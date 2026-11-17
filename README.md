@@ -14,7 +14,7 @@ Docente responsable: **Ing. Jimmy Luis Laruta Villarreal**
 | Fase | Contenido | Estado |
 |---|---|---|
 | 0. Base | Proyecto, sistema de diseño, página de inicio, publicación automática | ✅ Lista |
-| 1. BD y login | Supabase, seguridad (RLS), login del docente | ⏳ Siguiente |
+| 1. BD y login | Supabase, seguridad (RLS), login del docente | ⏳ Siguiente (proyecto Supabase ya creado) |
 | 2. Gestión académica | Gestiones, periodos, asignaturas, listas de estudiantes por Excel | — |
 | 3. Editor y banco | Editor visual, carga masiva de preguntas desde Excel | — |
 | 4. Juego en vivo | Sala, PIN/QR, partida en tiempo real, puntaje en el servidor | — |
@@ -69,8 +69,8 @@ solo en GitHub Pages (archivo `.github/workflows/deploy.yml`). El avance se ve e
 
 ## Seguridad
 
-- Las claves secretas **nunca** se suben al repositorio: van en **Settings → Secrets and variables → Actions**.
-- La única clave de Supabase que usa la página es la `anon public key`, que es pública por diseño;
+- Las claves secretas (`sb_secret_...`, contraseña de la base de datos) **nunca** se suben al repositorio.
+- La única clave de Supabase que usa la página es la `publishable key` (sb_publishable_...), que es pública por diseño;
   la protección real la dan las reglas RLS de la base de datos.
 - Las respuestas correctas nunca se envían al navegador del estudiante antes de tiempo (Fase 4).
 

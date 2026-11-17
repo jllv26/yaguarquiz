@@ -11,14 +11,12 @@ jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - name: Consultar Supabase
-        env:
-          URL: ${{ secrets.VITE_SUPABASE_URL }}
-          KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         run: |
-          if [ -z "$URL" ] || [ -z "$KEY" ]; then
-            echo "Supabase aún no está configurado (Fase 1). Nada que hacer."
-            exit 0
-          fi
-          code=$(curl -s -o /dev/null -w "%{http_code}" "$URL/rest/v1/" -H "apikey: $KEY" -H "Authorization: Bearer $KEY")
-          echo "Respuesta de Supabase: $code"
+          # Lee la URL y la clave pública desde .env.example
+          URL=$(grep '^VITE_SUPABASE_URL=' .env.example | cut -d= -f2-)
+          KEY=$(grep '^VITE_SUPABASE_PUBLISHABLE_KEY=' .env.example | cut -d= -f2-)
+          # Fase 1 agregará la función keep_alive() que toca la base de datos.
+          curl -s -o /dev/null -w "auth: %{http_code}\n" "$URL/auth/v1/health" -H "apikey: $KEY"
+          curl -s -o /dev/null -w "rest: %{http_code}\n" -X POST "$URL/rest/v1/rpc/keep_alive" -H "apikey: $KEY" -H "Content-Type: application/json" -d '{}' 
