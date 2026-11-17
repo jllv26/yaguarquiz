@@ -1,0 +1,161 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ============================================================
+   SISTEMA DE DISEÑO — AmazoQuiz UAP
+   Institucional (UAP): azul oscuro, rojo oscuro, plomo + verde y oro del escudo
+   Juego: coral, eléctrico, mango, selva (+ violeta y turquesa)
+   ============================================================ */
+@theme {
+  /* Institucional UAP */
+  --color-uap-blue: #1f3864;
+  --color-uap-blue-700: #172b4e;
+  --color-uap-blue-900: #0d1a33;
+  --color-uap-red: #8b1a1a;
+  --color-uap-red-600: #a32424;
+  --color-uap-green: #1b7339;
+  --color-uap-green-400: #2e9a55;
+  --color-uap-gold: #c9a23a;
+  --color-uap-gold-300: #e2c46f;
+  --color-uap-gray: #4d4d4d;
+  --color-uap-gray-soft: #767676;
+  --color-uap-mist: #ededed;
+
+  /* Juego */
+  --color-game-coral: #ff3355;
+  --color-game-electric: #2d7dff;
+  --color-game-mango: #ffb800;
+  --color-game-selva: #1dbf73;
+  --color-game-violet: #7c3aed;
+  --color-game-teal: #14b8a6;
+
+  /* Superficies (cambian con modo oscuro, ver :root/.dark) */
+  --color-surface: var(--aq-surface);
+  --color-surface-2: var(--aq-surface-2);
+  --color-ink: var(--aq-ink);
+  --color-ink-soft: var(--aq-ink-soft);
+  --color-line: var(--aq-line);
+
+  --font-display: 'Outfit Variable', 'Outfit', system-ui, sans-serif;
+  --font-sans: 'Inter Variable', 'Inter', system-ui, sans-serif;
+
+  --radius-xl2: 1.25rem;
+  --radius-xl3: 1.5rem;
+
+  --animate-float-slow: float 14s ease-in-out infinite;
+  --animate-float-med: float 10s ease-in-out infinite reverse;
+  --animate-pop-in: pop-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+
+  @keyframes float {
+    0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg) scale(1); }
+    33% { transform: translate3d(4%, -6%, 0) rotate(8deg) scale(1.06); }
+    66% { transform: translate3d(-5%, 4%, 0) rotate(-6deg) scale(0.96); }
+  }
+  @keyframes pop-in {
+    from { opacity: 0; transform: scale(0.85) translateY(12px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+}
+
+:root {
+  --aq-surface: #f6f7fb;
+  --aq-surface-2: #ffffff;
+  --aq-ink: #14213d;
+  --aq-ink-soft: #5b6478;
+  --aq-line: rgb(20 33 61 / 0.1);
+  color-scheme: light;
+}
+
+.dark {
+  --aq-surface: #0b1426;
+  --aq-surface-2: #121f38;
+  --aq-ink: #eef2fb;
+  --aq-ink-soft: #a7b1c6;
+  --aq-line: rgb(255 255 255 / 0.1);
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  @apply bg-surface text-ink font-sans antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+h1,
+h2,
+h3,
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-game-mango);
+  outline-offset: 3px;
+  border-radius: 12px;
+}
+
+/* Vidrio sutil */
+@utility glass {
+  background: rgb(255 255 255 / 0.72);
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  border: 1px solid rgb(255 255 255 / 0.6);
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 0.6) inset,
+    0 20px 50px -20px rgb(13 26 51 / 0.35);
+  .dark & {
+    background: rgb(18 31 56 / 0.62);
+    border-color: rgb(255 255 255 / 0.09);
+    box-shadow:
+      0 1px 0 rgb(255 255 255 / 0.06) inset,
+      0 20px 50px -20px rgb(0 0 0 / 0.6);
+  }
+}
+
+/* Botón "3D" que se hunde al presionar.
+   El color del borde inferior se define con --btn-edge */
+@utility btn-3d {
+  position: relative;
+  box-shadow:
+    0 6px 0 0 var(--btn-edge, rgb(0 0 0 / 0.25)),
+    0 12px 24px -10px rgb(0 0 0 / 0.45);
+  transform: translateY(0);
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease,
+    filter 150ms ease;
+  &:hover:not(:disabled) {
+    filter: brightness(1.06);
+    transform: translateY(-1px);
+    box-shadow:
+      0 7px 0 0 var(--btn-edge, rgb(0 0 0 / 0.25)),
+      0 16px 28px -10px rgb(0 0 0 / 0.45);
+  }
+  &:active:not(:disabled) {
+    transform: translateY(6px);
+    box-shadow:
+      0 0 0 0 var(--btn-edge, rgb(0 0 0 / 0.25)),
+      0 4px 10px -6px rgb(0 0 0 / 0.4);
+  }
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
