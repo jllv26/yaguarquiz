@@ -5,7 +5,7 @@
  *   si no hay internet, se usa la última guardada.
  * - Nunca guarda llamadas a Supabase ni a Google (datos en vivo).
  */
-const VERSION = 'yq-v1'
+const VERSION = 'yq-v2'
 const SCOPE = self.registration.scope
 
 self.addEventListener('install', () => self.skipWaiting())
