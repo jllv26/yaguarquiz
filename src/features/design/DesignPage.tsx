@@ -9,6 +9,9 @@ import { Button } from '../../components/ui/Button'
 import { Card, SolidCard } from '../../components/ui/Card'
 import { Input } from '../../components/ui/Input'
 import { useToast } from '../../components/ui/Toast'
+import { JaguarFace, type JaguarMood } from '../../components/jaguar/JaguarFace'
+import { ClawSwipe, JaguarEye, PawTrail } from '../../components/jaguar/JaguarFx'
+import { useLook } from '../../components/jaguar/useLook'
 
 const INSTITUTIONAL = [
   { name: 'Azul UAP', hex: '#1F3864', cls: 'bg-uap-blue' },
@@ -61,6 +64,8 @@ export function DesignPage() {
             construir el resto del sistema.
           </p>
         </header>
+
+        <JaguarShowcase />
 
         {/* Paletas */}
         <section className="grid gap-6 md:grid-cols-2">
@@ -212,5 +217,52 @@ function CountdownRing({ seconds }: { seconds: number }) {
       </span>
       <Timer className="sr-only" />
     </div>
+  )
+}
+
+const MOODS: { mood: JaguarMood; label: string }[] = [
+  { mood: 'neutral', label: 'Tranquilo (parpadea)' },
+  { mood: 'happy', label: 'Feliz (acierto)' },
+  { mood: 'wow', label: 'Sorprendido' },
+  { mood: 'sad', label: 'Triste (error)' },
+  { mood: 'wink', label: 'Guiño (¡ya estás dentro!)' },
+]
+
+function JaguarShowcase() {
+  const { ref, look } = useLook<HTMLDivElement>()
+  const [claw, setClaw] = useState<number | null>(null)
+  return (
+    <section>
+      <SolidCard className="flex flex-col gap-6 p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="font-display text-xl font-bold">Toque jaguar</h2>
+            <p className="text-sm text-ink-soft">Mascota con expresiones (mueva el cursor: lo sigue con la mirada), zarpazo, ojo vigilante y huellas.</p>
+          </div>
+          <Button variant="gold" onClick={() => setClaw(Date.now())}>
+            Probar zarpazo
+          </Button>
+        </div>
+        <div ref={ref} className="grid grid-cols-2 gap-4 sm:grid-cols-5">
+          {MOODS.map((m) => (
+            <figure key={m.mood} className="flex flex-col items-center gap-2">
+              <JaguarFace mood={m.mood} look={look} className="w-32" />
+              <figcaption className="text-center text-sm font-semibold text-ink-soft">{m.label}</figcaption>
+            </figure>
+          ))}
+        </div>
+        <div className="flex flex-wrap items-center justify-around gap-6">
+          <figure className="flex flex-col items-center gap-2">
+            <JaguarEye className="w-40" />
+            <figcaption className="text-sm font-semibold text-ink-soft">Ojo vigilante (modo enfoque)</figcaption>
+          </figure>
+          <figure className="flex flex-col items-center gap-2">
+            <PawTrail />
+            <figcaption className="text-sm font-semibold text-ink-soft">Huellas (sala de espera)</figcaption>
+          </figure>
+        </div>
+      </SolidCard>
+      <ClawSwipe playKey={claw} label="¡Demuestra tu garra!" />
+    </section>
   )
 }

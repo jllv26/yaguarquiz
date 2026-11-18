@@ -46,6 +46,15 @@
   --animate-float-slow: float 14s ease-in-out infinite;
   --animate-float-med: float 10s ease-in-out infinite reverse;
   --animate-pop-in: pop-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  --animate-spots: spots-drift 120s linear infinite;
+  @keyframes spots-drift {
+    from {
+      background-position: 0 0;
+    }
+    to {
+      background-position: 240px 480px;
+    }
+  }
 
   @keyframes float {
     0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg) scale(1); }

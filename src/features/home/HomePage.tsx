@@ -9,6 +9,8 @@ import { Card } from '../../components/ui/Card'
 import { useToast } from '../../components/ui/Toast'
 import { BRAND } from '../../lib/brand'
 import { cn } from '../../lib/cn'
+import { JaguarFace } from '../../components/jaguar/JaguarFace'
+import { useLook } from '../../components/jaguar/useLook'
 
 const PIN_LENGTH = 6
 const YEAR = new Date().getFullYear()
@@ -19,6 +21,7 @@ export function HomePage() {
   const refs = useRef<(HTMLInputElement | null)[]>([])
   const navigate = useNavigate()
   const toast = useToast()
+  const { ref: mascotRef, look } = useLook<HTMLDivElement>()
 
   const pin = digits.join('')
   const complete = pin.length === PIN_LENGTH
@@ -123,13 +126,19 @@ export function HomePage() {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.6, delay: 0.15, ease: 'easeOut' }}
         >
-          <Card className="relative overflow-hidden p-6 sm:p-8">
+          {/* Yaguar asoma por encima de la tarjeta y sigue el cursor con la mirada */}
+          <div ref={mascotRef} className="relative z-10 -mb-12 flex justify-center">
+            <motion.div
+              initial={{ y: 30, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.5, type: 'spring', stiffness: 160, damping: 12 }}
+              whileHover={{ rotate: [0, -6, 6, 0], transition: { duration: 0.5 } }}
+            >
+              <JaguarFace mood={shake ? 'sad' : complete ? 'happy' : pin.length > 0 ? 'wow' : 'neutral'} look={look} className="w-28 drop-shadow-xl sm:w-32" />
+            </motion.div>
+          </div>
+          <Card className="relative overflow-hidden p-6 pt-14 sm:p-8 sm:pt-16">
             <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-uap-blue via-uap-green to-uap-gold" />
-            <img
-              src={BRAND.logoColor}
-              alt=""
-              className="mx-auto mb-4 w-20 drop-shadow-lg lg:hidden"
-            />
             <h2 className="text-center font-display text-2xl font-extrabold text-ink sm:text-3xl">Únete a la partida</h2>
             <p className="mt-1 text-center text-ink-soft">Ingresa el PIN de 6 dígitos</p>
 

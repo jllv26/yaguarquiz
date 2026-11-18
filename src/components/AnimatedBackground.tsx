@@ -1,5 +1,24 @@
 import { cn } from '../lib/cn'
 
+/** Mosaico de rosetas de jaguar (SVG en línea, sin descargas). */
+function rosetteTile(color: string) {
+  const ros = (x: number, y: number, s: number, r: number) => {
+    const blobs = [0, 60, 130, 200, 270]
+      .map((a) => {
+        const rad = (a * Math.PI) / 180
+        const cx = (Math.cos(rad) * 11).toFixed(1)
+        const cy = (Math.sin(rad) * 11).toFixed(1)
+        return `<ellipse cx='${cx}' cy='${cy}' rx='5.2' ry='3.4' transform='rotate(${a + 90} ${cx} ${cy})'/>`
+      })
+      .join('')
+    return `<g transform='translate(${x} ${y}) rotate(${r}) scale(${s})'>${blobs}<circle r='2.6' opacity='0.55'/></g>`
+  }
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240' fill='${color}'>${ros(40, 50, 1.1, 10)}${ros(160, 30, 0.8, 40)}${ros(110, 130, 1.25, -20)}${ros(30, 190, 0.9, 70)}${ros(200, 170, 1, 15)}<circle cx='90' cy='60' r='3'/><circle cx='190' cy='100' r='2.5'/><circle cx='70' cy='150' r='2.5'/><circle cx='150' cy='220' r='3'/></svg>`
+  return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`
+}
+const SPOTS_LIGHT = rosetteTile('#8A5A1B')
+const SPOTS_DARK = rosetteTile('#E2C46F')
+
 /**
  * Fondo "Amazonía digital": malla de color animada (mesh gradient) +
  * siluetas de hojas y un río sinuoso. Puro CSS/SVG, sin imágenes externas.
@@ -19,6 +38,10 @@ export function AnimatedBackground({ variant = 'jungle', className }: { variant?
           <div className="absolute bottom-[5%] right-[5%] size-[25vmax] rounded-full bg-uap-red/15 blur-[90px] animate-float-med dark:bg-uap-red/30" />
         </>
       )}
+
+      {/* rosetas de jaguar (muy suaves, se desplazan lento) */}
+      <div className="absolute inset-0 animate-spots opacity-[0.07] dark:hidden" style={{ backgroundImage: SPOTS_LIGHT, backgroundSize: '240px 240px' }} />
+      <div className="absolute inset-0 hidden animate-spots opacity-[0.06] dark:block" style={{ backgroundImage: SPOTS_DARK, backgroundSize: '240px 240px' }} />
 
       {/* río */}
       <svg className="absolute inset-x-0 bottom-0 h-[38vh] w-full opacity-40 dark:opacity-25" viewBox="0 0 1440 320" preserveAspectRatio="none">

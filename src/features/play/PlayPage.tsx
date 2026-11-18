@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { ArrowLeft, Clock, Flame, Loader2, Pause, RefreshCw, Trophy, WifiOff } from 'lucide-react'
+import { ArrowLeft, Clock, Flame, Loader2, Pause, RefreshCw, WifiOff } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { AnimatedBackground } from '../../components/AnimatedBackground'
@@ -24,6 +24,8 @@ import { AvatarBubble, BigCountdown, Leaderboard } from '../live/LiveBits'
 import { celebrate, COUNTDOWN_MS, secondsLeft, useServerNow } from '../live/clock'
 import { ExamPlay } from './ExamPlay'
 import { JoinFlow } from './JoinFlow'
+import { JaguarFace } from '../../components/jaguar/JaguarFace'
+import { ClawSwipe, PawTrail } from '../../components/jaguar/JaguarFx'
 import { QuestionView, type RevealInfo } from './QuestionView'
 
 type PlayMode = 'live' | 'exam' | 'homework'
@@ -139,6 +141,7 @@ function Game({ token, onLeave }: { token: string; onLeave: (message?: string) =
   const [offset, setOffset] = useState(0)
   const [offline, setOffline] = useState(false)
   const [pending, setPending] = useState<{ qid: string; r: StudentResponse } | null>(null)
+  const [claw, setClaw] = useState<{ k: number; label: string; tone: 'gold' | 'green' } | null>(null)
   const inflight = useRef(false)
 
   const refresh = useCallback(async () => {
@@ -181,11 +184,15 @@ function Game({ token, onLeave }: { token: string; onLeave: (message?: string) =
     const first = prev.current === ''
     prev.current = k
     if (first) return
-    if (st.session.phase === 'question') sfx.go()
+    if (st.session.phase === 'question') {
+      sfx.go()
+      setClaw({ k: Date.now(), label: '¡Ya!', tone: 'gold' })
+    }
     if (st.session.phase === 'reveal') {
       if (st.my_answer?.correct) {
         sfx.correct()
         celebrate()
+        setClaw({ k: Date.now(), label: `¡Garra! +${st.my_answer.points ?? 0}`, tone: 'green' })
       } else sfx.wrong()
     }
     if (st.session.phase === 'finished') {
@@ -249,12 +256,16 @@ function Game({ token, onLeave }: { token: string; onLeave: (message?: string) =
 
       {s.phase === 'lobby' && (
         <Card className="text-center">
-          <AvatarBubble avatar={me.avatar} size="xl" className="mx-auto" />
+          <div className="flex items-end justify-center gap-2">
+            <JaguarFace mood="wink" className="w-28" />
+            <AvatarBubble avatar={me.avatar} size="lg" className="-ml-6 mb-1" />
+          </div>
           <p className="mt-4 font-display text-3xl font-black">¡Ya estás dentro!</p>
           <p className="mt-1 text-lg text-ink-soft">Mira el proyector: el juego empieza en un momento.</p>
           <motion.p animate={{ opacity: [0.4, 1, 0.4] }} transition={{ repeat: Infinity, duration: 2 }} className="mt-4 font-semibold text-uap-green dark:text-game-selva">
             Esperando al docente…
           </motion.p>
+          <PawTrail count={5} className="mt-3 justify-center" />
         </Card>
       )}
 
@@ -267,6 +278,12 @@ function Game({ token, onLeave }: { token: string; onLeave: (message?: string) =
         </div>
       )}
 
+      {s.phase === 'reveal' && st.question && (
+        <JaguarFace
+          mood={st.my_answer?.correct ? 'happy' : Number(st.my_answer?.partial ?? 0) > 0 ? 'wow' : 'sad'}
+          className="mx-auto -mb-2 w-24 drop-shadow-lg"
+        />
+      )}
       {(s.phase === 'question' || s.phase === 'reveal') && st.question && (
         <SolidCard className="p-4 sm:p-6">
           {s.phase === 'reveal' && !st.my_answer?.answered && (
@@ -300,6 +317,7 @@ function Game({ token, onLeave }: { token: string; onLeave: (message?: string) =
 
       {s.phase === 'finished' && <Summary st={st} />}
 
+      <ClawSwipe playKey={claw?.k ?? null} label={claw?.label} tone={claw?.tone} />
       {s.paused && s.phase !== 'finished' && (
         <div className="fixed inset-0 z-30 grid place-items-center bg-uap-blue-900/70 backdrop-blur-sm">
           <div className="text-center text-white">
@@ -355,8 +373,8 @@ function Summary({ st }: { st: PlayState }) {
   return (
     <div className="flex flex-col gap-4">
       <Card className="text-center">
-        <Trophy className="mx-auto size-12 text-uap-gold" />
-        <p className="mt-2 font-display text-3xl font-black">¡Terminaste!</p>
+        <JaguarFace mood={sm.rank <= 3 ? 'wow' : pass ? 'happy' : 'wink'} className="mx-auto w-28" />
+        <p className="mt-2 font-display text-3xl font-black">{pass ? '¡Terminaste! 🏆' : '¡Terminaste! Sigue practicando'}</p>
         <p className="text-ink-soft">{st.session.quiz_title}</p>
         <div className="mt-5 grid grid-cols-3 gap-2">
           <Big label="Puesto" value={`${sm.rank}°`} sub={`de ${sm.of}`} />

@@ -44,6 +44,8 @@ import { sfx } from '../../lib/sound'
 import { AvatarBubble } from '../live/LiveBits'
 import { celebrate, fmtLeft, useServerNow } from '../live/clock'
 import { QuestionView, type RevealInfo } from './QuestionView'
+import { JaguarFace } from '../../components/jaguar/JaguarFace'
+import { JaguarEye } from '../../components/jaguar/JaguarFx'
 
 const pendKey = (attempt: string) => `yq-exam-pending-${attempt}`
 function readPending(attempt: string): Record<string, StudentResponse> {
@@ -163,6 +165,7 @@ function Home({ st, now, onStart, offline }: { st: ExamState; now: number; onSta
           <div className="mt-5 rounded-3xl bg-ink/5 p-5 text-center">
             {s.show_grade && st.best_grade !== null ? (
               <>
+                <JaguarFace mood={pass ? 'happy' : 'wink'} className="mx-auto mb-1 w-20" />
                 <p className="text-sm font-bold uppercase tracking-widest text-ink-soft">{st.attempts.length > 1 ? 'Tu mejor nota' : 'Tu nota'}</p>
                 <p className={cn('font-display text-7xl font-black tabular-nums', pass ? 'text-uap-green dark:text-game-selva' : 'text-uap-red dark:text-game-coral')}>
                   {Math.round(Number(st.best_grade))}
@@ -216,7 +219,7 @@ function Home({ st, now, onStart, offline }: { st: ExamState; now: number; onSta
               <Rule icon={<ClipboardCheck className="size-4" />}>Cada respuesta se guarda al instante. Si se corta el internet o recargas, sigues donde te quedaste.</Rule>
               <Rule icon={<ShieldCheck className="size-4" />}>No se puede copiar ni pegar texto.</Rule>
               {s.focus_mode && (
-                <Rule icon={<Maximize className="size-4" />}>
+                <Rule icon={<JaguarEye className="w-6" watching={false} />}>
                   Se abrirá en <strong>pantalla completa</strong>. Cada vez que salgas de la pestaña o ventana queda registrado
                   {s.lock_after ? <> y a las <strong>{s.lock_after} salidas</strong> se bloquea</> : null}.
                 </Rule>
@@ -640,8 +643,10 @@ function Attempt({
 
       {locked && (
         <Overlay>
-          <Lock className="mx-auto size-16" />
-          <p className="mt-3 font-display text-3xl font-black">Examen bloqueado</p>
+          <JaguarEye className="mx-auto w-40" />
+          <p className="mt-3 flex items-center justify-center gap-2 font-display text-3xl font-black">
+            <Lock className="size-7" /> Examen bloqueado
+          </p>
           <p className="mt-1 text-white/85">Saliste de la pestaña {losses} veces. Tus respuestas están guardadas.</p>
           <p className="text-white/85">Pide al docente que te habilite desde su monitor.</p>
           <Loader2 className="mx-auto mt-4 size-6 animate-spin" />
@@ -649,8 +654,9 @@ function Attempt({
       )}
       {!locked && needFs && (
         <Overlay>
-          <Maximize className="mx-auto size-14" />
+          <JaguarEye className="mx-auto w-36" />
           <p className="mt-3 font-display text-3xl font-black">Vuelve a pantalla completa</p>
+          <p className="text-white/85">El jaguar te está mirando 👀</p>
           <p className="mt-1 text-white/85">Este examen se responde en pantalla completa. Salir queda registrado.</p>
           <Button size="xl" variant="gold" className="mt-5" onClick={() => void document.documentElement.requestFullscreen().catch(() => null)}>
             <Maximize className="size-6" /> Continuar el examen

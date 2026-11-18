@@ -50,6 +50,8 @@ import { useAuth } from '../auth/AuthProvider'
 import { AvatarBubble, BigCountdown, Leaderboard, Podium } from '../live/LiveBits'
 import { celebrate, COUNTDOWN_MS, secondsLeft, useServerNow } from '../live/clock'
 import { useBots } from './bots'
+import { JaguarFace } from '../../components/jaguar/JaguarFace'
+import { ClawSwipe, PawTrail } from '../../components/jaguar/JaguarFx'
 import { useAutoSync } from '../reports/useAutoSync'
 import { ExamMonitor } from './ExamMonitor'
 
@@ -182,12 +184,16 @@ function Host() {
 
   // ---------------------------------------------------------- sonidos
   const prevPhase = useRef<Phase | undefined>(undefined)
+  const [claw, setClaw] = useState<number | null>(null)
   useEffect(() => {
     if (!phase || prevPhase.current === phase) return
     const first = prevPhase.current === undefined
     prevPhase.current = phase
     if (first) return
-    if (phase === 'question') sfx.go()
+    if (phase === 'question') {
+      sfx.go()
+      setClaw(Date.now())
+    }
     if (phase === 'reveal') sfx.reveal()
     if (phase === 'finished') {
       sfx.fanfare()
@@ -421,6 +427,7 @@ function Host() {
         </div>
       )}
 
+      <ClawSwipe playKey={claw} label="¡Ya!" />
       <ParticipantsPanel open={panel} onClose={() => setPanel(false)} st={st} onKick={kick} onAuthorize={authorize} />
     </div>
   )
@@ -475,10 +482,12 @@ function Lobby({ st, onKick, bots }: { st: HostState; onKick: (p: HostParticipan
           </SolidCard>
         )}
         {playing.length === 0 ? (
-          <div className="grid flex-1 place-items-center">
+          <div className="flex flex-1 flex-col items-center justify-center gap-4">
+            <JaguarFace mood="neutral" className="w-40 drop-shadow-xl" />
             <motion.p animate={{ opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 2 }} className="font-display text-2xl font-bold text-ink-soft">
               Esperando a los primeros jugadores…
             </motion.p>
+            <PawTrail />
           </div>
         ) : (
           <div className="flex flex-wrap content-start gap-3">
@@ -706,7 +715,10 @@ function Final({ st }: { st: HostState }) {
   }
   return (
     <div className="flex flex-col items-center gap-8">
-      <h2 className="font-display text-4xl font-black drop-shadow">🎉 ¡Felicidades!</h2>
+      <div className="flex items-center gap-4">
+        <JaguarFace mood="happy" className="w-24 drop-shadow-xl" />
+        <h2 className="font-display text-4xl font-black drop-shadow">¡Felicidades!</h2>
+      </div>
       {st.leaderboard.length > 0 ? <Podium rows={st.leaderboard} /> : <p className="text-ink-soft">Nadie participó en esta sesión.</p>}
       <SolidCard className="w-full max-w-5xl overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-4">
