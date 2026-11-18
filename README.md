@@ -19,7 +19,7 @@ Docente responsable: **Ing. Jimmy Luis Laruta Villarreal**
 | 3. Editor y banco | Editor visual con autoguardado, 6 tipos de pregunta, imágenes, banco, carga masiva Excel + ZIP | ✅ Lista |
 | 4. Juego en vivo | Sala, PIN/QR, partida en tiempo real, puntaje en el servidor | ✅ Lista |
 | 5. Examen y tarea | Autoritmo, tiempo total, apertura/cierre automático, anti-copia | ✅ Lista |
-| 6. Resultados y Sheets | Reportes, exportaciones, Google Sheets, conversor de notas | — |
+| 6. Resultados y Sheets | Reportes, exportaciones, Google Sheets, conversor de notas | ✅ Lista |
 | 7. Pulido | Sonido, animaciones, temas, podio, insignias | — |
 | 8. QA final | Pruebas completas, manuales | — |
 
@@ -56,11 +56,34 @@ Docente responsable: **Ing. Jimmy Luis Laruta Villarreal**
 - **Primer docente = administrador.** La primera cuenta creada en `/#/admin/login` queda como administrador
   aprobado; las siguientes deben ser aprobadas en *Configuración → Docentes*.
 - Al crear la cuenta llega un correo de confirmación; hay que abrir el enlace en el mismo navegador.
-- Migraciones: `0001` esquema + RLS, `0002` datos de ejemplo, `0003` gestión académica (importar estudiantes, plan de calificación), `0004` editor de evaluaciones (guardar/importar/copiar/mover/duplicar preguntas) y almacenamiento de imágenes (bucket `media`), `0005` motor del juego en vivo (sesiones, unirse con RU/CI o apodo, corrección y puntaje en el servidor, ranking, nota 0‑100), `0006` examen y tarea (intentos, apertura/cierre automático, preguntas al azar, mezcla por estudiante, modo enfoque, monitor).
+- Migraciones: `0001` esquema + RLS, `0002` datos de ejemplo, `0003` gestión académica (importar estudiantes, plan de calificación), `0004` editor de evaluaciones (guardar/importar/copiar/mover/duplicar preguntas) y almacenamiento de imágenes (bucket `media`), `0005` motor del juego en vivo (sesiones, unirse con RU/CI o apodo, corrección y puntaje en el servidor, ranking, nota 0‑100), `0006` examen y tarea (intentos, apertura/cierre automático, preguntas al azar, mezcla por estudiante, modo enfoque, monitor), `0007` reportes, libreta de notas (conversor) y registro de envíos a Google Sheets.
 - Pruebas de seguridad: `tests/sql/10_rls_test.sql` y `tests/sql/20_academic_test.sql` (se ejecutan en un PostgreSQL local con
   `tests/sql/00_supabase_stub.sql`).
 - Prueba de carga del juego en vivo: `node tests/load/live-load-test.mjs 45` simula al docente y a 45 estudiantes que se unen y
   responden a la vez (respuestas simultáneas, doble clic, respuestas tardías, pausa, +10 s, otro dispositivo, expulsión, permisos).
+
+## Reportes, libreta de notas y Google Sheets
+
+- **Reportes** (`/#/admin/reportes`): por sesión muestra participación, promedio, mediana, máxima/mínima, % de aprobación,
+  tiempo promedio y distribución de notas; tabla por estudiante (respuestas una a una, alertas de pestaña, **ajuste manual de
+  nota con motivo registrado**); análisis por pregunta con la respuesta incorrecta más elegida y las **preguntas difíciles
+  (< 35 % de acierto)** resaltadas. Exporta **Excel** (Resumen, Estudiantes, Preguntas, Respuestas), **CSV** y **PDF**
+  imprimible con encabezado UAP.
+- **Libreta de notas** (Asignatura → *Libreta de notas*): el conversor del plan (por defecto 30 + 30 + 40). Cada actividad
+  se vincula a una categoría; aporte = (nota / 100) × peso; varias actividades de una categoría se promedian; ausente en una
+  actividad cerrada = 0; las categorías manuales (asistencia, exposiciones, proyecto final) se escriben ahí mismo.
+  Nota final redondeada al entero y aprobación con 51. Exporta a Excel.
+- **Google Sheets**: el script [`google-apps-script/Code.gs`](google-apps-script/Code.gs) se pega en *Extensiones →
+  Apps Script* de una hoja de Google y se publica como **Aplicación web** (Ejecutar como: Yo · Acceso: Cualquier persona).
+  En *Configuración → Google Sheets* se pegan la URL y el token. Al terminar cada sesión (con lista oficial) se envían
+  solos los resultados a 4 hojas: `Resumen_Sesiones`, `Notas_SIGLA_PARALELO` (libreta, una columna por evaluación),
+  `Detalle_Respuestas` y `Analisis_Preguntas`. El envío usa `Content-Type: text/plain` (evita el bloqueo CORS de Apps
+  Script) y el script valida el token. **Reenviar no duplica filas** (la clave es el identificador de la sesión); en el
+  reporte hay un botón **Re-sincronizar**.
+
+Pruebas: `node tests/load/reports-test.mjs` (números del reporte, ajuste de nota, libreta, permisos),
+`tests/unit/gradebook.test.ts` (conversor) y `tests/unit/appsScript.test.ts` (Code.gs con una hoja simulada: 4 hojas,
+token, reenvíos sin duplicar).
 
 ## Examen de laboratorio y tarea
 

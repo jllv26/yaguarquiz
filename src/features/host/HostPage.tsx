@@ -50,6 +50,7 @@ import { useAuth } from '../auth/AuthProvider'
 import { AvatarBubble, BigCountdown, Leaderboard, Podium } from '../live/LiveBits'
 import { celebrate, COUNTDOWN_MS, secondsLeft, useServerNow } from '../live/clock'
 import { useBots } from './bots'
+import { useAutoSync } from '../reports/useAutoSync'
 import { ExamMonitor } from './ExamMonitor'
 
 /** Estilo de color/forma de cada opción (en V/F: Verdadero = rombo azul, Falso = triángulo rojo). */
@@ -144,6 +145,7 @@ function Host() {
 
   const now = useServerNow(offset, phase === 'countdown' || phase === 'question')
   const bots = useBots(st)
+  useAutoSync(id, phase === 'finished' && st?.session.identification === 'roster')
 
   // ---------------------------------------------------------- avances automáticos
   const autoKey = useRef('')
@@ -718,8 +720,8 @@ function Final({ st }: { st: HostState }) {
             <Button variant="success" onClick={() => void exportExcel()} disabled={!rows.length}>
               <Download className="size-4" /> Descargar Excel
             </Button>
-            <Link to="/admin/sesiones">
-              <Button variant="secondary">Volver al panel</Button>
+            <Link to={`/admin/reportes/${s.id}`}>
+              <Button variant="secondary">Ver reporte completo</Button>
             </Link>
           </div>
         </div>

@@ -25,7 +25,7 @@ const NAV = [
   { to: '/admin/estudiantes', label: 'Estudiantes', icon: Users },
   { to: '/admin/evaluaciones', label: 'Evaluaciones', icon: ClipboardList },
   { to: '/admin/sesiones', label: 'Sesiones', icon: Radio },
-  { to: '/admin/reportes', label: 'Reportes', icon: BarChart3, phase: 6 },
+  { to: '/admin/reportes', label: 'Reportes', icon: BarChart3 },
   { to: '/admin/configuracion', label: 'Configuración', icon: Settings },
 ] as const
 

@@ -1,6 +1,6 @@
-import { ArrowLeft, BookMarked, Calculator, Pencil, Trash2, Users } from 'lucide-react'
+import { ArrowLeft, BookMarked, BookOpenCheck, Calculator, Pencil, Trash2, Users } from 'lucide-react'
 import { useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useConfirm } from '../../components/ui/Confirm'
 import { EmptyState, Skeleton } from '../../components/ui/Field'
 import { useToast } from '../../components/ui/Toast'
@@ -8,6 +8,7 @@ import { useDeleteSubject, usePeriods, useSubject } from '../../lib/api/academic
 import { cn } from '../../lib/cn'
 import { StudentsTab } from '../students/StudentsTab'
 import { SubjectModal } from './AcademicModals'
+import { GradebookTab } from './GradebookTab'
 import { GradingTab } from './GradingTab'
 import { TopicsTab } from './TopicsTab'
 
@@ -15,6 +16,7 @@ const TABS = [
   { id: 'estudiantes', label: 'Estudiantes', icon: Users },
   { id: 'temas', label: 'Temas', icon: BookMarked },
   { id: 'plan', label: 'Plan de calificación', icon: Calculator },
+  { id: 'libreta', label: 'Libreta de notas', icon: BookOpenCheck },
 ] as const
 type TabId = (typeof TABS)[number]['id']
 
@@ -24,7 +26,8 @@ export function SubjectDetailPage() {
   const toast = useToast()
   const confirm = useConfirm()
   const subject = useSubject(id)
-  const [tab, setTab] = useState<TabId>('estudiantes')
+  const [params] = useSearchParams()
+  const [tab, setTab] = useState<TabId>(() => (TABS.some((t) => t.id === params.get('tab')) ? (params.get('tab') as TabId) : 'estudiantes'))
   const [edit, setEdit] = useState(false)
   const del = useDeleteSubject()
   const s = subject.data
@@ -121,6 +124,7 @@ export function SubjectDetailPage() {
       {tab === 'estudiantes' && <StudentsTab subjectId={s.id} subjectLabel={`${s.code}_${s.parallel}`} />}
       {tab === 'temas' && <TopicsTab subjectId={s.id} />}
       {tab === 'plan' && <GradingTab subjectId={s.id} />}
+      {tab === 'libreta' && <GradebookTab subjectId={s.id} />}
 
       <SubjectModal
         open={edit}

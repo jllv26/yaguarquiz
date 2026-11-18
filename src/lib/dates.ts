@@ -11,3 +11,8 @@ export function fmtDate(d: string) {
 export function fmtDateTime(ts: string) {
   return new Date(ts).toLocaleString('es-BO', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'America/La_Paz' })
 }
+
+/** Fecha de un timestamp → "18 nov." en hora de Bolivia. */
+export function fmtDay(ts: string) {
+  return new Date(ts).toLocaleDateString('es-BO', { day: 'numeric', month: 'short', timeZone: 'America/La_Paz' })
+}

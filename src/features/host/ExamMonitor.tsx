@@ -33,6 +33,7 @@ import { fmtDateTime } from '../../lib/dates'
 import { buildWorkbook, downloadBlob, headerCell, titleCell } from '../../lib/excel'
 import { AvatarBubble } from '../live/LiveBits'
 import { fmtLeft, useServerNow } from '../live/clock'
+import { useAutoSync } from '../reports/useAutoSync'
 
 type Filter = 'all' | 'progress' | 'done' | 'absent' | 'alerts'
 
@@ -70,6 +71,8 @@ export function ExamMonitor({ id }: { id: string }) {
     return () => clearInterval(t)
   }, [refresh])
   const now = useServerNow(offset, true, 1000)
+  const closedNow = !!st && (st.session.status === 'finished' || (!!st.session.closes_at && new Date(st.session.closes_at).getTime() <= now))
+  useAutoSync(id, closedNow && st?.session.identification === 'roster' && !st.rows.some((r) => r.current))
 
   // primero quienes entraron (los que están en curso arriba), al final los ausentes
   const rows = useMemo(() => {
@@ -204,6 +207,11 @@ export function ExamMonitor({ id }: { id: string }) {
           </p>
           <p className="truncate font-display text-lg font-extrabold">{s.quiz_title}</p>
         </div>
+        <Link to={`/admin/reportes/${id}`}>
+          <Button size="sm" variant="secondary">
+            Reporte
+          </Button>
+        </Link>
         <Button size="sm" variant="success" onClick={() => void exportExcel()}>
           <Download className="size-4" /> Excel
         </Button>
