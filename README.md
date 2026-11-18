@@ -16,8 +16,8 @@ Docente responsable: **Ing. Jimmy Luis Laruta Villarreal**
 | 0. Base | Proyecto, sistema de diseño, página de inicio, publicación automática | ✅ Lista |
 | 1. BD y login | Supabase, seguridad (RLS), login del docente, datos de ejemplo | ✅ Lista |
 | 2. Gestión académica | Gestiones, periodos, asignaturas, listas de estudiantes por Excel, temas, plan de calificación | ✅ Lista |
-| 3. Editor y banco | Editor visual, carga masiva de preguntas desde Excel | ⏳ Siguiente |
-| 4. Juego en vivo | Sala, PIN/QR, partida en tiempo real, puntaje en el servidor | — |
+| 3. Editor y banco | Editor visual con autoguardado, 6 tipos de pregunta, imágenes, banco, carga masiva Excel + ZIP | ✅ Lista |
+| 4. Juego en vivo | Sala, PIN/QR, partida en tiempo real, puntaje en el servidor | ⏳ Siguiente |
 | 5. Examen y tarea | Autoritmo, tiempo total, apertura/cierre automático, anti-copia | — |
 | 6. Resultados y Sheets | Reportes, exportaciones, Google Sheets, conversor de notas | — |
 | 7. Pulido | Sonido, animaciones, temas, podio, insignias | — |
@@ -56,7 +56,7 @@ Docente responsable: **Ing. Jimmy Luis Laruta Villarreal**
 - **Primer docente = administrador.** La primera cuenta creada en `/#/admin/login` queda como administrador
   aprobado; las siguientes deben ser aprobadas en *Configuración → Docentes*.
 - Al crear la cuenta llega un correo de confirmación; hay que abrir el enlace en el mismo navegador.
-- Migraciones: `0001` esquema + RLS, `0002` datos de ejemplo, `0003` gestión académica (importar estudiantes, plan de calificación).
+- Migraciones: `0001` esquema + RLS, `0002` datos de ejemplo, `0003` gestión académica (importar estudiantes, plan de calificación), `0004` editor de evaluaciones (guardar/importar/copiar/mover/duplicar preguntas) y almacenamiento de imágenes (bucket `media`).
 - Pruebas de seguridad: `tests/sql/10_rls_test.sql` y `tests/sql/20_academic_test.sql` (se ejecutan en un PostgreSQL local con
   `tests/sql/00_supabase_stub.sql`).
 
@@ -88,7 +88,7 @@ solo en GitHub Pages (archivo `.github/workflows/deploy.yml`). El avance se ve e
 npm test        # pruebas unitarias (importación de Excel, etc.)
 ```
 
-`scripts/make-test-list.mjs` genera `lista_prueba_40_con_2_errores.xlsx` para probar la importación.
+`scripts/make-test-list.mjs` genera `lista_prueba_40_con_2_errores.xlsx` y `scripts/make-test-questions.mjs` genera `preguntas_prueba_30.xlsx` (5 preguntas de cada tipo) para probar las importaciones.
 
 ## Seguridad
 

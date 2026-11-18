@@ -23,7 +23,7 @@ const NAV = [
   { to: '/admin', label: 'Inicio', icon: LayoutDashboard, end: true },
   { to: '/admin/asignaturas', label: 'Asignaturas', icon: BookOpen },
   { to: '/admin/estudiantes', label: 'Estudiantes', icon: Users },
-  { to: '/admin/evaluaciones', label: 'Evaluaciones', icon: ClipboardList, phase: 3 },
+  { to: '/admin/evaluaciones', label: 'Evaluaciones', icon: ClipboardList },
   { to: '/admin/sesiones', label: 'Sesiones', icon: Radio, phase: 4 },
   { to: '/admin/reportes', label: 'Reportes', icon: BarChart3, phase: 6 },
   { to: '/admin/configuracion', label: 'Configuración', icon: Settings },
