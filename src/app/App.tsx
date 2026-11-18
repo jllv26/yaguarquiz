@@ -23,6 +23,8 @@ const AdminLayout = lazy(() => import('../features/admin/AdminLayout').then((m) 
 const SettingsPage = lazy(() => import('../features/admin/SettingsPage').then((m) => ({ default: m.SettingsPage })))
 const ComingSoon = lazy(() => import('../features/admin/SettingsPage').then((m) => ({ default: m.ComingSoon })))
 const QuizzesPage = lazy(() => import('../features/quizzes/QuizzesPage').then((m) => ({ default: m.QuizzesPage })))
+const SessionsPage = lazy(() => import('../features/sessions/SessionsPage').then((m) => ({ default: m.SessionsPage })))
+const HostPage = lazy(() => import('../features/host/HostPage').then((m) => ({ default: m.HostPage })))
 const QuizEditorPage = lazy(() => import('../features/editor/QuizEditorPage').then((m) => ({ default: m.QuizEditorPage })))
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, retry: 1, refetchOnWindowFocus: false } },
@@ -41,6 +43,7 @@ export function App() {
             <Route path="/play/:pin" element={<PlayPage />} />
             <Route path="/diseno" element={<DesignPage />} />
             <Route path="/admin/login" element={<LoginPage />} />
+            <Route path="/host/:id" element={<HostPage />} />
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<DashboardPage />} />
               <Route path="asignaturas" element={<AcademicPage />} />
@@ -48,7 +51,7 @@ export function App() {
               <Route path="estudiantes" element={<StudentsPage />} />
               <Route path="evaluaciones" element={<QuizzesPage />} />
               <Route path="evaluaciones/:id" element={<QuizEditorPage />} />
-              <Route path="sesiones" element={<ComingSoon phase={4} title="Sesiones" />} />
+              <Route path="sesiones" element={<SessionsPage />} />
               <Route path="reportes" element={<ComingSoon phase={6} title="Reportes" />} />
               <Route path="configuracion" element={<SettingsPage />} />
             </Route>

@@ -42,7 +42,7 @@ const ROADMAP = [
   { phase: 1, title: 'Base de datos y acceso docente', done: true },
   { phase: 2, title: 'Asignaturas, estudiantes y listas desde Excel', done: true },
   { phase: 3, title: 'Editor de evaluaciones y banco de preguntas', done: true },
-  { phase: 4, title: 'Partida en vivo con PIN y código QR' },
+  { phase: 4, title: 'Partida en vivo con PIN y código QR', done: true },
   { phase: 5, title: 'Modo examen, tareas y anti-copia' },
   { phase: 6, title: 'Reportes, Google Sheets y conversor de notas' },
   { phase: 7, title: 'Sonido, podio, insignias y mascota Yaguar' },

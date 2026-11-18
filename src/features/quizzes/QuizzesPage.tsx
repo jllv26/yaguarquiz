@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { Archive, ClipboardList, Copy, FileSpreadsheet, MoreVertical, Pencil, Plus, Search, Trash2, Undo2 } from 'lucide-react'
+import { Archive, ClipboardList, Copy, FileSpreadsheet, MoreVertical, Pencil, Plus, Rocket, Search, Trash2, Undo2 } from 'lucide-react'
 import { useMemo, useState, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
@@ -13,6 +13,7 @@ import { normalizeText } from '../../lib/text'
 import { exportQuizToExcel } from './quizExport'
 import { downloadQuestionTemplate } from './questionTemplate'
 import { QuizSettingsModal } from './QuizSettingsModal'
+import { LaunchModal } from '../sessions/LaunchModal'
 
 const STATUS: Record<QuizStatus, { label: string; tone: 'neutral' | 'green' | 'gold' }> = {
   draft: { label: 'Borrador', tone: 'gold' },
@@ -133,6 +134,7 @@ function QuizCard({ z, index }: { z: QuizListRow; index: number }) {
   const del = useDeleteQuiz()
   const setStatus = useSetQuizStatus()
   const [menu, setMenu] = useState(false)
+  const [launch, setLaunch] = useState(false)
   const n = z.questions?.[0]?.count ?? 0
   const color = z.subjects?.theme_color || '#1B7339'
 
@@ -215,9 +217,17 @@ function QuizCard({ z, index }: { z: QuizListRow; index: number }) {
           <span className="font-display text-2xl font-black">
             {n} <span className="text-sm font-semibold text-ink-soft">pregunta{n === 1 ? '' : 's'}</span>
           </span>
-          <Button size="sm" variant="primary" onClick={() => navigate(`/admin/evaluaciones/${z.id}`)}>
-            <Pencil className="size-4" /> Editar
-          </Button>
+          <div className="flex gap-2">
+            <Button size="sm" variant="secondary" onClick={() => navigate(`/admin/evaluaciones/${z.id}`)} aria-label="Editar">
+              <Pencil className="size-4" /> {z.status === 'published' ? '' : 'Editar'}
+            </Button>
+            {z.status === 'published' && n > 0 && (
+              <Button size="sm" variant="success" onClick={() => setLaunch(true)}>
+                <Rocket className="size-4" /> En vivo
+              </Button>
+            )}
+          </div>
+          <LaunchModal open={launch} onClose={() => setLaunch(false)} quiz={launch ? { id: z.id, title: z.title, subject_id: z.subject_id } : null} />
         </div>
       </SolidCard>
     </motion.div>

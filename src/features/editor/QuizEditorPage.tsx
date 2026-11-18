@@ -10,6 +10,7 @@ import {
   GripVertical,
   Loader2,
   Plus,
+  Radio,
   Rocket,
   Settings2,
   Undo2,
@@ -38,6 +39,7 @@ import { cn } from '../../lib/cn'
 import { exportQuizToExcel } from '../quizzes/quizExport'
 import { newQuestion, QUESTION_TYPES, uid, validateQuestion, type EditorQuestion, type QuestionType } from '../quizzes/questionModel'
 import { QuizSettingsModal } from '../quizzes/QuizSettingsModal'
+import { LaunchModal } from '../sessions/LaunchModal'
 import { BankModal, ImportQuestionsModal, MoveModal, PreviewModal } from './EditorModals'
 import { QuestionCanvas } from './QuestionCanvas'
 import { SettingsPanel } from './SettingsPanel'
@@ -73,6 +75,7 @@ function Editor({ quiz, initial }: { quiz: NonNullable<ReturnType<typeof useQuiz
   const [sel, setSel] = useState<string | undefined>(initial[0]?.key)
   const [saveState, setSaveState] = useState<SaveState>('saved')
   const [modal, setModal] = useState<null | 'preview' | 'bank' | 'move' | 'import' | 'settings' | 'add'>(null)
+  const [launchOpen, setLaunchOpen] = useState(false)
 
   const qsRef = useRef(qs)
   useEffect(() => {
@@ -261,7 +264,7 @@ function Editor({ quiz, initial }: { quiz: NonNullable<ReturnType<typeof useQuiz
       return toast.error(`Hay ${totalIssues} pregunta${totalIssues === 1 ? '' : 's'} incompleta${totalIssues === 1 ? '' : 's'}`, 'Te llevé a la primera; revisa el panel derecho.')
     }
     await setStatus.mutateAsync({ id: quiz.id, status: 'published' })
-    toast.success('¡Evaluación publicada!', 'Ya puedes usarla en una sesión (Fase 4).')
+    toast.success('¡Evaluación publicada!', 'Ya puedes lanzarla en vivo con “Lanzar en vivo”.')
   }
 
   const color = quiz.subjects?.theme_color || '#1B7339'
@@ -308,6 +311,11 @@ function Editor({ quiz, initial }: { quiz: NonNullable<ReturnType<typeof useQuiz
             {quiz.status === 'published' ? <Undo2 className="size-4" /> : <Rocket className="size-4" />}
             {quiz.status === 'published' ? 'Pasar a borrador' : 'Publicar'}
           </Button>
+          {quiz.status === 'published' && qs.length > 0 && (
+            <Button size="sm" variant="success" onClick={() => void flush().then(() => setLaunchOpen(true))}>
+              <Radio className="size-4" /> Lanzar en vivo
+            </Button>
+          )}
         </div>
       </div>
 
@@ -417,6 +425,7 @@ function Editor({ quiz, initial }: { quiz: NonNullable<ReturnType<typeof useQuiz
       <MoveModal open={modal === 'move'} onClose={() => setModal(null)} currentQuizId={quiz.id} onMove={onMove} />
       <ImportQuestionsModal open={modal === 'import'} onClose={() => setModal(null)} onImport={onImport} />
       <QuizSettingsModal open={modal === 'settings'} onClose={() => setModal(null)} quiz={quiz} />
+      <LaunchModal open={launchOpen} onClose={() => setLaunchOpen(false)} quiz={{ id: quiz.id, title: quiz.title, subject_id: quiz.subject_id }} />
     </div>
   )
 }

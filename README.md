@@ -17,8 +17,8 @@ Docente responsable: **Ing. Jimmy Luis Laruta Villarreal**
 | 1. BD y login | Supabase, seguridad (RLS), login del docente, datos de ejemplo | ✅ Lista |
 | 2. Gestión académica | Gestiones, periodos, asignaturas, listas de estudiantes por Excel, temas, plan de calificación | ✅ Lista |
 | 3. Editor y banco | Editor visual con autoguardado, 6 tipos de pregunta, imágenes, banco, carga masiva Excel + ZIP | ✅ Lista |
-| 4. Juego en vivo | Sala, PIN/QR, partida en tiempo real, puntaje en el servidor | ⏳ Siguiente |
-| 5. Examen y tarea | Autoritmo, tiempo total, apertura/cierre automático, anti-copia | — |
+| 4. Juego en vivo | Sala, PIN/QR, partida en tiempo real, puntaje en el servidor | ✅ Lista |
+| 5. Examen y tarea | Autoritmo, tiempo total, apertura/cierre automático, anti-copia | ⏳ Siguiente |
 | 6. Resultados y Sheets | Reportes, exportaciones, Google Sheets, conversor de notas | — |
 | 7. Pulido | Sonido, animaciones, temas, podio, insignias | — |
 | 8. QA final | Pruebas completas, manuales | — |
@@ -56,9 +56,24 @@ Docente responsable: **Ing. Jimmy Luis Laruta Villarreal**
 - **Primer docente = administrador.** La primera cuenta creada en `/#/admin/login` queda como administrador
   aprobado; las siguientes deben ser aprobadas en *Configuración → Docentes*.
 - Al crear la cuenta llega un correo de confirmación; hay que abrir el enlace en el mismo navegador.
-- Migraciones: `0001` esquema + RLS, `0002` datos de ejemplo, `0003` gestión académica (importar estudiantes, plan de calificación), `0004` editor de evaluaciones (guardar/importar/copiar/mover/duplicar preguntas) y almacenamiento de imágenes (bucket `media`).
+- Migraciones: `0001` esquema + RLS, `0002` datos de ejemplo, `0003` gestión académica (importar estudiantes, plan de calificación), `0004` editor de evaluaciones (guardar/importar/copiar/mover/duplicar preguntas) y almacenamiento de imágenes (bucket `media`), `0005` motor del juego en vivo (sesiones, unirse con RU/CI o apodo, corrección y puntaje en el servidor, ranking, nota 0‑100).
 - Pruebas de seguridad: `tests/sql/10_rls_test.sql` y `tests/sql/20_academic_test.sql` (se ejecutan en un PostgreSQL local con
   `tests/sql/00_supabase_stub.sql`).
+- Prueba de carga del juego en vivo: `node tests/load/live-load-test.mjs 45` simula al docente y a 45 estudiantes que se unen y
+  responden a la vez (respuestas simultáneas, doble clic, respuestas tardías, pausa, +10 s, otro dispositivo, expulsión, permisos).
+
+## Cómo funciona una clase en vivo
+
+1. **Evaluaciones** → abre una evaluación → **Publicar** → **Lanzar en vivo** (o **Sesiones → Nueva sesión**).
+2. Elige si entran **con su RU** (lista oficial, cuenta para la nota; opcional pedir los últimos 3 dígitos del CI) o **con apodo** (repasos).
+3. Se abre el **proyector** (`/#/host/...`): muestra la dirección, el **PIN** y un **código QR**. Los estudiantes entran desde el celular o la PC.
+4. **Empezar** → cuenta regresiva 3‑2‑1 → pregunta. Se cierra sola cuando se acaba el tiempo o cuando todos respondieron.
+5. Se muestran la respuesta correcta y el gráfico de respuestas → **ranking** → siguiente pregunta (tecla **Espacio**).
+6. Al final: **podio**, tabla de resultados con la **nota 0‑100** (solo aciertos, no velocidad) y **Descargar Excel**.
+
+Controles: **P** pausa, **+10 s**, **Cerrar pregunta**, **F** pantalla completa, retirar a un participante, autorizar un cambio de
+dispositivo. Si un estudiante recarga la página o se le corta el internet, vuelve a entrar solo con su mismo puntaje.
+En sesiones con apodo, el botón **Simular 10 estudiantes** permite ensayar la clase sin celulares.
 
 ## Cómo se publica
 
@@ -95,7 +110,9 @@ npm test        # pruebas unitarias (importación de Excel, etc.)
 - Las claves secretas (`sb_secret_...`, contraseña de la base de datos) **nunca** se suben al repositorio.
 - La única clave de Supabase que usa la página es la `publishable key` (sb_publishable_...), que es pública por diseño;
   la protección real la dan las reglas RLS de la base de datos.
-- Las respuestas correctas nunca se envían al navegador del estudiante antes de tiempo (Fase 4).
+- Las respuestas correctas nunca se envían al navegador del estudiante antes de cerrar la pregunta: el estudiante no puede
+  leer ninguna tabla, solo llama funciones que validan su ficha de juego. La corrección, el tiempo (reloj del servidor) y los
+  puntos se calculan en el servidor; una respuesta repetida o tardía se rechaza.
 
 ## Identidad visual
 

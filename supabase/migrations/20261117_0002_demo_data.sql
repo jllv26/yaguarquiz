@@ -26,8 +26,11 @@ begin
 
   insert into public.academic_years (year) values (2026)
     on conflict (teacher_id, year) do update set year = excluded.year returning id into y_id;
-  insert into public.periods (academic_year_id, name, starts_on, ends_on)
-    values (y_id, 'II/2026 (DEMO)', '2026-08-01', '2026-12-15') returning id into p_id;
+  select id into p_id from public.periods where academic_year_id = y_id and name = 'II/2026 (DEMO)';
+  if p_id is null then
+    insert into public.periods (academic_year_id, name, starts_on, ends_on)
+      values (y_id, 'II/2026 (DEMO)', '2026-08-01', '2026-12-15') returning id into p_id;
+  end if;
   insert into public.subjects (period_id, code, name, career, semester, parallel, theme_color)
     values (p_id, 'DEMO 023', 'Tecnologías de la Información y Comunicación (DEMO)',
             'Turismo Sostenible', '5to semestre', 'A', '#1B7339')

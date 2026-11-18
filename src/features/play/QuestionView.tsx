@@ -246,6 +246,16 @@ export function QuestionView({ q, index, total, secondsLeft, onSubmit, submitted
             {q.type === 'short_text' && !reveal.correct && reveal.acceptedAnswers?.length ? (
               <p className="mt-1">La respuesta era: <strong>{reveal.acceptedAnswers[0]}</strong></p>
             ) : null}
+            {q.type === 'ordering' && !reveal.correct && reveal.correctOrder?.length ? (
+              <div className="mx-auto mt-2 max-w-sm rounded-2xl bg-black/15 px-4 py-2 text-left">
+                <p className="mb-1 text-sm font-bold uppercase tracking-wider text-white/80">Orden correcto</p>
+                <ol className="list-inside list-decimal font-semibold">
+                  {reveal.correctOrder.map((k) => (
+                    <li key={k}>{q.options.find((o) => o.key === k)?.text}</li>
+                  ))}
+                </ol>
+              </div>
+            ) : null}
             {reveal.explanation && <p className="mt-2 text-white/90">{reveal.explanation}</p>}
           </motion.div>
         ) : submitted ? (
