@@ -1,5 +1,6 @@
 import { forwardRef, useId, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react'
 import { cn } from '../../lib/cn'
+import { JAGUAR } from '../jaguar/assets'
 
 const base =
   'w-full rounded-2xl border-2 border-line bg-surface-2 px-4 text-base text-ink outline-none transition-colors focus:border-uap-blue dark:focus:border-game-electric'
@@ -78,8 +79,11 @@ export function EmptyState({
   action?: ReactNode
 }) {
   return (
-    <div className="flex flex-col items-center gap-3 rounded-3xl border-2 border-dashed border-line px-6 py-12 text-center">
-      <div className="grid size-16 place-items-center rounded-3xl bg-uap-gold/15 text-uap-gold">{icon}</div>
+    <div className="flex flex-col items-center gap-3 rounded-3xl border-2 border-dashed border-line px-6 py-10 text-center">
+      <div className="relative">
+        <img src={JAGUAR.descansando} alt="" aria-hidden loading="lazy" className="w-56 sm:w-64" />
+        <div className="absolute -bottom-1 right-2 grid size-11 place-items-center rounded-2xl bg-surface-2 text-[#8a6416] shadow-md ring-1 ring-uap-gold/30 dark:text-uap-gold-300">{icon}</div>
+      </div>
       <p className="font-display text-xl font-bold">{title}</p>
       {text && <p className="max-w-md text-ink-soft">{text}</p>}
       {action}

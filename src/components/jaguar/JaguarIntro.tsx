@@ -1,97 +1,118 @@
+import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { JaguarRunner } from './JaguarRunner'
-import { Paw } from './JaguarFx'
+import { BRAND } from '../../lib/brand'
+import { JAGUAR } from './assets'
 
-const RUN_IN = 1.15
-const LEAP = 0.95
-const RUN_OUT = 1.0
-const TOTAL = RUN_IN + LEAP + RUN_OUT
-const CYCLES_PER_SEC = 2.2
-
-const ease = (u: number) => u * u * (3 - 2 * u)
-
-/** Posición del jaguar en el tiempo t (s): x en % del ancho, y en % del alto (negativo = arriba). */
-function track(t: number) {
-  if (t < RUN_IN) return { x: -30 + (t / RUN_IN) * 66, y: 0, leap: 0 }
-  if (t < RUN_IN + LEAP) {
-    const u = (t - RUN_IN) / LEAP
-    return { x: 36 + u * 34, y: -Math.sin(Math.PI * u) * 24, leap: Math.sin(Math.PI * Math.min(1, u * 1.15)) }
-  }
-  const u = Math.min(1, (t - RUN_IN - LEAP) / RUN_OUT)
-  return { x: 70 + ease(u) * 65, y: 0, leap: 0 }
-}
-
-const PRINTS = [6, 16, 26, 74, 84, 94]
+/** Momento del rugido en el video (s): aparece el título. */
+const ROAR_AT = 4.2
+/** Si el video no empieza en este tiempo (internet lento), se salta la entrada. */
+const START_TIMEOUT = 3500
 
 /**
- * Entrada: un jaguar cruza la pantalla corriendo, salta rugiendo y sale, dejando huellas.
- * No bloquea la página (pointer-events: none). Respeta "reducir movimiento".
+ * Entrada al sistema: video real de un jaguar que sale de la selva y ruge (~7 s, sin audio).
+ * Se puede saltar con el botón o con Escape. Respeta "reducir movimiento" y el "ahorro de datos".
  */
 export function JaguarIntro({ onDone, onLanded }: { onDone?: () => void; onLanded?: () => void }) {
-  const [t, setT] = useState(0)
-  const start = useRef<number | null>(null)
-  const landed = useRef(false)
-  const reduce = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+  const video = useRef<HTMLVideoElement>(null)
+  const [open, setOpen] = useState(true)
+  const [title, setTitle] = useState(false)
+  const done = useRef(false)
+
+  const skip =
+    typeof window !== 'undefined' &&
+    (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ||
+      (navigator as unknown as { connection?: { saveData?: boolean } }).connection?.saveData === true)
+
+  const finish = () => {
+    if (done.current) return
+    done.current = true
+    setOpen(false)
+    onLanded?.()
+    window.setTimeout(() => onDone?.(), 450)
+  }
 
   useEffect(() => {
-    if (reduce) {
+    if (skip) {
       onDone?.()
       return
     }
-    let raf = 0
-    const tick = (now: number) => {
-      if (start.current == null) start.current = now
-      const el = (now - start.current) / 1000
-      setT(el)
-      if (!landed.current && el > RUN_IN + LEAP) {
-        landed.current = true
-        onLanded?.()
-      }
-      if (el < TOTAL + 1.2) raf = requestAnimationFrame(tick)
-      else onDone?.()
+    const v = video.current
+    let started = false
+    const t = window.setTimeout(() => !started && finish(), START_TIMEOUT)
+    const onPlay = () => (started = true)
+    const onTime = () => v && v.currentTime >= ROAR_AT && setTitle(true)
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && finish()
+    v?.addEventListener('playing', onPlay)
+    v?.addEventListener('timeupdate', onTime)
+    window.addEventListener('keydown', onKey)
+    v?.play().catch(() => finish())
+    return () => {
+      window.clearTimeout(t)
+      v?.removeEventListener('playing', onPlay)
+      v?.removeEventListener('timeupdate', onTime)
+      window.removeEventListener('keydown', onKey)
     }
-    raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  if (reduce) return null
-  const p = track(Math.min(t, TOTAL))
-  const phase = (t * CYCLES_PER_SEC) % 1
-  const inLeap = t > RUN_IN && t < RUN_IN + LEAP
-  const fadeAll = t > TOTAL ? Math.max(0, 1 - (t - TOTAL) / 1.2) : 1
-
+  if (skip) return null
   return createPortal(
-    <div aria-hidden className="pointer-events-none fixed inset-0 z-[60] overflow-hidden" style={{ opacity: fadeAll }}>
-      {/* huellas que deja al pasar */}
-      {PRINTS.map((x, i) => {
-        const shown = p.x + 8 > x || t > TOTAL
-        return (
-          <span
-            key={x}
-            className="absolute text-[#8A5A1B] transition-opacity duration-700 dark:text-uap-gold"
-            style={{ left: `${x}%`, bottom: `calc(11vh + ${i % 2 ? 0 : 14}px)`, opacity: shown ? 0.45 : 0 }}
-          >
-            <Paw className="size-6 sm:size-8" style={{ transform: 'rotate(90deg)' }} />
-          </span>
-        )
-      })}
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          className="fixed inset-0 z-[60] overflow-hidden bg-black"
+          initial={{ opacity: 1 }}
+          exit={{ opacity: 0, scale: 1.04 }}
+          transition={{ duration: 0.45 }}
+          role="dialog"
+          aria-label="Entrada de YaguarQuiz"
+        >
+          <video
+            ref={video}
+            src={JAGUAR.video}
+            poster={JAGUAR.poster}
+            muted
+            playsInline
+            autoPlay
+            preload="auto"
+            onEnded={finish}
+            onError={finish}
+            className="absolute inset-0 h-full w-full object-cover"
+            aria-hidden
+          />
+          {/* viñeta para que se lea el texto */}
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_45%,rgba(0,0,0,.65))]" />
 
-      <div className="absolute" style={{ left: `${p.x}%`, bottom: '12vh', transform: `translate(-50%, ${p.y}vh)` }}>
-        {/* sombra en el suelo */}
-        <div
-          className="absolute left-1/2 top-full h-4 -translate-x-1/2 -translate-y-3 rounded-[50%] bg-black/25 blur-sm dark:bg-black/50"
-          style={{ width: `${70 - Math.abs(p.y) * 1.6}%`, transform: `translate(-50%, ${-p.y}vh)`, opacity: 1 - Math.abs(p.y) / 40 }}
-        />
-        <JaguarRunner phase={phase} leap={p.leap} roar={inLeap} className="w-[min(56vw,420px)] drop-shadow-[0_10px_18px_rgba(0,0,0,0.35)]" />
-        {inLeap && (
-          <div className="absolute -top-6 right-0 font-display text-2xl font-black tracking-wider text-uap-gold drop-shadow sm:text-4xl" style={{ opacity: p.leap }}>
-            ¡GRRR!
-          </div>
-        )}
-      </div>
-    </div>,
+          <AnimatePresence>
+            {title && (
+              <motion.div
+                className="absolute inset-x-0 bottom-[12%] flex flex-col items-center text-center"
+                initial={{ opacity: 0, y: 30, scale: 0.9 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ type: 'spring', stiffness: 200, damping: 16 }}
+              >
+                <p className="font-display text-5xl font-black tracking-tight text-white drop-shadow-[0_4px_20px_rgba(0,0,0,.8)] sm:text-7xl">
+                  Yaguar<span className="text-[#FFD34D]">Quiz</span>
+                </p>
+                <p className="mt-2 font-display text-lg font-bold uppercase tracking-[0.3em] text-[#FFD34D] drop-shadow sm:text-2xl">
+                  {BRAND.slogan}
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <button
+            type="button"
+            onClick={finish}
+            className="absolute right-4 top-4 rounded-full bg-black/55 px-5 py-2.5 font-display text-sm font-bold text-white ring-1 ring-white/30 backdrop-blur transition hover:bg-black/75 sm:right-6 sm:top-6 sm:text-base"
+            autoFocus
+          >
+            Saltar ›
+          </button>
+        </motion.div>
+      )}
+    </AnimatePresence>,
     document.body,
   )
 }

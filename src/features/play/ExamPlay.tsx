@@ -165,7 +165,7 @@ function Home({ st, now, onStart, offline }: { st: ExamState; now: number; onSta
           <div className="mt-5 rounded-3xl bg-ink/5 p-5 text-center">
             {s.show_grade && st.best_grade !== null ? (
               <>
-                <JaguarFace mood={pass ? 'happy' : 'wink'} className="mx-auto mb-1 w-20" />
+                <JaguarFace mood={pass ? 'happy' : 'neutral'} className="mx-auto mb-1 w-24" />
                 <p className="text-sm font-bold uppercase tracking-widest text-ink-soft">{st.attempts.length > 1 ? 'Tu mejor nota' : 'Tu nota'}</p>
                 <p className={cn('font-display text-7xl font-black tabular-nums', pass ? 'text-uap-green dark:text-game-selva' : 'text-uap-red dark:text-game-coral')}>
                   {Math.round(Number(st.best_grade))}
@@ -219,7 +219,7 @@ function Home({ st, now, onStart, offline }: { st: ExamState; now: number; onSta
               <Rule icon={<ClipboardCheck className="size-4" />}>Cada respuesta se guarda al instante. Si se corta el internet o recargas, sigues donde te quedaste.</Rule>
               <Rule icon={<ShieldCheck className="size-4" />}>No se puede copiar ni pegar texto.</Rule>
               {s.focus_mode && (
-                <Rule icon={<JaguarEye className="w-6" watching={false} />}>
+                <Rule icon={<JaguarEye icon className="w-7" />}>
                   Se abrirá en <strong>pantalla completa</strong>. Cada vez que salgas de la pestaña o ventana queda registrado
                   {s.lock_after ? <> y a las <strong>{s.lock_after} salidas</strong> se bloquea</> : null}.
                 </Rule>
@@ -643,7 +643,7 @@ function Attempt({
 
       {locked && (
         <Overlay>
-          <JaguarEye className="mx-auto w-40" />
+          <div className="mx-auto w-fit rounded-3xl bg-[#fbf6ec] p-3 shadow-2xl"><JaguarEye className="w-56" /></div>
           <p className="mt-3 flex items-center justify-center gap-2 font-display text-3xl font-black">
             <Lock className="size-7" /> Examen bloqueado
           </p>
@@ -654,7 +654,7 @@ function Attempt({
       )}
       {!locked && needFs && (
         <Overlay>
-          <JaguarEye className="mx-auto w-36" />
+          <div className="mx-auto w-fit rounded-3xl bg-[#fbf6ec] p-3 shadow-2xl"><JaguarEye className="w-52" /></div>
           <p className="mt-3 font-display text-3xl font-black">Vuelve a pantalla completa</p>
           <p className="text-white/85">El jaguar te está mirando 👀</p>
           <p className="mt-1 text-white/85">Este examen se responde en pantalla completa. Salir queda registrado.</p>

@@ -51,6 +51,7 @@ import { useAuth } from '../auth/AuthProvider'
 import { AvatarBubble, BigCountdown, Leaderboard, Podium } from '../live/LiveBits'
 import { celebrate, COUNTDOWN_MS, secondsLeft, useServerNow } from '../live/clock'
 import { useBots } from './bots'
+import { JAGUAR } from '../../components/jaguar/assets'
 import { JaguarFace } from '../../components/jaguar/JaguarFace'
 import { ClawSwipe, PawTrail } from '../../components/jaguar/JaguarFx'
 import { useAutoSync } from '../reports/useAutoSync'
@@ -186,7 +187,7 @@ function Host() {
 
   // ---------------------------------------------------------- sonidos
   const prevPhase = useRef<Phase | undefined>(undefined)
-  const [claw, setClaw] = useState<number | null>(null)
+  const [claw, setClaw] = useState<{ k: number; kind: 'dash' | 'leap'; label?: string } | null>(null)
   useEffect(() => {
     if (!phase || prevPhase.current === phase) return
     const first = prevPhase.current === undefined
@@ -194,10 +195,13 @@ function Host() {
     if (first) return
     if (phase === 'question') {
       sfx.go()
-      setClaw(Date.now())
+      setClaw({ k: Date.now(), kind: 'dash', label: '¡Ya!' })
     }
     if (phase === 'reveal') sfx.reveal()
-    if (phase === 'leaderboard') sfx.rankUp()
+    if (phase === 'leaderboard') {
+      sfx.rankUp()
+      setClaw({ k: Date.now(), kind: 'leap' })
+    }
     if (phase === 'finished') {
       sfx.drumroll(2.1)
       setTimeout(() => {
@@ -436,7 +440,7 @@ function Host() {
         </div>
       )}
 
-      <ClawSwipe playKey={claw} label="¡Ya!" />
+      <ClawSwipe playKey={claw?.k ?? null} label={claw?.label} kind={claw?.kind} />
       <ParticipantsPanel open={panel} onClose={() => setPanel(false)} st={st} onKick={kick} onAuthorize={authorize} />
     </div>
   )
@@ -725,10 +729,24 @@ function Final({ st }: { st: HostState }) {
   return (
     <div className="flex flex-col items-center gap-8">
       <div className="flex items-center gap-4">
-        <JaguarFace mood="happy" className="w-24 drop-shadow-xl" />
+        <JaguarFace mood="happy" className="w-24" />
         <h2 className="font-display text-4xl font-black drop-shadow">¡Felicidades!</h2>
       </div>
-      {st.leaderboard.length > 0 ? <Podium rows={st.leaderboard} /> : <p className="text-ink-soft">Nadie participó en esta sesión.</p>}
+      <div className="relative w-full">
+        {/* jaguar eléctrico rugiendo detrás del podio */}
+        <motion.div
+          aria-hidden
+          className="pointer-events-none absolute left-1/2 top-1/2 -z-0 w-[min(80vw,640px)] -translate-x-1/2 -translate-y-[58%] overflow-hidden rounded-full"
+          initial={{ opacity: 0, scale: 0.7 }}
+          animate={{ opacity: 0.55, scale: 1 }}
+          transition={{ delay: 2.1, duration: 0.6, ease: 'easeOut' }}
+        >
+          <img src={JAGUAR.rayoFrente} alt="" className="w-full [mask-image:radial-gradient(circle,black_45%,transparent_70%)]" />
+        </motion.div>
+        <div className="relative">
+          {st.leaderboard.length > 0 ? <Podium rows={st.leaderboard} /> : <p className="text-center text-ink-soft">Nadie participó en esta sesión.</p>}
+        </div>
+      </div>
       <SolidCard className="w-full max-w-5xl overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-4">
           <div>

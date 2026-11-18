@@ -5,7 +5,7 @@ import { AnimatedBackground } from '../../components/AnimatedBackground'
 import { Shape } from '../../components/Shape'
 import { TopBar } from '../../components/TopBar'
 import { SolidCard } from '../../components/ui/Card'
-import { JaguarFace } from '../../components/jaguar/JaguarFace'
+import { JAGUAR } from '../../components/jaguar/assets'
 import { ANSWER_STYLES } from '../../lib/brand'
 
 /** Manual corto del estudiante (el mismo contenido que docs/MANUAL_ESTUDIANTE.md). */
@@ -15,8 +15,11 @@ export function HelpPage() {
       <AnimatedBackground variant="calm" />
       <TopBar />
       <main className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 py-6 sm:px-6">
-        <div className="flex items-center gap-4">
-          <JaguarFace mood="neutral" className="w-20 shrink-0 drop-shadow-lg" />
+        <div className="relative flex items-center gap-4">
+          <div className="relative shrink-0">
+            <img src={JAGUAR.manchas} alt="" aria-hidden className="absolute -inset-6 h-[calc(100%+3rem)] w-[calc(100%+3rem)] max-w-none animate-[spin_60s_linear_infinite] opacity-40" />
+            <img src={JAGUAR.rostroAcuarela} alt="Jaguar en acuarela" className="relative w-24 drop-shadow-lg sm:w-28" />
+          </div>
           <div>
             <h1 className="font-display text-3xl font-black sm:text-4xl">¿Cómo se juega?</h1>
             <p className="text-ink-soft">Manual del estudiante · sin cuenta y sin instalar nada</p>

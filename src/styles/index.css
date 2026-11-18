@@ -47,6 +47,11 @@
   --animate-float-med: float 10s ease-in-out infinite reverse;
   --animate-pop-in: pop-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
   --animate-spots: spots-drift 120s linear infinite;
+  --animate-kenburns: kenburns 40s ease-in-out infinite alternate;
+  @keyframes kenburns {
+    from { transform: scale(1) translate(0, 0); }
+    to { transform: scale(1.1) translate(-1.5%, -1%); }
+  }
   --animate-twinkle: twinkle 4s ease-in-out infinite;
   --animate-shoot: shoot 9s ease-in infinite;
   --animate-grid: grid-move 2.4s linear infinite;

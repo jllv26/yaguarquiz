@@ -411,7 +411,7 @@ function Summary({ st }: { st: PlayState }) {
   return (
     <div className="flex flex-col gap-4">
       <Card className="text-center">
-        <JaguarFace mood={sm.rank <= 3 ? 'wow' : pass ? 'happy' : 'wink'} className="mx-auto w-28" />
+        <JaguarFace mood={sm.rank <= 3 || pass ? 'happy' : 'neutral'} className="mx-auto w-28" />
         <p className="mt-2 font-display text-3xl font-black">{pass ? '¡Terminaste! 🏆' : '¡Terminaste! Sigue practicando'}</p>
         <p className="text-ink-soft">{st.session.quiz_title}</p>
         <div className="mt-5 grid grid-cols-3 gap-2">

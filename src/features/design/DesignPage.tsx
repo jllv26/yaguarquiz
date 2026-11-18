@@ -12,7 +12,7 @@ import { useToast } from '../../components/ui/Toast'
 import { JaguarFace, type JaguarMood } from '../../components/jaguar/JaguarFace'
 import { ClawSwipe, JaguarEye, PawTrail } from '../../components/jaguar/JaguarFx'
 import { useLook } from '../../components/jaguar/useLook'
-import { JaguarRunner } from '../../components/jaguar/JaguarRunner'
+import { JAGUAR } from '../../components/jaguar/assets'
 import { JaguarIntro } from '../../components/jaguar/JaguarIntro'
 import { setMusic, sfx, type Track } from '../../lib/sound'
 import { SoundControl } from '../../components/SoundControl'
@@ -237,22 +237,29 @@ const MOODS: { mood: JaguarMood; label: string }[] = [
 
 function JaguarShowcase() {
   const { ref, look } = useLook<HTMLDivElement>()
-  const [claw, setClaw] = useState<number | null>(null)
+  const [fx, setFx] = useState<{ k: number; kind: 'dash' | 'claw' | 'leap'; label: string } | null>(null)
   const [intro, setIntro] = useState(0)
+  const play = (kind: 'dash' | 'claw' | 'leap', label: string) => setFx({ k: Date.now(), kind, label })
   return (
     <section>
       <SolidCard className="flex flex-col gap-6 p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="font-display text-xl font-bold">Toque jaguar</h2>
-            <p className="text-sm text-ink-soft">Mascota con expresiones (mueva el cursor: lo sigue con la mirada), zarpazo, ojo vigilante y huellas.</p>
+            <h2 className="font-display text-xl font-bold">El jaguar de YaguarQuiz</h2>
+            <p className="text-sm text-ink-soft">Mascota con 5 expresiones (mueva el cursor: inclina la cabeza), efectos eléctricos, acuarela y video de entrada.</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button variant="gold" onClick={() => setClaw(Date.now())}>
-              Probar zarpazo
+            <Button variant="gold" onClick={() => play('dash', '¡Ya!')}>
+              «¡Ya!»
+            </Button>
+            <Button variant="success" onClick={() => play('claw', '¡Garra! +874')}>
+              Zarpazo (acierto)
+            </Button>
+            <Button variant="secondary" onClick={() => play('leap', '¡Sube!')}>
+              Salto (ranking)
             </Button>
             <Button variant="secondary" onClick={() => setIntro(Date.now())}>
-              Ver entrada del jaguar
+              Ver entrada (video)
             </Button>
           </div>
         </div>
@@ -264,26 +271,26 @@ function JaguarShowcase() {
             </figure>
           ))}
         </div>
-        <figure className="flex flex-col items-center gap-2" data-testid="gallop">
-          <div className="grid w-full grid-cols-2 gap-2 sm:grid-cols-4">
-            {[0, 0.25, 0.5, 0.75].map((ph) => (
-              <JaguarRunner key={ph} phase={ph} className="w-full" />
-            ))}
-          </div>
-          <figcaption className="text-sm font-semibold text-ink-soft">Galope (entrada al sistema)</figcaption>
-        </figure>
-        <div className="flex flex-wrap items-center justify-around gap-6">
-          <figure className="flex flex-col items-center gap-2">
-            <JaguarEye className="w-40" />
-            <figcaption className="text-sm font-semibold text-ink-soft">Ojo vigilante (modo enfoque)</figcaption>
+        <div className="grid gap-4 sm:grid-cols-3" data-testid="jaguar-art">
+          <figure className="overflow-hidden rounded-2xl bg-black">
+            <img src={JAGUAR.rayoFrente} alt="" className="aspect-square w-full object-cover" />
+            <figcaption className="bg-black px-3 py-2 text-sm font-semibold text-white/80">Podio (eléctrico)</figcaption>
           </figure>
-          <figure className="flex flex-col items-center gap-2">
-            <PawTrail />
-            <figcaption className="text-sm font-semibold text-ink-soft">Huellas (sala de espera)</figcaption>
+          <figure className="flex flex-col items-center justify-center gap-2 rounded-2xl bg-[#fbf6ec] p-4">
+            <JaguarEye className="w-56" />
+            <figcaption className="text-sm font-semibold text-[#6b4a1b]">Ojo vigilante (modo enfoque)</figcaption>
+          </figure>
+          <figure className="flex flex-col items-center justify-center gap-2 rounded-2xl bg-[#fbf6ec] p-4">
+            <img src={JAGUAR.descansando} alt="" className="w-full" />
+            <figcaption className="text-sm font-semibold text-[#6b4a1b]">Estados vacíos (acuarela)</figcaption>
           </figure>
         </div>
+        <figure className="flex flex-col items-center gap-2">
+          <PawTrail />
+          <figcaption className="text-sm font-semibold text-ink-soft">Huellas (sala de espera)</figcaption>
+        </figure>
       </SolidCard>
-      <ClawSwipe playKey={claw} label="¡Demuestra tu garra!" />
+      <ClawSwipe playKey={fx?.k ?? null} label={fx?.label} kind={fx?.kind} />
       {intro > 0 && <JaguarIntro key={intro} onDone={() => setIntro(0)} />}
     </section>
   )
