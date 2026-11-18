@@ -50,6 +50,7 @@ import { useAuth } from '../auth/AuthProvider'
 import { AvatarBubble, BigCountdown, Leaderboard, Podium } from '../live/LiveBits'
 import { celebrate, COUNTDOWN_MS, secondsLeft, useServerNow } from '../live/clock'
 import { useBots } from './bots'
+import { ExamMonitor } from './ExamMonitor'
 
 /** Estilo de color/forma de cada opción (en V/F: Verdadero = rombo azul, Falso = triángulo rojo). */
 const styleIndex = (type: string, i: number) => (type === 'true_false' ? (i === 0 ? 1 : 0) : i)
@@ -59,7 +60,34 @@ export function HostPage() {
   if (loading) return <Center><Loader2 className="size-10 animate-spin text-uap-green" /></Center>
   if (!session) return <Navigate to="/admin/login" replace />
   if (!teacher?.approved) return <Navigate to="/admin" replace />
-  return <Host />
+  return <HostRouter />
+}
+
+/** En vivo → proyector; examen o tarea → monitor. */
+function HostRouter() {
+  const { id = '' } = useParams()
+  const [mode, setMode] = useState<string | null>(null)
+  const [error, setError] = useState('')
+  useEffect(() => {
+    hostState(id)
+      .then((st) => setMode(st.session.mode))
+      .catch((e: Error) => setError(e.message))
+  }, [id])
+  if (error)
+    return (
+      <Center>
+        <SolidCard className="max-w-md p-8 text-center">
+          <XCircle className="mx-auto mb-3 size-12 text-uap-red" />
+          <p className="font-display text-xl font-bold">No pudimos abrir la sesión</p>
+          <p className="mt-1 text-ink-soft">{error}</p>
+          <Link to="/admin/sesiones" className="mt-4 inline-block">
+            <Button variant="secondary">Volver a sesiones</Button>
+          </Link>
+        </SolidCard>
+      </Center>
+    )
+  if (!mode) return <Center><Loader2 className="size-10 animate-spin text-uap-green" /></Center>
+  return mode === 'live' ? <Host /> : <ExamMonitor id={id} />
 }
 
 function Host() {

@@ -18,7 +18,7 @@ Docente responsable: **Ing. Jimmy Luis Laruta Villarreal**
 | 2. Gestión académica | Gestiones, periodos, asignaturas, listas de estudiantes por Excel, temas, plan de calificación | ✅ Lista |
 | 3. Editor y banco | Editor visual con autoguardado, 6 tipos de pregunta, imágenes, banco, carga masiva Excel + ZIP | ✅ Lista |
 | 4. Juego en vivo | Sala, PIN/QR, partida en tiempo real, puntaje en el servidor | ✅ Lista |
-| 5. Examen y tarea | Autoritmo, tiempo total, apertura/cierre automático, anti-copia | ⏳ Siguiente |
+| 5. Examen y tarea | Autoritmo, tiempo total, apertura/cierre automático, anti-copia | ✅ Lista |
 | 6. Resultados y Sheets | Reportes, exportaciones, Google Sheets, conversor de notas | — |
 | 7. Pulido | Sonido, animaciones, temas, podio, insignias | — |
 | 8. QA final | Pruebas completas, manuales | — |
@@ -56,11 +56,31 @@ Docente responsable: **Ing. Jimmy Luis Laruta Villarreal**
 - **Primer docente = administrador.** La primera cuenta creada en `/#/admin/login` queda como administrador
   aprobado; las siguientes deben ser aprobadas en *Configuración → Docentes*.
 - Al crear la cuenta llega un correo de confirmación; hay que abrir el enlace en el mismo navegador.
-- Migraciones: `0001` esquema + RLS, `0002` datos de ejemplo, `0003` gestión académica (importar estudiantes, plan de calificación), `0004` editor de evaluaciones (guardar/importar/copiar/mover/duplicar preguntas) y almacenamiento de imágenes (bucket `media`), `0005` motor del juego en vivo (sesiones, unirse con RU/CI o apodo, corrección y puntaje en el servidor, ranking, nota 0‑100).
+- Migraciones: `0001` esquema + RLS, `0002` datos de ejemplo, `0003` gestión académica (importar estudiantes, plan de calificación), `0004` editor de evaluaciones (guardar/importar/copiar/mover/duplicar preguntas) y almacenamiento de imágenes (bucket `media`), `0005` motor del juego en vivo (sesiones, unirse con RU/CI o apodo, corrección y puntaje en el servidor, ranking, nota 0‑100), `0006` examen y tarea (intentos, apertura/cierre automático, preguntas al azar, mezcla por estudiante, modo enfoque, monitor).
 - Pruebas de seguridad: `tests/sql/10_rls_test.sql` y `tests/sql/20_academic_test.sql` (se ejecutan en un PostgreSQL local con
   `tests/sql/00_supabase_stub.sql`).
 - Prueba de carga del juego en vivo: `node tests/load/live-load-test.mjs 45` simula al docente y a 45 estudiantes que se unen y
   responden a la vez (respuestas simultáneas, doble clic, respuestas tardías, pausa, +10 s, otro dispositivo, expulsión, permisos).
+
+## Examen de laboratorio y tarea
+
+1. **Lanzar** → elija **Examen** o **Tarea / práctica**.
+2. Ponga la hora de **apertura** y de **cierre**: la actividad se abre y se cierra sola. Lo que esté a medias al cerrar se entrega solo.
+3. **Tiempo total por estudiante** (ej. 40 min): cuenta desde que el estudiante presiona “Comenzar”; al terminar se entrega solo.
+4. **Anti-copia:** preguntas al azar (ej. 7 de 12) distintas para cada estudiante, orden de preguntas y opciones mezclado,
+   últimos 3 dígitos del CI, sin copiar ni pegar, **modo enfoque** (pantalla completa; cada salida de la pestaña queda
+   registrada y opcionalmente bloquea el examen hasta que el docente lo habilite) y respuestas correctas visibles **solo
+   cuando cierra la actividad** (para que no se las pasen).
+5. **Intentos:** 1 para examen, varios para práctica (cuenta el mejor). La práctica puede mostrar la correcta después de
+   cada pregunta.
+6. El **monitor** (`/#/host/...`) muestra PIN, QR, botón para **copiar o compartir por WhatsApp**, quién entró, progreso,
+   tiempo restante, alertas y nota. Acciones: +5 min a un estudiante (necesidades especiales), +10 min a todos, desbloquear,
+   permitir otro intento, entregar ahora, retirar, abrir/cerrar/reabrir y **Excel**.
+7. Cada respuesta se guarda al instante en el servidor y también en el equipo del estudiante: si se corta el internet,
+   se envía sola al volver.
+
+Prueba: `node tests/load/exam-load-test.mjs 45` (apertura y cierre automáticos, entrega por tiempo, intentos, bloqueo,
+tiempo extra, revisión solo después del cierre, permisos).
 
 ## Cómo funciona una clase en vivo
 

@@ -121,11 +121,23 @@ export interface PlayState {
 export type PlayError = { ok: false; error: string }
 
 export interface SessionSettings {
+  mode?: 'live' | 'exam' | 'homework'
   identification: 'roster' | 'nickname'
   require_ci: boolean
   show_ranking: boolean
   allow_late_join: boolean
   grading_item_id?: string | null
+  opens_at?: string | null
+  closes_at?: string | null
+  time_limit_min?: number | null
+  max_attempts?: number
+  pick_count?: number | null
+  shuffle_questions?: boolean
+  shuffle_options?: boolean
+  show_correct?: 'each' | 'end' | 'after_close' | 'never'
+  show_grade?: boolean
+  focus_mode?: boolean
+  lock_after?: number
 }
 
 // ---------------------------------------------------------------- helpers
@@ -169,7 +181,7 @@ export function playUrl(pin?: string) {
 
 // ---------------------------------------------------------------- docente
 export const createSession = (quizId: string, subjectId: string, settings: SessionSettings) =>
-  rpc<{ id: string; pin: string }>('create_session', { p_quiz: quizId, p_subject: subjectId, p_settings: settings })
+  rpc<{ id: string; pin: string; mode: 'live' | 'exam' | 'homework' }>('create_session', { p_quiz: quizId, p_subject: subjectId, p_settings: settings })
 export const hostState = (id: string) => rpc<HostState>('host_state', { p_session: id })
 export const hostAdvance = (id: string, from: Phase) => rpc<HostState>('host_advance', { p_session: id, p_from: from })
 export const hostPause = (id: string, pause: boolean) => rpc<HostState>('host_pause', { p_session: id, p_pause: pause })
@@ -186,6 +198,8 @@ export interface SessionListRow {
   mode: string
   created_at: string
   finished_at: string | null
+  scheduled_start: string | null
+  scheduled_end: string | null
   identification: string
   quizzes: { title: string } | null
   subjects: { code: string; parallel: string; name: string; theme_color: string | null } | null
@@ -198,7 +212,7 @@ export function useSessions() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('sessions')
-        .select('id, pin, status, phase, mode, created_at, finished_at, identification, quizzes(title), subjects(code, parallel, name, theme_color), participants(count)')
+        .select('id, pin, status, phase, mode, created_at, finished_at, scheduled_start, scheduled_end, identification, quizzes(title), subjects(code, parallel, name, theme_color), participants(count)')
         .order('created_at', { ascending: false })
         .limit(100)
       if (error) throw new Error(friendlyError(error.message))
@@ -209,7 +223,25 @@ export function useSessions() {
 
 // ---------------------------------------------------------------- estudiante
 export const sessionInfo = (pin: string) =>
-  rpc<{ ok: true; identification: 'roster' | 'nickname'; require_ci: boolean; quiz_title: string; subject: string; phase: Phase } | PlayError>(
+  rpc<
+    | {
+        ok: true
+        mode: 'live' | 'exam' | 'homework'
+        identification: 'roster' | 'nickname'
+        require_ci: boolean
+        quiz_title: string
+        subject: string
+        phase: Phase
+        window: 'not_open' | 'open' | 'closed'
+        opens_at: string | null
+        closes_at: string | null
+        time_limit_sec: number | null
+        question_count: number
+        max_attempts: number
+        focus_mode: boolean
+      }
+    | PlayError
+  >(
     'session_info',
     { p_pin: pin },
   )
@@ -227,7 +259,7 @@ export const joinSession = (args: { pin: string; code?: string; ci?: string; nic
 export const getState = (token: string) => rpc<PlayState | PlayError>('get_state', { p_token: token })
 export const submitAnswer = (token: string, questionId: string, response: StudentResponse) =>
   rpc<{ ok: true } | PlayError>('submit_answer', { p_token: token, p_question: questionId, p_response: response })
-export const reportEvent = (token: string, kind: 'tab' | 'paste') => rpc<null>('report_event', { p_token: token, p_kind: kind }).catch(() => null)
+export const reportEvent = (token: string, kind: 'tab' | 'paste') => rpc<unknown>('report_event', { p_token: token, p_kind: kind }).catch(() => null)
 
 /** Identificador estable del navegador (para reconectar y evitar que otro use tu RU). */
 export function deviceId() {

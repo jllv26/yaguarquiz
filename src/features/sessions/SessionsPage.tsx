@@ -1,12 +1,12 @@
 import { motion } from 'framer-motion'
-import { MonitorPlay, Radio, Rocket, Trophy, Users } from 'lucide-react'
+import { BookOpenCheck, CalendarClock, Home, MonitorPlay, Radio, Rocket, Trophy, Users } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
 import { SolidCard } from '../../components/ui/Card'
 import { Badge, EmptyState, Select, Skeleton } from '../../components/ui/Field'
 import { Modal } from '../../components/ui/Modal'
-import { useSessions, type Phase } from '../../lib/api/live'
+import { useSessions, type Phase, type SessionListRow } from '../../lib/api/live'
 import { useQuizzes } from '../../lib/api/quizzes'
 import { fmtDateTime } from '../../lib/dates'
 import { LaunchModal } from './LaunchModal'
@@ -20,18 +20,32 @@ const PHASE: Record<Phase, string> = {
   finished: 'Terminada',
 }
 
+/** Estado visible de una sesión (en examen/tarea depende de la hora de apertura y cierre). */
+function stateOf(s: SessionListRow, now: number): { label: string; open: boolean; tone: 'green' | 'gold' | 'neutral' } {
+  if (s.mode === 'live') return { label: PHASE[s.phase], open: s.status !== 'finished', tone: s.status !== 'finished' ? 'green' : 'neutral' }
+  if (s.status === 'finished' || (s.scheduled_end && new Date(s.scheduled_end).getTime() <= now)) return { label: 'Cerrada', open: false, tone: 'neutral' }
+  if (s.scheduled_start && new Date(s.scheduled_start).getTime() > now) return { label: 'Programada', open: true, tone: 'gold' }
+  return { label: 'Abierta', open: true, tone: 'green' }
+}
+const MODE = {
+  live: { label: 'En vivo', icon: MonitorPlay },
+  exam: { label: 'Examen', icon: BookOpenCheck },
+  homework: { label: 'Tarea', icon: Home },
+} as const
+
 export function SessionsPage() {
   const sessions = useSessions()
   const [pick, setPick] = useState(false)
-  const active = (sessions.data ?? []).filter((s) => s.status !== 'finished')
-  const done = (sessions.data ?? []).filter((s) => s.status === 'finished')
+  const [now] = useState(() => Date.now())
+  const active = (sessions.data ?? []).filter((s) => stateOf(s, now).open)
+  const done = (sessions.data ?? []).filter((s) => !stateOf(s, now).open)
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-display text-3xl font-black">Sesiones en vivo</h1>
-          <p className="text-ink-soft">Lanza una evaluación publicada y proyéctala en el aula.</p>
+          <h1 className="font-display text-3xl font-black">Sesiones</h1>
+          <p className="text-ink-soft">Partidas en vivo, exámenes programados y tareas.</p>
         </div>
         <Button variant="success" size="lg" onClick={() => setPick(true)}>
           <Rocket className="size-5" /> Nueva sesión
@@ -61,21 +75,21 @@ export function SessionsPage() {
           {active.length > 0 && (
             <section className="flex flex-col gap-3">
               <h2 className="flex items-center gap-2 font-display text-xl font-bold">
-                <span className="size-2.5 animate-pulse rounded-full bg-game-coral" /> Abiertas ahora
+                <span className="size-2.5 animate-pulse rounded-full bg-game-coral" /> Abiertas y programadas
               </h2>
               <div className="grid gap-3 sm:grid-cols-2">
                 {active.map((s) => (
-                  <SessionCard key={s.id} s={s} />
+                  <SessionCard key={s.id} s={s} now={now} />
                 ))}
               </div>
             </section>
           )}
           {done.length > 0 && (
             <section className="flex flex-col gap-3">
-              <h2 className="font-display text-xl font-bold">Terminadas</h2>
+              <h2 className="font-display text-xl font-bold">Terminadas y cerradas</h2>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {done.map((s) => (
-                  <SessionCard key={s.id} s={s} />
+                  <SessionCard key={s.id} s={s} now={now} />
                 ))}
               </div>
             </section>
@@ -87,9 +101,12 @@ export function SessionsPage() {
   )
 }
 
-function SessionCard({ s }: { s: NonNullable<ReturnType<typeof useSessions>['data']>[number] }) {
+function SessionCard({ s, now }: { s: SessionListRow; now: number }) {
   const n = s.participants[0]?.count ?? 0
-  const open = s.status !== 'finished'
+  const st = stateOf(s, now)
+  const open = st.open
+  const live = s.mode === 'live'
+  const M = MODE[(s.mode as keyof typeof MODE) ?? 'live'] ?? MODE.live
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
       <SolidCard className="flex h-full flex-col gap-2 p-5" style={{ borderTop: `5px solid ${s.subjects?.theme_color ?? '#1B7339'}` }}>
@@ -97,21 +114,33 @@ function SessionCard({ s }: { s: NonNullable<ReturnType<typeof useSessions>['dat
           <span className="text-xs font-bold uppercase tracking-wider text-ink-soft">
             {s.subjects?.code} · Paralelo {s.subjects?.parallel}
           </span>
-          <Badge tone={open ? 'green' : 'neutral'}>{PHASE[s.phase]}</Badge>
+          <span className="flex items-center gap-1.5">
+            <Badge tone="neutral">
+              <M.icon className="mr-1 inline size-3.5" />
+              {M.label}
+            </Badge>
+            <Badge tone={st.tone}>{st.label}</Badge>
+          </span>
         </div>
         <h3 className="font-display text-lg font-bold leading-snug">{s.quizzes?.title ?? 'Evaluación eliminada'}</h3>
         <p className="flex items-center gap-3 text-sm text-ink-soft">
           <span className="flex items-center gap-1">
             <Users className="size-4" /> {n}
           </span>
-          <span>{fmtDateTime(s.created_at)}</span>
+          {live && <span>{fmtDateTime(s.created_at)}</span>}
           {open && <span className="font-display font-black tracking-widest text-ink">PIN {s.pin}</span>}
         </p>
+        {!live && (
+          <p className="flex items-center gap-1.5 text-sm text-ink-soft">
+            <CalendarClock className="size-4 shrink-0" />
+            {s.scheduled_start ? fmtDateTime(s.scheduled_start) : fmtDateTime(s.created_at)} → {s.scheduled_end ? fmtDateTime(s.scheduled_end) : 'sin cierre'}
+          </p>
+        )}
         <div className="mt-auto flex justify-end pt-2">
           <Link to={`/host/${s.id}`}>
             <Button size="sm" variant={open ? 'primary' : 'secondary'}>
               {open ? <MonitorPlay className="size-4" /> : <Trophy className="size-4" />}
-              {open ? 'Abrir proyector' : 'Ver resultados'}
+              {open ? (live ? 'Abrir proyector' : 'Abrir monitor') : 'Ver resultados'}
             </Button>
           </Link>
         </div>
@@ -164,7 +193,7 @@ function PickQuizModal({ open, onClose }: { open: boolean; onClose: () => void }
           setLaunch(false)
           onClose()
         }}
-        quiz={quiz ? { id: quiz.id, title: quiz.title, subject_id: quiz.subject_id } : null}
+        quiz={quiz ? { id: quiz.id, title: quiz.title, subject_id: quiz.subject_id, questionCount: quiz.questions[0]?.count } : null}
       />
     </>
   )

@@ -264,7 +264,7 @@ function Editor({ quiz, initial }: { quiz: NonNullable<ReturnType<typeof useQuiz
       return toast.error(`Hay ${totalIssues} pregunta${totalIssues === 1 ? '' : 's'} incompleta${totalIssues === 1 ? '' : 's'}`, 'Te llevé a la primera; revisa el panel derecho.')
     }
     await setStatus.mutateAsync({ id: quiz.id, status: 'published' })
-    toast.success('¡Evaluación publicada!', 'Ya puedes lanzarla en vivo con “Lanzar en vivo”.')
+    toast.success('¡Evaluación publicada!', 'Ya puedes lanzarla en vivo, como examen o como tarea con “Lanzar”.')
   }
 
   const color = quiz.subjects?.theme_color || '#1B7339'
@@ -313,7 +313,7 @@ function Editor({ quiz, initial }: { quiz: NonNullable<ReturnType<typeof useQuiz
           </Button>
           {quiz.status === 'published' && qs.length > 0 && (
             <Button size="sm" variant="success" onClick={() => void flush().then(() => setLaunchOpen(true))}>
-              <Radio className="size-4" /> Lanzar en vivo
+              <Radio className="size-4" /> Lanzar
             </Button>
           )}
         </div>
@@ -425,7 +425,7 @@ function Editor({ quiz, initial }: { quiz: NonNullable<ReturnType<typeof useQuiz
       <MoveModal open={modal === 'move'} onClose={() => setModal(null)} currentQuizId={quiz.id} onMove={onMove} />
       <ImportQuestionsModal open={modal === 'import'} onClose={() => setModal(null)} onImport={onImport} />
       <QuizSettingsModal open={modal === 'settings'} onClose={() => setModal(null)} quiz={quiz} />
-      <LaunchModal open={launchOpen} onClose={() => setLaunchOpen(false)} quiz={{ id: quiz.id, title: quiz.title, subject_id: quiz.subject_id }} />
+      <LaunchModal open={launchOpen} onClose={() => setLaunchOpen(false)} quiz={{ id: quiz.id, title: quiz.title, subject_id: quiz.subject_id, questionCount: qs.length }} />
     </div>
   )
 }

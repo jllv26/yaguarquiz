@@ -10,6 +10,7 @@ import { cn } from '../../lib/cn'
 import { AvatarBubble } from '../live/LiveBits'
 
 interface Info {
+  mode?: 'live' | 'exam' | 'homework'
   identification: 'roster' | 'nickname'
   require_ci: boolean
   quiz_title: string
@@ -179,7 +180,7 @@ export function JoinFlow({ pin, info, onJoined }: { pin: string; info: Info; onJ
                 <ArrowLeft className="size-4" />
               </Button>
               <Button size="lg" variant="success" className="flex-1" onClick={() => void join()} disabled={busy}>
-                {busy ? <Loader2 className="size-5 animate-spin" /> : <LogIn className="size-5" />} ¡Entrar al juego!
+                {busy ? <Loader2 className="size-5 animate-spin" /> : <LogIn className="size-5" />} {info.mode && info.mode !== 'live' ? 'Entrar' : '¡Entrar al juego!'}
               </Button>
             </div>
           </div>

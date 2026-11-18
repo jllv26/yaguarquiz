@@ -22,20 +22,26 @@ import type { StudentResponse } from '../../lib/scoring'
 import { sfx } from '../../lib/sound'
 import { AvatarBubble, BigCountdown, Leaderboard } from '../live/LiveBits'
 import { celebrate, COUNTDOWN_MS, secondsLeft, useServerNow } from '../live/clock'
+import { ExamPlay } from './ExamPlay'
 import { JoinFlow } from './JoinFlow'
 import { QuestionView, type RevealInfo } from './QuestionView'
 
+type PlayMode = 'live' | 'exam' | 'homework'
 const tokenKey = (pin: string) => `yq-play-${pin}`
-const readToken = (pin: string) => {
+/** Se guarda {t, m}; las fichas antiguas (solo texto) son del modo en vivo. */
+const readToken = (pin: string): { t: string; m: PlayMode } | null => {
   try {
-    return localStorage.getItem(tokenKey(pin))
+    const raw = localStorage.getItem(tokenKey(pin))
+    if (!raw) return null
+    if (raw.startsWith('{')) return JSON.parse(raw) as { t: string; m: PlayMode }
+    return { t: raw, m: 'live' }
   } catch {
     return null
   }
 }
-const saveToken = (pin: string, t: string | null) => {
+const saveToken = (pin: string, v: { t: string; m: PlayMode } | null) => {
   try {
-    if (t) localStorage.setItem(tokenKey(pin), t)
+    if (v) localStorage.setItem(tokenKey(pin), JSON.stringify(v))
     else localStorage.removeItem(tokenKey(pin))
   } catch {
     /* sin almacenamiento */
@@ -45,13 +51,13 @@ const saveToken = (pin: string, t: string | null) => {
 type Screen =
   | { kind: 'loading' }
   | { kind: 'error'; message: string; retry?: boolean }
-  | { kind: 'join'; info: { identification: 'roster' | 'nickname'; require_ci: boolean; quiz_title: string; subject: string } }
+  | { kind: 'join'; info: { mode: PlayMode; identification: 'roster' | 'nickname'; require_ci: boolean; quiz_title: string; subject: string } }
   | { kind: 'game' }
 
 export function PlayPage() {
   const { pin = '' } = useParams()
   const [screen, setScreen] = useState<Screen>({ kind: 'loading' })
-  const [token, setToken] = useState<string | null>(() => readToken(pin))
+  const [token, setToken] = useState<{ t: string; m: PlayMode } | null>(() => readToken(pin))
 
   const openJoin = useCallback(async () => {
     setScreen({ kind: 'loading' })
@@ -112,14 +118,15 @@ export function PlayPage() {
             pin={pin}
             info={screen.info}
             onJoined={(t) => {
-              saveToken(pin, t)
-              setToken(t)
+              const v = { t, m: screen.info.mode ?? 'live' }
+              saveToken(pin, v)
+              setToken(v)
               setScreen({ kind: 'game' })
               sfx.join()
             }}
           />
         )}
-        {screen.kind === 'game' && token && <Game token={token} onLeave={leave} />}
+        {screen.kind === 'game' && token && (token.m === 'live' ? <Game token={token.t} onLeave={leave} /> : <ExamPlay token={token.t} onLeave={leave} />)}
       </main>
     </div>
   )

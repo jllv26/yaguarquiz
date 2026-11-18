@@ -40,13 +40,18 @@ interface Props {
   reveal?: RevealInfo | null
   /** respuesta enviada (para resaltar lo elegido al revelar) */
   response?: StudentResponse | null
+  /** Modo examen: la respuesta guardada se puede cambiar hasta entregar */
+  editable?: boolean
+  /** Se intentó pegar texto (queda registrado; el pegado se bloquea) */
+  onPaste?: () => void
 }
 
-export function QuestionView({ q, index, total, secondsLeft, onSubmit, submitted, reveal, response }: Props) {
-  const [multi, setMulti] = useState<string[]>([])
-  const [text, setText] = useState('')
-  const [order, setOrder] = useState<string[]>(() => q.options.map((o) => o.key))
-  const locked = submitted || !!reveal
+export function QuestionView({ q, index, total, secondsLeft, onSubmit, submitted, reveal, response, editable, onPaste }: Props) {
+  const [multi, setMulti] = useState<string[]>(() => (editable && response?.kind === 'choices' ? response.keys : []))
+  const [text, setText] = useState(() => (editable && response?.kind === 'text' ? response.text : ''))
+  const [order, setOrder] = useState<string[]>(() => (editable && response?.kind === 'order' ? response.keys : q.options.map((o) => o.key)))
+  const locked = editable ? !!reveal : submitted || !!reveal
+  const saveLabel = editable ? (response ? 'Actualizar respuesta' : 'Guardar respuesta') : 'Enviar'
 
   // Teclas 1–6 para responder (o marcar en "varias correctas"); Enter para enviar
   useEffect(() => {
@@ -114,7 +119,7 @@ export function QuestionView({ q, index, total, secondsLeft, onSubmit, submitted
                 index={q.type === 'true_false' ? (i === 0 ? 1 : 0) : i}
                 text={o.text}
                 selected={chosen.includes(o.key)}
-                dimmed={locked && !chosen.includes(o.key) && !reveal}
+                dimmed={(locked || (editable && chosen.length > 0)) && !chosen.includes(o.key) && !reveal}
                 disabled={locked}
                 onClick={() => onSubmit({ kind: 'choice', key: o.key })}
               />
@@ -125,7 +130,7 @@ export function QuestionView({ q, index, total, secondsLeft, onSubmit, submitted
 
       {q.type === 'multiple' && (
         <>
-          <p className="text-center text-sm font-semibold text-ink-soft">Marca todas las correctas y presiona “Enviar”</p>
+          <p className="text-center text-sm font-semibold text-ink-soft">Marca todas las correctas y presiona “{editable ? 'Guardar respuesta' : 'Enviar'}”</p>
           <div className="grid gap-4 sm:grid-cols-2">
             {q.options.map((o, i) => {
               const on = locked ? chosen.includes(o.key) : multi.includes(o.key)
@@ -154,7 +159,7 @@ export function QuestionView({ q, index, total, secondsLeft, onSubmit, submitted
           </div>
           {!locked && (
             <Button size="lg" variant="primary" className="mx-auto" disabled={!multi.length} onClick={() => onSubmit({ kind: 'choices', keys: multi })}>
-              <Send className="size-5" /> Enviar
+              <Send className="size-5" /> {saveLabel}
             </Button>
           )}
         </>
@@ -201,6 +206,16 @@ export function QuestionView({ q, index, total, secondsLeft, onSubmit, submitted
           <input
             value={locked && response?.kind === 'text' ? response.text : text}
             onChange={(e) => setText(e.target.value)}
+            onPaste={
+              onPaste
+                ? (e) => {
+                    e.preventDefault()
+                    onPaste()
+                  }
+                : undefined
+            }
+            onDrop={onPaste ? (e) => e.preventDefault() : undefined}
+            spellCheck={false}
             disabled={locked}
             placeholder="Escribe tu respuesta"
             className="h-16 flex-1 rounded-3xl border-4 border-uap-blue/30 bg-surface-2 px-6 text-center font-display text-2xl font-bold outline-none focus:border-uap-blue"
@@ -208,8 +223,8 @@ export function QuestionView({ q, index, total, secondsLeft, onSubmit, submitted
             autoFocus
           />
           {!locked && (
-            <Button type="submit" size="xl" disabled={!text.trim()}>
-              <Send className="size-5" /> Enviar
+            <Button type="submit" size="xl" disabled={!text.trim() || (editable && response?.kind === 'text' && response.text === text)}>
+              <Send className="size-5" /> {editable ? 'Guardar' : 'Enviar'}
             </Button>
           )}
         </form>
@@ -223,6 +238,7 @@ export function QuestionView({ q, index, total, secondsLeft, onSubmit, submitted
           locked={locked}
           correctOrder={reveal?.correctOrder}
           onSubmit={() => onSubmit({ kind: 'order', keys: order })}
+          submitLabel={editable ? (response ? 'Actualizar orden' : 'Guardar orden') : 'Enviar orden'}
         />
       )}
 
@@ -258,7 +274,7 @@ export function QuestionView({ q, index, total, secondsLeft, onSubmit, submitted
             ) : null}
             {reveal.explanation && <p className="mt-2 text-white/90">{reveal.explanation}</p>}
           </motion.div>
-        ) : submitted ? (
+        ) : submitted && !editable ? (
           <motion.p key="sent" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center font-display text-xl font-bold text-ink-soft">
             ¡Respuesta enviada! ⏳
           </motion.p>
@@ -304,6 +320,7 @@ function OrderingList({
   locked,
   correctOrder,
   onSubmit,
+  submitLabel = 'Enviar orden',
 }: {
   options: StudentQuestion['options']
   order: string[]
@@ -311,6 +328,7 @@ function OrderingList({
   locked: boolean
   correctOrder?: string[]
   onSubmit: () => void
+  submitLabel?: string
 }) {
   const byKey = new Map(options.map((o) => [o.key, o]))
   const move = (i: number, d: -1 | 1) => {
@@ -362,7 +380,7 @@ function OrderingList({
       </Reorder.Group>
       {!locked && (
         <Button size="lg" className="mx-auto" onClick={onSubmit}>
-          <Send className="size-5" /> Enviar orden
+          <Send className="size-5" /> {submitLabel}
         </Button>
       )}
     </div>

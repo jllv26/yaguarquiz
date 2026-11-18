@@ -223,11 +223,11 @@ function QuizCard({ z, index }: { z: QuizListRow; index: number }) {
             </Button>
             {z.status === 'published' && n > 0 && (
               <Button size="sm" variant="success" onClick={() => setLaunch(true)}>
-                <Rocket className="size-4" /> En vivo
+                <Rocket className="size-4" /> Lanzar
               </Button>
             )}
           </div>
-          <LaunchModal open={launch} onClose={() => setLaunch(false)} quiz={launch ? { id: z.id, title: z.title, subject_id: z.subject_id } : null} />
+          <LaunchModal open={launch} onClose={() => setLaunch(false)} quiz={launch ? { id: z.id, title: z.title, subject_id: z.subject_id, questionCount: n } : null} />
         </div>
       </SolidCard>
     </motion.div>

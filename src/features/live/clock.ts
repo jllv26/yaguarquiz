@@ -33,3 +33,13 @@ export function celebrate(big = false) {
     setTimeout(() => void confetti({ particleCount: 90, angle: 120, spread: 60, origin: { x: 1 }, colors, disableForReducedMotion: true }), 500)
   }
 }
+
+/** "1:05:09" o "4:09" */
+export function fmtLeft(ms: number) {
+  const t = Math.max(0, Math.ceil(ms / 1000))
+  const h = Math.floor(t / 3600)
+  const m = Math.floor((t % 3600) / 60)
+  const s = t % 60
+  return h ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}` : `${m}:${String(s).padStart(2, '0')}`
+}
+
