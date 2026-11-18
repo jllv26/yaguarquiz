@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { ArrowLeft, Eye, EyeOff, LogIn, UserPlus } from 'lucide-react'
+import { ArrowLeft, Eye, EyeOff, LogIn, MailCheck, UserPlus } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { AnimatedBackground } from '../../components/AnimatedBackground'
@@ -25,6 +25,7 @@ export function LoginPage() {
   const [showPass, setShowPass] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [sentTo, setSentTo] = useState<string | null>(null)
 
   if (!loading && session) return <Navigate to="/admin" replace />
 
@@ -37,13 +38,21 @@ export function LoginPage() {
       if (password !== password2) return setError('Las contraseñas no coinciden.')
     }
     setBusy(true)
-    const err = mode === 'login' ? await signIn(email, password) : await signUp(fullName, email, password)
-    setBusy(false)
-    if (err) {
-      setError(err)
+    if (mode === 'login') {
+      const err = await signIn(email, password)
+      setBusy(false)
+      if (err) return setError(err)
+      toast.success('¡Bienvenido!')
       return
     }
-    toast.success(mode === 'login' ? '¡Bienvenido!' : '¡Cuenta creada!', mode === 'signup' ? 'Ya puedes usar tu panel.' : undefined)
+    const res = await signUp(fullName, email, password)
+    setBusy(false)
+    if (res.error) return setError(res.error)
+    if (res.needsConfirmation) {
+      setSentTo(email.trim())
+      return
+    }
+    toast.success('¡Cuenta creada!', 'Ya puedes usar tu panel.')
   }
 
   return (
@@ -93,6 +102,27 @@ export function LoginPage() {
             ))}
           </div>
 
+          {sentTo ? (
+            <div className="mt-6 rounded-3xl bg-uap-green/10 p-5 text-center">
+              <MailCheck className="mx-auto mb-2 size-10 text-uap-green dark:text-game-selva" />
+              <p className="font-display text-lg font-bold">Revisa tu correo</p>
+              <p className="mt-1 text-sm text-ink-soft">
+                Enviamos un enlace de confirmación a <strong className="text-ink">{sentTo}</strong>. Ábrelo en este
+                mismo navegador y entrarás directo a tu panel. Si no llega en 2 minutos, revisa la carpeta de spam.
+              </p>
+              <Button
+                variant="secondary"
+                size="sm"
+                className="mt-4"
+                onClick={() => {
+                  setSentTo(null)
+                  setMode('login')
+                }}
+              >
+                Ya confirmé, quiero ingresar
+              </Button>
+            </div>
+          ) : (
           <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-4" noValidate>
             <AnimatePresence initial={false}>
               {mode === 'signup' && (
@@ -171,6 +201,7 @@ export function LoginPage() {
               </p>
             )}
           </form>
+          )}
 
           <Link to="/" className="mt-6 flex items-center justify-center gap-2 text-sm font-semibold text-ink-soft hover:text-ink">
             <ArrowLeft className="size-4" /> Volver al inicio

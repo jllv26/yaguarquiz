@@ -16,7 +16,7 @@ interface AuthState {
   session: Session | null
   teacher: Teacher | null
   signIn: (email: string, password: string) => Promise<string | null>
-  signUp: (fullName: string, email: string, password: string) => Promise<string | null>
+  signUp: (fullName: string, email: string, password: string) => Promise<{ error: string | null; needsConfirmation: boolean }>
   signOut: () => Promise<void>
   refreshTeacher: () => Promise<void>
 }
@@ -43,8 +43,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let active = true
+    const cameFromEmail = new URLSearchParams(window.location.search).has('code')
     supabase.auth.getSession().then(async ({ data }) => {
       if (!active) return
+      if (cameFromEmail) {
+        window.history.replaceState(null, '', `${window.location.pathname}#/admin`)
+      }
       setSession(data.session)
       await loadTeacher(data.session)
       if (active) setLoading(false)
@@ -66,7 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const signUp = useCallback(async (fullName: string, email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email: email.trim(),
       password,
       options: {
@@ -74,7 +78,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         emailRedirectTo: `${window.location.origin}${import.meta.env.BASE_URL}`,
       },
     })
-    return error ? friendlyError(error.message) : null
+    if (error) return { error: friendlyError(error.message), needsConfirmation: false }
+    return { error: null, needsConfirmation: !data.session }
   }, [])
 
   const signOut = useCallback(async () => {

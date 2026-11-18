@@ -14,8 +14,8 @@ Docente responsable: **Ing. Jimmy Luis Laruta Villarreal**
 | Fase | Contenido | Estado |
 |---|---|---|
 | 0. Base | Proyecto, sistema de diseño, página de inicio, publicación automática | ✅ Lista |
-| 1. BD y login | Supabase, seguridad (RLS), login del docente | ⏳ Siguiente (proyecto Supabase ya creado) |
-| 2. Gestión académica | Gestiones, periodos, asignaturas, listas de estudiantes por Excel | — |
+| 1. BD y login | Supabase, seguridad (RLS), login del docente, datos de ejemplo | ✅ Lista |
+| 2. Gestión académica | Gestiones, periodos, asignaturas, listas de estudiantes por Excel, plan de calificación | ⏳ Siguiente |
 | 3. Editor y banco | Editor visual, carga masiva de preguntas desde Excel | — |
 | 4. Juego en vivo | Sala, PIN/QR, partida en tiempo real, puntaje en el servidor | — |
 | 5. Examen y tarea | Autoritmo, tiempo total, apertura/cierre automático, anti-copia | — |
@@ -38,12 +38,26 @@ Docente responsable: **Ing. Jimmy Luis Laruta Villarreal**
 |---|---|
 | `/#/` | Estudiantes: ingresar el PIN |
 | `/#/play/123456` | Estudiantes: partida |
-| `/#/admin` | Docente: panel (Fase 1) |
+| `/#/admin/login` | Docente: ingresar o crear cuenta |
+| `/#/admin` | Docente: panel |
 | `/#/diseno` | Revisión del sistema de diseño |
 
 > Se usa `#` en las direcciones para que recargar la página nunca dé error 404 en GitHub Pages.
 
 ---
+
+## Base de datos (Supabase)
+
+- Proyecto: `ywoamnwsacphjfjokmkg` (plan gratuito).
+- Las migraciones están en `supabase/migrations/`. Para aplicarlas: Supabase → **SQL Editor** → pegar el
+  contenido de cada archivo en orden → **Run**. Se pueden ejecutar varias veces sin dañar nada.
+- Seguridad: todas las tablas tienen RLS. Los visitantes (estudiantes) no pueden leer ninguna tabla; cada
+  docente solo ve sus propios datos.
+- **Primer docente = administrador.** La primera cuenta creada en `/#/admin/login` queda como administrador
+  aprobado; las siguientes deben ser aprobadas en *Configuración → Docentes*.
+- Al crear la cuenta llega un correo de confirmación; hay que abrir el enlace en el mismo navegador.
+- Pruebas de seguridad: `tests/sql/10_rls_test.sql` (se ejecutan en un PostgreSQL local con
+  `tests/sql/00_supabase_stub.sql`).
 
 ## Cómo se publica
 
