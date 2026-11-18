@@ -8,7 +8,7 @@ import { Modal } from '../../components/ui/Modal'
 import { useToast } from '../../components/ui/Toast'
 import { useGradingPlan } from '../../lib/api/academic'
 import { SHOW_CORRECT_LABEL, type ShowCorrect } from '../../lib/api/exam'
-import { createSession, type SessionSettings } from '../../lib/api/live'
+import { createSession, hostEnd, type SessionSettings } from '../../lib/api/live'
 import { useSubjectsLite } from '../../lib/api/quizzes'
 import { cn } from '../../lib/cn'
 import { TERM_LABEL } from '../academic/gradingDefaults'
@@ -95,6 +95,12 @@ function LaunchModalInner({ open, onClose, quiz }: Props & { quiz: NonNullable<P
     setBusy(true)
     try {
       const r = await createSession(quiz.id, subjectId, settings)
+      if (mode !== 'live' && r.mode !== mode) {
+        // la base de datos todavía no tiene la actualización del modo examen/tarea
+        await hostEnd(r.id).catch(() => null)
+        toast.error('Falta actualizar la base de datos', 'El modo examen/tarea estará disponible cuando se aplique la migración 0006 en Supabase.')
+        return
+      }
       onClose()
       navigate(`/host/${r.id}`)
     } catch (e) {
