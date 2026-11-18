@@ -98,11 +98,17 @@ function JaguarHead({ className }: { className?: string }) {
           <circle cx="86" cy="50" r="2.6" fill="black" fillOpacity="0.5" />
           <circle cx="114" cy="50" r="2.6" fill="black" fillOpacity="0.5" />
           {/* ojos almendrados y rasgados */}
-          <path d="M60 110 Q74 96 92 108 Q76 120 60 110 Z" fill="black" />
-          <path d="M140 110 Q126 96 108 108 Q124 120 140 110 Z" fill="black" />
+          <path d="M90 112 Q74 94 54 102 Q68 120 90 112 Z" fill="black" />
+          <path d="M110 112 Q126 94 146 102 Q132 120 110 112 Z" fill="black" />
+          {/* cejas serias */}
+          <path d="M50 92 Q70 84 92 98" stroke="black" strokeWidth="5" strokeLinecap="round" fill="none" />
+          <path d="M150 92 Q130 84 108 98" stroke="black" strokeWidth="5" strokeLinecap="round" fill="none" />
+          {/* líneas de lágrima */}
+          <path d="M88 116 Q94 128 92 140" stroke="black" strokeOpacity="0.6" strokeWidth="3.5" strokeLinecap="round" fill="none" />
+          <path d="M112 116 Q106 128 108 140" stroke="black" strokeOpacity="0.6" strokeWidth="3.5" strokeLinecap="round" fill="none" />
           {/* nariz y boca */}
           <path d="M88 136 Q100 132 112 136 Q108 146 100 150 Q92 146 88 136 Z" fill="black" />
-          <path d="M100 150 L100 160 M100 160 Q90 170 80 164 M100 160 Q110 170 120 164" stroke="black" strokeWidth="3.5" fill="none" strokeLinecap="round" />
+          <path d="M100 150 L100 160 M100 160 Q90 166 80 165 M100 160 Q110 166 120 165" stroke="black" strokeWidth="3.5" fill="none" strokeLinecap="round" />
           {/* bigotes */}
           <g stroke="black" strokeOpacity="0.5" strokeWidth="2" fill="none" strokeLinecap="round">
             <path d="M74 150 Q54 146 30 152" /><path d="M74 157 Q54 160 34 170" />
