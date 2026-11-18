@@ -18,7 +18,7 @@ export const ANSWER_STYLES = [
   { key: '1', shape: 'triangle', label: 'Triángulo', bg: 'bg-game-coral', edge: '#b3122f', text: 'text-white' },
   { key: '2', shape: 'diamond', label: 'Rombo', bg: 'bg-game-electric', edge: '#1452b8', text: 'text-white' },
   { key: '3', shape: 'circle', label: 'Círculo', bg: 'bg-game-mango', edge: '#b98300', text: 'text-[#2a1a00]' },
-  { key: '4', shape: 'square', label: 'Cuadrado', bg: 'bg-game-selva', edge: '#0f8a50', text: 'text-white' },
+  { key: '4', shape: 'square', label: 'Cuadrado', bg: 'bg-[#139a5c]', edge: '#0b6e40', text: 'text-white' },
 ] as const
 
 export type AnswerShape = (typeof ANSWER_STYLES)[number]['shape']

@@ -47,6 +47,22 @@
   --animate-float-med: float 10s ease-in-out infinite reverse;
   --animate-pop-in: pop-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
   --animate-spots: spots-drift 120s linear infinite;
+  --animate-twinkle: twinkle 4s ease-in-out infinite;
+  --animate-shoot: shoot 9s ease-in infinite;
+  --animate-grid: grid-move 2.4s linear infinite;
+  @keyframes twinkle {
+    0%, 100% { opacity: 0.25; transform: scale(0.8); }
+    50% { opacity: 1; transform: scale(1.15); }
+  }
+  @keyframes shoot {
+    0%, 82% { opacity: 0; translate: -120px -40px; }
+    86% { opacity: 1; }
+    100% { opacity: 0; translate: 520px 190px; }
+  }
+  @keyframes grid-move {
+    from { background-position: 0 0; }
+    to { background-position: 0 60px; }
+  }
   --animate-bg-blink: bg-blink 7s ease-in-out infinite;
   --animate-paw-step: paw-step 9s ease-in-out infinite;
   @keyframes bg-blink {

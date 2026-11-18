@@ -5,15 +5,17 @@ import { HashRouter, Route, Routes } from 'react-router-dom'
 import { ConfirmProvider } from '../components/ui/Confirm'
 import { ToastProvider } from '../components/ui/Toast'
 import { AuthProvider } from '../features/auth/AuthProvider'
-import { LoginPage } from '../features/auth/LoginPage'
-import { NotFound } from '../features/home/NotFound'
 import { HomePage } from '../features/home/HomePage'
-import { PlayPage } from '../features/play/PlayPage'
 
 /**
  * HashRouter: las rutas quedan como /#/play/123456 para que GitHub Pages
  * nunca devuelva 404 al recargar la página.
  */
+// El inicio carga de inmediato; todo lo demás se descarga solo cuando se necesita.
+const PlayPage = lazy(() => import('../features/play/PlayPage').then((m) => ({ default: m.PlayPage })))
+const LoginPage = lazy(() => import('../features/auth/LoginPage').then((m) => ({ default: m.LoginPage })))
+const HelpPage = lazy(() => import('../features/home/HelpPage').then((m) => ({ default: m.HelpPage })))
+const NotFound = lazy(() => import('../features/home/NotFound').then((m) => ({ default: m.NotFound })))
 const AcademicPage = lazy(() => import('../features/academic/AcademicPage').then((m) => ({ default: m.AcademicPage })))
 const SubjectDetailPage = lazy(() => import('../features/academic/SubjectDetailPage').then((m) => ({ default: m.SubjectDetailPage })))
 const StudentsPage = lazy(() => import('../features/students/StudentsPage').then((m) => ({ default: m.StudentsPage })))
@@ -43,6 +45,7 @@ export function App() {
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/play/:pin" element={<PlayPage />} />
+            <Route path="/ayuda" element={<HelpPage />} />
             <Route path="/diseno" element={<DesignPage />} />
             <Route path="/admin/login" element={<LoginPage />} />
             <Route path="/host/:id" element={<HostPage />} />

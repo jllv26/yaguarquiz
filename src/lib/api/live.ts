@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react'
 import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from '../config'
 import type { StudentResponse } from '../scoring'
 import { friendlyError, supabase } from '../supabase'
+import { asTheme, type VisualTheme } from '../visualThemes'
 
 // ---------------------------------------------------------------- tipos
 export type Phase = 'lobby' | 'countdown' | 'question' | 'reveal' | 'leaderboard' | 'finished'
@@ -310,4 +311,27 @@ export function useNudgeChannel(sessionId: string | undefined, onNudge?: () => v
   return () => {
     void chan.current?.send({ type: 'broadcast', event: 'nudge', payload: {} })
   }
+}
+
+// ---------------------------------------------------------------------------- tema visual
+
+/** Tema visual de la evaluación: por PIN (estudiante) o por id de sesión (docente). */
+export function useSessionTheme(opts: { pin?: string; sessionId?: string }): VisualTheme {
+  const q = useQuery({
+    queryKey: ['session-theme', opts.pin ?? '', opts.sessionId ?? ''],
+    enabled: !!(opts.pin || opts.sessionId),
+    staleTime: 5 * 60_000,
+    retry: false,
+    queryFn: async () => {
+      if (opts.sessionId) {
+        const { data } = await supabase.from('sessions').select('quizzes(visual_theme)').eq('id', opts.sessionId).maybeSingle()
+        const qz = (data as { quizzes?: { visual_theme?: string } | null } | null)?.quizzes
+        return asTheme(qz?.visual_theme)
+      }
+      const { data, error } = await supabase.rpc('session_theme', { p_pin: opts.pin })
+      if (error) return 'amazonia' as VisualTheme
+      return asTheme(data as string)
+    },
+  })
+  return q.data ?? 'amazonia'
 }

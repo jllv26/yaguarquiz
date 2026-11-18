@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
-import { ArrowRight, GraduationCap, PawPrint, QrCode } from 'lucide-react'
-import { useRef, useState, type ClipboardEvent, type KeyboardEvent } from 'react'
+import { ArrowRight, GraduationCap, HelpCircle, PawPrint, QrCode } from 'lucide-react'
+import { useEffect, useRef, useState, type ClipboardEvent, type KeyboardEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { AnimatedBackground } from '../../components/AnimatedBackground'
 import { TopBar } from '../../components/TopBar'
@@ -11,6 +11,7 @@ import { BRAND } from '../../lib/brand'
 import { cn } from '../../lib/cn'
 import { JaguarFace } from '../../components/jaguar/JaguarFace'
 import { useLook } from '../../components/jaguar/useLook'
+import { sfx } from '../../lib/sound'
 import { JaguarIntro } from '../../components/jaguar/JaguarIntro'
 
 const INTRO_KEY = 'yq-intro-seen'
@@ -33,6 +34,11 @@ export function HomePage() {
   const toast = useToast()
   const { ref: mascotRef, look } = useLook<HTMLDivElement>()
   const [intro, setIntro] = useState(introPending)
+  // Descarga por adelantado la pantalla de juego mientras el estudiante escribe el PIN
+  useEffect(() => {
+    const t = window.setTimeout(() => void import('../play/PlayPage'), 1500)
+    return () => window.clearTimeout(t)
+  }, [])
   const [roar, setRoar] = useState(false)
   const endIntro = () => {
     try {
@@ -84,6 +90,7 @@ export function HomePage() {
       toast.error('PIN incompleto', 'El PIN tiene 6 dígitos. Míralo en la pantalla del proyector.')
       return
     }
+    sfx.roar()
     navigate(`/play/${pin}`)
   }
 
@@ -218,6 +225,13 @@ export function HomePage() {
                 directo.
               </p>
             </div>
+
+            <Link
+              to="/ayuda"
+              className="mt-3 flex items-center justify-center gap-2 text-sm font-semibold text-uap-blue underline-offset-4 hover:underline dark:text-sky-300"
+            >
+              <HelpCircle className="size-4" /> ¿Cómo se juega? Manual del estudiante
+            </Link>
 
             <Link
               to="/admin"

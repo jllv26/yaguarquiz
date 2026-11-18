@@ -13,8 +13,6 @@ import {
   Plus,
   ShieldAlert,
   Users,
-  Volume2,
-  VolumeX,
   X,
   XCircle,
 } from 'lucide-react'
@@ -37,6 +35,7 @@ import {
   playUrl,
   serverOffset,
   useNudgeChannel,
+  useSessionTheme,
   type HostParticipant,
   type HostState,
   type Phase,
@@ -45,7 +44,9 @@ import { ANSWER_STYLES, BRAND } from '../../lib/brand'
 import { cn } from '../../lib/cn'
 import { fmtDateTime } from '../../lib/dates'
 import { buildWorkbook, downloadBlob, headerCell, titleCell } from '../../lib/excel'
-import { isMuted, setMuted, sfx } from '../../lib/sound'
+import { setMusic, sfx } from '../../lib/sound'
+import { useForcedDark } from '../../lib/visualThemes'
+import { SoundControl, useMuteHotkey } from '../../components/SoundControl'
 import { useAuth } from '../auth/AuthProvider'
 import { AvatarBubble, BigCountdown, Leaderboard, Podium } from '../live/LiveBits'
 import { celebrate, COUNTDOWN_MS, secondsLeft, useServerNow } from '../live/clock'
@@ -100,7 +101,6 @@ function Host() {
   const [st, setSt] = useState<HostState | null>(null)
   const [offset, setOffset] = useState(0)
   const [loadError, setLoadError] = useState('')
-  const [muted, setMute] = useState(isMuted())
   const [panel, setPanel] = useState(false)
   const busy = useRef(false)
 
@@ -115,6 +115,8 @@ function Host() {
       setLoadError((e as Error).message)
     }
   }, [id])
+  const theme = useSessionTheme({ pin: st?.session.pin })
+  useForcedDark(theme)
   const nudge = useNudgeChannel(id)
 
   const act = useCallback(
@@ -195,11 +197,26 @@ function Host() {
       setClaw(Date.now())
     }
     if (phase === 'reveal') sfx.reveal()
+    if (phase === 'leaderboard') sfx.rankUp()
     if (phase === 'finished') {
-      sfx.fanfare()
-      setTimeout(() => celebrate(true), 2200)
+      sfx.drumroll(2.1)
+      setTimeout(() => {
+        sfx.fanfare()
+        sfx.applause(3.5)
+        sfx.roar()
+        celebrate(true)
+      }, 2200)
     }
   }, [phase])
+
+  // música de fondo según la fase (suena en el proyector)
+  useMuteHotkey()
+  const paused = !!st?.session.paused_at
+  useEffect(() => {
+    if (!phase) return
+    setMusic(paused ? null : phase === 'lobby' || phase === 'leaderboard' ? 'lobby' : phase === 'question' ? 'question' : null)
+  }, [phase, paused])
+  useEffect(() => () => setMusic(null), [])
   const secs = st?.session.phase === 'question' && !st.session.paused_at ? secondsLeft(st.session.question_ends_at, now) : null
   const cd = st?.session.phase === 'countdown' ? Math.ceil((new Date(st.session.phase_started_at).getTime() + COUNTDOWN_MS - now) / 1000) : null
   const lastBeep = useRef<string>('')
@@ -208,7 +225,7 @@ function Host() {
     if (lastBeep.current === k) return
     lastBeep.current = k
     if (cd !== null && cd > 0) sfx.countdown()
-    if (secs !== null && secs > 0 && secs <= 5) sfx.urgent()
+    if (secs !== null && secs > 0 && secs <= 5) sfx.urgent(secs)
   }, [secs, cd, phase, st?.session.question_index])
 
   const joined = useRef(0)
@@ -303,7 +320,7 @@ function Host() {
 
   return (
     <div className="relative flex min-h-dvh flex-col">
-      <AnimatedBackground variant={s.phase === 'question' ? 'calm' : 'jungle'} />
+      <AnimatedBackground theme={theme} variant={s.phase === 'question' ? 'calm' : 'jungle'} />
 
       {/* Barra superior */}
       <header className="glass relative z-10 mx-3 mt-3 flex flex-wrap items-center gap-3 rounded-3xl px-4 py-2.5">
@@ -312,7 +329,7 @@ function Host() {
         </Link>
         <img src={BRAND.logoColor} alt="" className="size-10 rounded-xl bg-white object-contain p-0.5" />
         <div className="min-w-0 flex-1 leading-tight">
-          <p className="truncate text-xs font-bold uppercase tracking-wider" style={{ color }}>
+          <p className="truncate text-xs font-bold uppercase tracking-wider text-[var(--subj)] dark:text-white/75" style={{ '--subj': color } as CSSProperties}>
             {s.subject?.code} · Paralelo {s.subject?.parallel}
           </p>
           <p className="truncate font-display text-lg font-extrabold">{s.quiz_title}</p>
@@ -323,19 +340,11 @@ function Host() {
             <span className="text-xl font-black tracking-[0.15em]">{s.pin}</span>
           </span>
         )}
-        <button onClick={() => setPanel(true)} className="flex h-11 items-center gap-2 rounded-2xl bg-surface-2 px-3 font-display font-bold shadow-sm" aria-label="Ver participantes">
+        <button onClick={() => setPanel(true)} className="flex h-11 items-center gap-2 rounded-2xl bg-surface-2 px-3 font-display font-bold shadow-sm" aria-label={`${playing.length} participantes — ver lista`}>
           <Users className="size-5" /> {playing.length}
           {takeovers.length > 0 && <span className="size-2.5 animate-pulse rounded-full bg-game-coral" />}
         </button>
-        <IconBtn
-          label={muted ? 'Activar sonido' : 'Silenciar'}
-          onClick={() => {
-            setMuted(!muted)
-            setMute(!muted)
-          }}
-        >
-          {muted ? <VolumeX className="size-5" /> : <Volume2 className="size-5" />}
-        </IconBtn>
+        <SoundControl role="host" />
         <IconBtn label="Pantalla completa (F)" onClick={() => void document.documentElement.requestFullscreen?.().catch(() => null)}>
           <Expand className="size-5" />
         </IconBtn>
@@ -450,7 +459,7 @@ function Lobby({ st, onKick, bots }: { st: HostState; onKick: (p: HostParticipan
           <p className="font-display text-6xl font-black tracking-[0.12em] sm:text-7xl">{s.pin}</p>
         </div>
         <div className="rounded-3xl bg-white p-3 shadow-inner">
-          <QRCodeSVG value={url} size={210} level="M" fgColor="#14213D" />
+          <QRCodeSVG value={url} size={210} level="M" fgColor="#14213D" title="Código QR para unirse a esta sesión" role="img" />
         </div>
         <p className="text-sm text-ink-soft">
           {s.identification === 'roster' ? `Entran con su RU${s.require_ci ? ' y los últimos 3 dígitos del CI' : ''}` : 'Entran con un apodo'}
@@ -795,6 +804,13 @@ function ParticipantsPanel({
   onAuthorize: (p: HostParticipant) => void
 }) {
   const list = [...st.participants].sort((a, b) => Number(a.kicked) - Number(b.kicked) || b.score - a.score)
+  // Escape cierra el panel (accesibilidad)
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open, onClose])
   return (
     <AnimatePresence>
       {open && (
@@ -802,6 +818,7 @@ function ParticipantsPanel({
           <motion.div className="fixed inset-0 z-40 bg-black/30" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} />
           <motion.aside
             role="dialog"
+            aria-modal="true"
             aria-label="Participantes"
             initial={{ x: '100%' }}
             animate={{ x: 0 }}

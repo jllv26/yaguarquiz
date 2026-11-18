@@ -14,9 +14,10 @@ jobs:
       - uses: actions/checkout@v4
       - name: Consultar Supabase
         run: |
-          # Lee la URL y la clave pública desde .env.example
-          URL=$(grep '^VITE_SUPABASE_URL=' .env.example | cut -d= -f2-)
-          KEY=$(grep '^VITE_SUPABASE_PUBLISHABLE_KEY=' .env.example | cut -d= -f2-)
-          # Fase 1 agregará la función keep_alive() que toca la base de datos.
+          # Usa las variables del repositorio si existen; si no, las de .env.example
+          URL="${{ vars.VITE_SUPABASE_URL }}"; KEY="${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}"
+          [ -n "$URL" ] || URL=$(grep '^VITE_SUPABASE_URL=' .env.example | cut -d= -f2-)
+          [ -n "$KEY" ] || KEY=$(grep '^VITE_SUPABASE_PUBLISHABLE_KEY=' .env.example | cut -d= -f2-)
+          # keep_alive() hace una consulta liviana a la base de datos (cuenta como actividad)
           curl -s -o /dev/null -w "auth: %{http_code}\n" "$URL/auth/v1/health" -H "apikey: $KEY"
           curl -s -o /dev/null -w "rest: %{http_code}\n" -X POST "$URL/rest/v1/rpc/keep_alive" -H "apikey: $KEY" -H "Content-Type: application/json" -d '{}' 

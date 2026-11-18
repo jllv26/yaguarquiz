@@ -25,7 +25,6 @@ export function AnswerButton({ index, text, selected, dimmed, onClick, disabled 
       animate={{ opacity: dimmed ? 0.35 : 1, y: 0, scale: selected ? 1.02 : 1 }}
       transition={{ delay: index * 0.06, type: 'spring', stiffness: 380, damping: 26 }}
       aria-keyshortcuts={s.key}
-      aria-label={`${s.label}: ${text}`}
       className={cn(
         'btn-3d group flex min-h-24 w-full items-center gap-4 rounded-3xl p-4 text-left sm:min-h-28 sm:p-5',
         s.bg,
@@ -37,8 +36,11 @@ export function AnswerButton({ index, text, selected, dimmed, onClick, disabled 
       <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-black/15 sm:size-14">
         <Shape shape={s.shape} className="size-7 drop-shadow sm:size-8" />
       </span>
-      <span className="flex-1 font-display text-lg font-bold leading-snug sm:text-xl">{text}</span>
-      <kbd className="hidden rounded-lg bg-black/15 px-2 py-1 font-display text-sm font-bold sm:block">{s.key}</kbd>
+      <span className="flex-1 font-display text-lg font-bold leading-snug sm:text-xl">
+        <span className="sr-only">{s.label}: </span>
+        {text}
+      </span>
+      <kbd aria-hidden className="hidden rounded-lg bg-black/15 px-2 py-1 font-display text-sm font-bold sm:block">{s.key}</kbd>
     </motion.button>
   )
 }

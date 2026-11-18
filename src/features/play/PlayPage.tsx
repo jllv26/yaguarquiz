@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { AnimatedBackground } from '../../components/AnimatedBackground'
 import { TopBar } from '../../components/TopBar'
+import { SoundControl, useMuteHotkey, useSoundPrefs } from '../../components/SoundControl'
 import { Button } from '../../components/ui/Button'
 import { Card, SolidCard } from '../../components/ui/Card'
 import { useToast } from '../../components/ui/Toast'
@@ -15,11 +16,13 @@ import {
   sessionInfo,
   submitAnswer,
   useNudgeChannel,
+  useSessionTheme,
   type PlayState,
 } from '../../lib/api/live'
 import { cn } from '../../lib/cn'
 import type { StudentResponse } from '../../lib/scoring'
-import { sfx } from '../../lib/sound'
+import { setMusic, sfx } from '../../lib/sound'
+import { useForcedDark } from '../../lib/visualThemes'
 import { AvatarBubble, BigCountdown, Leaderboard } from '../live/LiveBits'
 import { celebrate, COUNTDOWN_MS, secondsLeft, useServerNow } from '../live/clock'
 import { ExamPlay } from './ExamPlay'
@@ -60,6 +63,8 @@ export function PlayPage() {
   const { pin = '' } = useParams()
   const [screen, setScreen] = useState<Screen>({ kind: 'loading' })
   const [token, setToken] = useState<{ t: string; m: PlayMode } | null>(() => readToken(pin))
+  const theme = useSessionTheme({ pin: /^\d{6}$/.test(pin) ? pin : undefined })
+  useForcedDark(theme)
 
   const openJoin = useCallback(async () => {
     setScreen({ kind: 'loading' })
@@ -93,8 +98,8 @@ export function PlayPage() {
 
   return (
     <div className="relative flex min-h-dvh flex-col">
-      <AnimatedBackground />
-      <TopBar />
+      <AnimatedBackground theme={theme} />
+      <TopBar right={<SoundControl role="student" />} />
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center px-4 pb-6">
         {screen.kind === 'loading' && <Loader2 className="size-10 animate-spin text-uap-green" aria-label="Cargando" />}
         {screen.kind === 'error' && (
@@ -175,6 +180,15 @@ function Game({ token, onLeave }: { token: string; onLeave: (message?: string) =
 
   const now = useServerNow(offset, phase === 'countdown' || phase === 'question')
 
+  // Música opcional en el equipo del estudiante (por defecto solo efectos)
+  const { studentMusic } = useSoundPrefs()
+  useMuteHotkey()
+  useEffect(() => {
+    if (!studentMusic || !phase) return setMusic(null)
+    setMusic(phase === 'lobby' || phase === 'leaderboard' ? 'lobby' : phase === 'question' ? 'question' : null)
+  }, [studentMusic, phase])
+  useEffect(() => () => setMusic(null), [])
+
   // Sonidos y celebraciones al cambiar de fase
   const prev = useRef('')
   useEffect(() => {
@@ -197,6 +211,7 @@ function Game({ token, onLeave }: { token: string; onLeave: (message?: string) =
     }
     if (st.session.phase === 'finished') {
       sfx.fanfare()
+      if ((st.summary?.rank ?? 99) <= 3) sfx.applause(2.5)
       if ((st.summary?.rank ?? 99) <= 3) setTimeout(() => celebrate(true), 400)
     }
   }, [st])
@@ -238,9 +253,32 @@ function Game({ token, onLeave }: { token: string; onLeave: (message?: string) =
   if (!st) return <Loader2 className="size-10 animate-spin text-uap-green" aria-label="Cargando" />
   const s = st.session
   const me = st.me
+  // Aviso para lectores de pantalla (accesibilidad): qué está pasando ahora
+  const qn = `Pregunta ${(s.question_index ?? 0) + 1} de ${s.total}`
+  const announce =
+    s.phase === 'lobby'
+      ? 'Estás en la sala de espera. Espera a que el docente empiece.'
+      : s.phase === 'countdown'
+        ? `Prepárate: ${qn}.`
+        : s.phase === 'question'
+          ? st.my_answer?.answered
+            ? 'Respuesta enviada. Espera el resultado.'
+            : `${qn}: ${st.question?.prompt ?? ''}. Responde con las teclas 1 a ${st.question?.options.length || 4}.`
+          : s.phase === 'reveal'
+            ? st.my_answer?.answered
+              ? st.my_answer.correct
+                ? `¡Correcto! Ganaste ${st.my_answer.points ?? 0} puntos.`
+                : 'Respuesta incorrecta.'
+              : 'No respondiste esta pregunta.'
+            : s.phase === 'leaderboard'
+              ? `Vas en el puesto ${me.rank} de ${me.of}, con ${me.score} puntos.`
+              : 'La partida terminó. Mira tu resumen.'
 
   return (
     <div className="flex w-full flex-col gap-4">
+      <p className="sr-only" role="status" aria-live="polite">
+        {announce}
+      </p>
       {/* Mi tarjeta */}
       <div className="glass flex items-center gap-3 rounded-3xl px-4 py-2">
         <AvatarBubble avatar={me.avatar} size="sm" />

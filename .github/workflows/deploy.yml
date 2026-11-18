@@ -27,6 +27,13 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: npm run build
+        env:
+          # Opcional: si crea su propia copia, ponga sus datos de Supabase en
+          # Settings → Secrets and variables → Actions → Variables (no son secretos).
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          # La dirección del sitio usa el nombre del repositorio (https://usuario.github.io/<repositorio>/)
+          BASE_PATH: /${{ github.event.repository.name }}/
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

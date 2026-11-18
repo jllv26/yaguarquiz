@@ -14,6 +14,9 @@ import { ClawSwipe, JaguarEye, PawTrail } from '../../components/jaguar/JaguarFx
 import { useLook } from '../../components/jaguar/useLook'
 import { JaguarRunner } from '../../components/jaguar/JaguarRunner'
 import { JaguarIntro } from '../../components/jaguar/JaguarIntro'
+import { setMusic, sfx, type Track } from '../../lib/sound'
+import { SoundControl } from '../../components/SoundControl'
+import { VISUAL_THEMES } from '../../lib/visualThemes'
 
 const INSTITUTIONAL = [
   { name: 'Azul UAP', hex: '#1F3864', cls: 'bg-uap-blue' },
@@ -68,6 +71,8 @@ export function DesignPage() {
         </header>
 
         <JaguarShowcase />
+        <SoundShowcase />
+        <ThemeShowcase />
 
         {/* Paletas */}
         <section className="grid gap-6 md:grid-cols-2">
@@ -280,6 +285,85 @@ function JaguarShowcase() {
       </SolidCard>
       <ClawSwipe playKey={claw} label="¡Demuestra tu garra!" />
       {intro > 0 && <JaguarIntro key={intro} onDone={() => setIntro(0)} />}
+    </section>
+  )
+}
+
+function SoundShowcase() {
+  const [track, setTrack] = useState<Track>(null)
+  useEffect(() => () => setMusic(null), [])
+  const play = (t: Track) => {
+    const next = track === t ? null : t
+    setTrack(next)
+    setMusic(next)
+  }
+  const fx: [string, () => void][] = [
+    ['3-2-1', () => sfx.countdown()],
+    ['¡Ya!', () => sfx.go()],
+    ['Tic-tac final', () => [5, 4, 3, 2, 1].forEach((s, i) => setTimeout(() => sfx.urgent(s), i * 1000))],
+    ['Enviado', () => sfx.sent()],
+    ['Acierto', () => sfx.correct()],
+    ['Error', () => sfx.wrong()],
+    ['Sube en ranking', () => sfx.rankUp()],
+    ['Redoble + podio', () => {
+      sfx.drumroll(2.1)
+      setTimeout(() => {
+        sfx.fanfare()
+        sfx.applause(3.5)
+      }, 2200)
+    }],
+    ['Rugido', () => sfx.roar()],
+  ]
+  return (
+    <section>
+      <SolidCard className="flex flex-col gap-4 p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="font-display text-xl font-bold">Sonido</h2>
+            <p className="text-sm text-ink-soft">Todo se genera en el navegador (sin archivos ni derechos de autor). La música suena en el proyector; en los celulares, solo efectos.</p>
+          </div>
+          <SoundControl role="host" />
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button variant={track === 'lobby' ? 'success' : 'secondary'} onClick={() => play('lobby')}>
+            {track === 'lobby' ? '⏹ Música de sala' : '▶ Música de sala'}
+          </Button>
+          <Button variant={track === 'question' ? 'success' : 'secondary'} onClick={() => play('question')}>
+            {track === 'question' ? '⏹ Música de pregunta' : '▶ Música de pregunta'}
+          </Button>
+          {fx.map(([label, fn]) => (
+            <Button key={label} variant="ghost" onClick={fn}>
+              {label}
+            </Button>
+          ))}
+        </div>
+      </SolidCard>
+    </section>
+  )
+}
+
+function ThemeShowcase() {
+  return (
+    <section>
+      <SolidCard className="flex flex-col gap-4 p-6">
+        <div>
+          <h2 className="font-display text-xl font-bold">Temas visuales</h2>
+          <p className="text-sm text-ink-soft">Se eligen en los datos de cada evaluación y se ven en el proyector y en los celulares. Espacio y Neón usan siempre modo oscuro.</p>
+        </div>
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-5" data-testid="themes">
+          {VISUAL_THEMES.map((t) => (
+            <figure key={t.id} className={t.dark ? 'dark' : undefined}>
+              <div className="relative h-36 overflow-hidden rounded-2xl border border-line">
+                <AnimatedBackground theme={t.id} contained />
+                <div className="relative grid h-full place-items-center">
+                  <span className="rounded-xl bg-surface-2/90 px-3 py-1.5 font-display text-sm font-bold text-ink shadow">{t.label}</span>
+                </div>
+              </div>
+              <figcaption className="mt-1 text-xs text-ink-soft">{t.hint}</figcaption>
+            </figure>
+          ))}
+        </div>
+      </SolidCard>
     </section>
   )
 }

@@ -6,6 +6,8 @@ import { Input } from '../../components/ui/Input'
 import { Modal } from '../../components/ui/Modal'
 import { useToast } from '../../components/ui/Toast'
 import { useSaveQuiz, useSubjectsLite, type QuizRow } from '../../lib/api/quizzes'
+import { asTheme, VISUAL_THEMES } from '../../lib/visualThemes'
+import { cn } from '../../lib/cn'
 
 /** Crear una evaluación nueva o editar sus datos generales. */
 export function QuizSettingsModal({
@@ -23,7 +25,7 @@ export function QuizSettingsModal({
   const save = useSaveQuiz()
   const toast = useToast()
   const navigate = useNavigate()
-  const [f, setF] = useState({ title: '', subject_id: '', topic_id: '', description: '' })
+  const [f, setF] = useState({ title: '', subject_id: '', topic_id: '', description: '', visual_theme: 'amazonia' })
   const [lastKey, setLastKey] = useState<string | null>(null)
   const key = open ? (quiz?.id ?? `new-${defaultSubjectId}`) : null
   if (key !== lastKey) {
@@ -33,6 +35,7 @@ export function QuizSettingsModal({
       subject_id: quiz?.subject_id ?? defaultSubjectId ?? '',
       topic_id: quiz?.topic_id ?? '',
       description: quiz?.description ?? '',
+      visual_theme: asTheme(quiz?.visual_theme),
     })
   }
   const list = subjects.data ?? []
@@ -95,6 +98,29 @@ export function QuizSettingsModal({
           </div>
         )}
         <Textarea label="Descripción (opcional)" value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} />
+        <fieldset>
+          <legend className="mb-2 text-sm font-semibold">Tema visual (proyector y celulares)</legend>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-5" role="radiogroup">
+            {VISUAL_THEMES.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                role="radio"
+                aria-checked={f.visual_theme === t.id}
+                onClick={() => setF({ ...f, visual_theme: t.id })}
+                className={cn(
+                  'flex flex-col overflow-hidden rounded-2xl border-2 text-left transition',
+                  f.visual_theme === t.id ? 'border-uap-gold ring-2 ring-uap-gold/40' : 'border-line hover:border-ink-soft/40',
+                )}
+                title={t.hint}
+              >
+                <span className="h-12 w-full" style={{ background: t.swatch }} />
+                <span className="px-2 py-1.5 text-xs font-bold">{t.label}</span>
+              </button>
+            ))}
+          </div>
+          <p className="mt-1.5 text-xs text-ink-soft">{VISUAL_THEMES.find((t) => t.id === f.visual_theme)?.hint}</p>
+        </fieldset>
       </form>
     </Modal>
   )

@@ -47,7 +47,7 @@ export function AdminLayout() {
             <img src={BRAND.logoColor} alt="Escudo UAP" className="size-11 rounded-xl bg-white object-contain p-0.5" />
             <div className="leading-tight">
               <p className="font-display text-lg font-extrabold text-uap-blue dark:text-white">
-                Yaguar<span className="text-uap-gold dark:text-uap-gold-300">Quiz</span>
+                Yaguar<span className="text-[#8a6416] dark:text-uap-gold-300">Quiz</span>
               </p>
               <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-soft">Panel docente</p>
             </div>
