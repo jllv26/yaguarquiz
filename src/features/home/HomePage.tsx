@@ -11,6 +11,16 @@ import { BRAND } from '../../lib/brand'
 import { cn } from '../../lib/cn'
 import { JaguarFace } from '../../components/jaguar/JaguarFace'
 import { useLook } from '../../components/jaguar/useLook'
+import { JaguarIntro } from '../../components/jaguar/JaguarIntro'
+
+const INTRO_KEY = 'yq-intro-seen'
+function introPending() {
+  try {
+    return !sessionStorage.getItem(INTRO_KEY)
+  } catch {
+    return false
+  }
+}
 
 const PIN_LENGTH = 6
 const YEAR = new Date().getFullYear()
@@ -22,6 +32,20 @@ export function HomePage() {
   const navigate = useNavigate()
   const toast = useToast()
   const { ref: mascotRef, look } = useLook<HTMLDivElement>()
+  const [intro, setIntro] = useState(introPending)
+  const [roar, setRoar] = useState(false)
+  const endIntro = () => {
+    try {
+      sessionStorage.setItem(INTRO_KEY, '1')
+    } catch {
+      /* sin almacenamiento: no pasa nada */
+    }
+    setIntro(false)
+  }
+  const onLanded = () => {
+    setRoar(true)
+    window.setTimeout(() => setRoar(false), 1600)
+  }
 
   const pin = digits.join('')
   const complete = pin.length === PIN_LENGTH
@@ -66,6 +90,7 @@ export function HomePage() {
   return (
     <div className="relative flex min-h-dvh flex-col">
       <AnimatedBackground />
+      {intro && <JaguarIntro onDone={endIntro} onLanded={onLanded} />}
       <TopBar
         right={
           <Link
@@ -134,7 +159,7 @@ export function HomePage() {
               transition={{ delay: 0.5, type: 'spring', stiffness: 160, damping: 12 }}
               whileHover={{ rotate: [0, -6, 6, 0], transition: { duration: 0.5 } }}
             >
-              <JaguarFace mood={shake ? 'sad' : complete ? 'happy' : pin.length > 0 ? 'wow' : 'neutral'} look={look} className="w-28 drop-shadow-xl sm:w-32" />
+              <JaguarFace mood={shake ? 'sad' : complete || roar ? 'happy' : pin.length > 0 ? 'wow' : 'neutral'} look={look} className="w-28 drop-shadow-xl sm:w-32" />
             </motion.div>
           </div>
           <Card className="relative overflow-hidden p-6 pt-14 sm:p-8 sm:pt-16">

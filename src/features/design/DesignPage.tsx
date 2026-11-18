@@ -12,6 +12,8 @@ import { useToast } from '../../components/ui/Toast'
 import { JaguarFace, type JaguarMood } from '../../components/jaguar/JaguarFace'
 import { ClawSwipe, JaguarEye, PawTrail } from '../../components/jaguar/JaguarFx'
 import { useLook } from '../../components/jaguar/useLook'
+import { JaguarRunner } from '../../components/jaguar/JaguarRunner'
+import { JaguarIntro } from '../../components/jaguar/JaguarIntro'
 
 const INSTITUTIONAL = [
   { name: 'Azul UAP', hex: '#1F3864', cls: 'bg-uap-blue' },
@@ -231,6 +233,7 @@ const MOODS: { mood: JaguarMood; label: string }[] = [
 function JaguarShowcase() {
   const { ref, look } = useLook<HTMLDivElement>()
   const [claw, setClaw] = useState<number | null>(null)
+  const [intro, setIntro] = useState(0)
   return (
     <section>
       <SolidCard className="flex flex-col gap-6 p-6">
@@ -239,9 +242,14 @@ function JaguarShowcase() {
             <h2 className="font-display text-xl font-bold">Toque jaguar</h2>
             <p className="text-sm text-ink-soft">Mascota con expresiones (mueva el cursor: lo sigue con la mirada), zarpazo, ojo vigilante y huellas.</p>
           </div>
-          <Button variant="gold" onClick={() => setClaw(Date.now())}>
-            Probar zarpazo
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="gold" onClick={() => setClaw(Date.now())}>
+              Probar zarpazo
+            </Button>
+            <Button variant="secondary" onClick={() => setIntro(Date.now())}>
+              Ver entrada del jaguar
+            </Button>
+          </div>
         </div>
         <div ref={ref} className="grid grid-cols-2 gap-4 sm:grid-cols-5">
           {MOODS.map((m) => (
@@ -251,6 +259,14 @@ function JaguarShowcase() {
             </figure>
           ))}
         </div>
+        <figure className="flex flex-col items-center gap-2" data-testid="gallop">
+          <div className="grid w-full grid-cols-2 gap-2 sm:grid-cols-4">
+            {[0, 0.25, 0.5, 0.75].map((ph) => (
+              <JaguarRunner key={ph} phase={ph} className="w-full" />
+            ))}
+          </div>
+          <figcaption className="text-sm font-semibold text-ink-soft">Galope (entrada al sistema)</figcaption>
+        </figure>
         <div className="flex flex-wrap items-center justify-around gap-6">
           <figure className="flex flex-col items-center gap-2">
             <JaguarEye className="w-40" />
@@ -263,6 +279,7 @@ function JaguarShowcase() {
         </div>
       </SolidCard>
       <ClawSwipe playKey={claw} label="¡Demuestra tu garra!" />
+      {intro > 0 && <JaguarIntro key={intro} onDone={() => setIntro(0)} />}
     </section>
   )
 }

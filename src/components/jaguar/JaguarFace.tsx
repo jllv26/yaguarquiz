@@ -1,30 +1,54 @@
 import { motion } from 'framer-motion'
 import { useId } from 'react'
 import { cn } from '../../lib/cn'
+import { rosetteParts } from './rosettes'
 
 export type JaguarMood = 'neutral' | 'happy' | 'wow' | 'sad' | 'wink'
 
-const DARK = '#1B120A'
-const FUR = '#C8862A'
+const INK = '#15100B'
 
-const ROSETTE = (x: number, y: number, s = 1, rot = 0) => (
-  <g key={`r${x}-${y}`} transform={`translate(${x} ${y}) rotate(${rot}) scale(${s})`}>
-    <circle r="3.6" fill="#9A5A14" />
-    {[0, 75, 150, 220, 290].map((a) => {
-      const cx = Math.cos((a * Math.PI) / 180) * 6
-      const cy = Math.sin((a * Math.PI) / 180) * 6
-      return <ellipse key={a} cx={cx} cy={cy} rx="2.8" ry="1.7" transform={`rotate(${a + 90} ${cx} ${cy})`} fill={DARK} />
-    })}
-  </g>
-)
+type Pt = [number, number]
+const poly = (pts: Pt[]) => 'M' + pts.map(([x, y]) => `${x} ${y}`).join('L') + 'Z'
+const mirror = (pts: Pt[]): Pt[] => pts.map(([x, y]) => [200 - x, y])
 
-/** Altura del párpado (desde arriba del ojo) según el ánimo: más alto = mirada más dura. */
-const LID: Record<JaguarMood, number> = { neutral: 8, wow: 1, happy: 13, sad: 12, wink: 8 }
+/** Facetas de la mitad izquierda (se reflejan): estilo emblema geométrico. */
+const FACETS: { pts: Pt[]; fill: string }[] = [
+  { pts: [[100, 30], [66, 34], [78, 68], [100, 76]], fill: '#E9B04B' }, // frente
+  { pts: [[66, 34], [42, 54], [54, 84], [78, 68]], fill: '#DA982F' }, // sien
+  { pts: [[42, 54], [28, 80], [22, 108], [48, 110], [54, 84]], fill: '#C9842A' }, // pómulo
+  { pts: [[22, 108], [28, 134], [42, 156], [62, 140], [48, 110]], fill: '#B87424' }, // mejilla baja
+  { pts: [[42, 156], [62, 174], [82, 186], [80, 160], [62, 140]], fill: '#A4651D' }, // quijada
+  { pts: [[48, 110], [62, 140], [72, 128], [78, 108], [54, 84]], fill: '#D08C2C' }, // bajo el ojo
+  { pts: [[78, 68], [54, 84], [78, 108], [90, 78]], fill: '#E2A43C' }, // entrecejo
+  { pts: [[100, 76], [90, 78], [88, 116], [100, 116]], fill: '#EFBE5E' }, // puente nasal
+]
+const MUZZLE: { pts: Pt[]; fill: string }[] = [
+  { pts: [[100, 114], [86, 116], [70, 130], [72, 150], [100, 150]], fill: '#F4E8CC' },
+  { pts: [[72, 150], [82, 168], [100, 174], [100, 150]], fill: '#E6D3AC' },
+  { pts: [[82, 186], [100, 190], [100, 174], [82, 168]], fill: '#D7C095' }, // mentón
+]
+const HEAD: Pt[] = [[100, 30], [66, 34], [42, 54], [28, 80], [22, 108], [28, 134], [42, 156], [62, 174], [82, 186], [100, 190], [118, 186], [138, 174], [158, 156], [172, 134], [178, 108], [172, 80], [158, 54], [134, 34]]
+const EAR_OUT: Pt[] = [[30, 56], [32, 30], [50, 20], [66, 34], [46, 58]]
+const EAR_IN: Pt[] = [[38, 50], [39, 32], [50, 27], [58, 37], [46, 52]]
+const BROW: Pt[] = [[50, 86], [72, 76], [94, 92], [90, 96], [72, 84], [52, 90]]
+const TEAR: Pt[] = [[86, 104], [92, 105], [86, 134], [79, 131]]
+const NOSE: Pt[] = [[100, 116], [86, 118], [84, 124], [92, 134], [100, 140]]
+
+/** Párpado (alto, desde arriba del ojo) según el ánimo. */
+const LID: Record<JaguarMood, number> = { neutral: 9, wow: 2, happy: 12, sad: 13, wink: 9 }
+
+const SPOTS: [number, number, number, number][] = [
+  [60, 52, 8.5, 1], [140, 52, 8.5, 2], [38, 96, 9, 3], [162, 96, 9, 4], [38, 134, 8, 5], [162, 134, 8, 6],
+  [56, 160, 6.5, 7], [144, 160, 6.5, 8],
+]
+const DOTS: [number, number, number][] = [
+  [100, 42, 2.6], [90, 50, 2], [110, 50, 2], [100, 58, 2.2], [84, 62, 1.8], [116, 62, 1.8], [80, 44, 1.6], [120, 44, 1.6],
+  [58, 120, 2], [142, 120, 2], [66, 112, 1.6], [134, 112, 1.6],
+]
 
 /**
- * Mascota de YaguarQuiz: rostro de jaguar estilo emblema (dibujo propio).
- * Mirada intensa con pupila felina; "happy" ruge mostrando los colmillos.
- * look: hacia dónde mira (-1..1). Parpadea despacio cuando está tranquilo.
+ * Mascota de YaguarQuiz: rostro de jaguar estilo emblema geométrico (dibujo propio).
+ * Mirada seria con pupila felina; "happy" ruge mostrando los colmillos.
  */
 export function JaguarFace({
   mood = 'neutral',
@@ -38,199 +62,157 @@ export function JaguarFace({
   title?: string
 }) {
   const id = useId().replace(/:/g, '')
-  const px = Math.max(-1, Math.min(1, look.x)) * 4
-  const py = Math.max(-1, Math.min(1, look.y)) * 2.5
+  const px = Math.max(-1, Math.min(1, look.x)) * 3.5
+  const py = Math.max(-1, Math.min(1, look.y)) * 2
   const wide = mood === 'wow'
-  const sadEars = mood === 'sad'
+  const roar = mood === 'happy'
 
-  // almendra: esquina interna más baja (hacia la nariz), externa elevada
-  const almond = (cx: number, f: 1 | -1) =>
-    `M${cx + 18 * f} 104 Q${cx + 2 * f} 84 ${cx - 18 * f} 92 Q${cx - 4 * f} 112 ${cx + 18 * f} 104 Z`
+  // ojo angular: esquina interna baja, externa elevada
+  const eyePts = (f: 1 | -1): Pt[] => {
+    const p: Pt[] = [[88, 102], [76, 88], [56, 90], [50, 92], [62, 102], [78, 106]]
+    return f === 1 ? p : mirror(p)
+  }
 
-  const eye = (cx: number, f: 1 | -1, closed = false) =>
-    closed ? (
-      <path d={`M${cx - 20 * f} 94 Q${cx} 108 ${cx + 18 * f} 102`} stroke={DARK} strokeWidth="4" strokeLinecap="round" fill="none" />
-    ) : (
-    <g>
-      <clipPath id={`eye-${id}-${cx}`}>
-        <path d={almond(cx, f)} />
-      </clipPath>
-      <g clipPath={`url(#eye-${id}-${cx})`}>
-        <rect x={cx - 22} y="80" width="44" height="36" fill={`url(#iris-${id})`} />
-        <motion.ellipse
-          cx={cx + px}
-          cy={98 + py}
-          rx={wide ? 5.5 : 2.4}
-          ry={wide ? 7.5 : 8}
-          fill={DARK}
-          animate={{ cx: cx + px, cy: 98 + py, rx: wide ? 5.5 : 2.4, ry: wide ? 7.5 : 8 }}
-          transition={{ type: 'spring', stiffness: 200, damping: 20 }}
-        />
-        <circle cx={cx + px + 3.5} cy={93 + py} r="1.5" fill="#fff" opacity="0.85" />
-        {/* párpado: baja según el ánimo y en el parpadeo */}
-        <motion.rect
-          x={cx - 22}
-          y="78"
-          width="44"
-          fill={DARK}
-          initial={false}
-          animate={
-            closed
-              ? { height: 40 }
-              : mood === 'neutral'
-                ? { height: [LID.neutral + 4, LID.neutral + 4, 40, LID.neutral + 4, LID.neutral + 4] }
-                : { height: LID[mood] + 4 }
-          }
-          transition={mood === 'neutral' && !closed ? { duration: 5.5, times: [0, 0.9, 0.93, 0.96, 1], repeat: Infinity } : { duration: 0.25 }}
-        />
+  const eye = (f: 1 | -1, closed = false) => {
+    const cx = f === 1 ? 70 : 130
+    if (closed) return <path d={poly(f === 1 ? [[50, 94], [70, 102], [88, 102], [70, 106]] : mirror([[50, 94], [70, 102], [88, 102], [70, 106]]))} fill={INK} />
+    return (
+      <g>
+        <clipPath id={`eye-${id}-${f}`}>
+          <path d={poly(eyePts(f))} />
+        </clipPath>
+        <g clipPath={`url(#eye-${id}-${f})`}>
+          <rect x={cx - 24} y="84" width="48" height="26" fill={`url(#iris-${id})`} />
+          <motion.ellipse
+            cx={cx + px}
+            cy={97 + py}
+            rx={wide ? 5 : 2.2}
+            ry={wide ? 6.5 : 7.5}
+            fill={INK}
+            animate={{ cx: cx + px, cy: 97 + py, rx: wide ? 5 : 2.2, ry: wide ? 6.5 : 7.5 }}
+            transition={{ type: 'spring', stiffness: 200, damping: 20 }}
+          />
+          <circle cx={cx + px + 3} cy={93 + py} r="1.3" fill="#fff" opacity="0.8" />
+          <motion.rect
+            x={cx - 24}
+            y="80"
+            width="48"
+            fill={INK}
+            initial={false}
+            animate={
+              mood === 'neutral'
+                ? { height: [LID.neutral + 6, LID.neutral + 6, 30, LID.neutral + 6, LID.neutral + 6] }
+                : { height: LID[mood] + 6 }
+            }
+            transition={mood === 'neutral' ? { duration: 6, times: [0, 0.9, 0.93, 0.96, 1], repeat: Infinity } : { duration: 0.25 }}
+          />
+        </g>
+        <path d={poly(eyePts(f))} fill="none" stroke={INK} strokeWidth="3" strokeLinejoin="round" />
       </g>
-      <path d={almond(cx, f)} fill="none" stroke={DARK} strokeWidth="3.2" strokeLinejoin="round" />
-      {/* delineado externo tipo felino */}
-      <path d={`M${cx - 18 * f} 92 L${cx - 25 * f} 88`} stroke={DARK} strokeWidth="3" strokeLinecap="round" />
-    </g>
     )
+  }
 
   return (
     <svg viewBox="0 0 200 200" className={cn('select-none', className)} role="img" aria-label={title}>
       <defs>
-        <radialGradient id={`fur-${id}`} cx="50%" cy="48%" r="62%">
-          <stop offset="0%" stopColor="#E6AA4C" />
-          <stop offset="62%" stopColor={FUR} />
-          <stop offset="100%" stopColor="#7E4A12" />
+        <radialGradient id={`iris-${id}`} cx="50%" cy="60%" r="60%">
+          <stop offset="0%" stopColor="#FFE07A" />
+          <stop offset="55%" stopColor="#E0A526" />
+          <stop offset="100%" stopColor="#8A5A0E" />
         </radialGradient>
-        <radialGradient id={`iris-${id}`} cx="50%" cy="55%" r="60%">
-          <stop offset="0%" stopColor="#F2D46A" />
-          <stop offset="55%" stopColor="#C9A227" />
-          <stop offset="100%" stopColor="#6E6A1C" />
-        </radialGradient>
-        <linearGradient id={`muzzle-${id}`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#F3E7CF" />
-          <stop offset="100%" stopColor="#DCC7A0" />
-        </linearGradient>
       </defs>
 
-      {/* orejas (pequeñas, redondeadas; caen hacia afuera si está triste) */}
-      {[
-        [46, -1],
-        [154, 1],
-      ].map(([x, s]) => (
+      {/* orejas */}
+      {[1, -1].map((f) => (
         <motion.g
-          key={x}
-          style={{ transformOrigin: `${x}px 60px` }}
-          animate={{ rotate: sadEars ? s * 22 : wide ? -s * 4 : 0, y: sadEars ? 4 : 0 }}
+          key={f}
+          style={{ transformOrigin: f === 1 ? '50px 56px' : '150px 56px' }}
+          animate={{ rotate: mood === 'sad' ? -f * 18 : wide ? f * 4 : 0 }}
           transition={{ type: 'spring', stiffness: 160, damping: 16 }}
         >
-          <path d={`M${x - 20} 64 Q${x - 18} 30 ${x} 28 Q${x + 18} 30 ${x + 20} 64 Z`} fill="#8E5414" />
-          <path d={`M${x - 12} 62 Q${x - 10} 40 ${x} 38 Q${x + 10} 40 ${x + 12} 62 Z`} fill={DARK} />
-          <path d={`M${x - 6} 62 Q${x - 4} 48 ${x} 46 Q${x + 4} 48 ${x + 6} 62 Z`} fill="#E9D7B4" opacity="0.8" />
+          <path d={poly(f === 1 ? EAR_OUT : mirror(EAR_OUT))} fill="#9A5E1A" stroke={INK} strokeWidth="2.5" strokeLinejoin="round" />
+          <path d={poly(f === 1 ? EAR_IN : mirror(EAR_IN))} fill={INK} />
+          <path d={poly(f === 1 ? [[42, 50], [44, 40], [52, 44], [46, 52]] : mirror([[42, 50], [44, 40], [52, 44], [46, 52]]))} fill="#EAD9B6" opacity="0.85" />
         </motion.g>
       ))}
 
-      {/* cabeza: ancha en los pómulos */}
-      <path
-        d="M100 32 C142 32 168 48 178 78 C186 100 186 122 176 142 C164 166 138 186 100 190 C62 186 36 166 24 142 C14 122 14 100 22 78 C32 48 58 32 100 32 Z"
-        fill={`url(#fur-${id})`}
-        stroke="#5A3510"
-        strokeWidth="2"
-      />
+      {/* base y facetas de la cabeza */}
+      <path d={poly(HEAD)} fill="#C9842A" />
+      {FACETS.flatMap((fc, i) => [
+        <path key={`l${i}`} d={poly(fc.pts)} fill={fc.fill} />,
+        <path key={`r${i}`} d={poly(mirror(fc.pts))} fill={fc.fill} />,
+      ])}
 
-      {/* puente nasal más claro */}
-      <path d="M90 66 Q100 60 110 66 L108 120 Q100 126 92 120 Z" fill="#E8B35C" opacity="0.55" />
-
-      {/* rosetas y manchas */}
-      {ROSETTE(76, 58, 0.85, 20)}
-      {ROSETTE(124, 58, 0.85, -20)}
-      {ROSETTE(40, 92, 0.9, 40)}
-      {ROSETTE(160, 92, 0.9, -40)}
-      {ROSETTE(32, 128, 0.8, 10)}
-      {ROSETTE(168, 128, 0.8, -10)}
-      {ROSETTE(48, 158, 0.7, 60)}
-      {ROSETTE(152, 158, 0.7, -60)}
-      {[
-        [100, 46, 2.8],
-        [92, 54, 2.2],
-        [108, 54, 2.2],
-        [100, 62, 2],
-        [86, 70, 1.8],
-        [114, 70, 1.8],
-        [60, 74, 2.4],
-        [140, 74, 2.4],
-        [58, 122, 2],
-        [142, 122, 2],
-      ].map(([x, y, r]) => (
-        <circle key={`s${x}-${y}`} cx={x} cy={y} r={r} fill={DARK} />
+      {/* rosetas reales */}
+      {SPOTS.flatMap(([x, y, r, s]) =>
+        rosetteParts(x, y, r, s * 11).map((p, j) =>
+          p.kind === 'arc' ? (
+            <path key={`${s}-${j}`} d={p.d} stroke={INK} strokeWidth={p.w} strokeLinecap="round" fill="none" />
+          ) : (
+            <circle key={`${s}-${j}`} cx={p.cx} cy={p.cy} r={p.r} fill={INK} />
+          ),
+        ),
+      )}
+      {DOTS.map(([x, y, r]) => (
+        <circle key={`d${x}-${y}`} cx={x} cy={y} r={r} fill={INK} />
       ))}
-
-      {/* cejas: arco oscuro inclinado hacia el centro (mirada seria) */}
-      <motion.g
-        stroke={DARK}
-        strokeWidth="4.5"
-        strokeLinecap="round"
-        fill="none"
-        animate={{ y: wide ? -5 : mood === 'sad' ? 2 : 0 }}
-        transition={{ duration: 0.25 }}
-      >
-        <path d={mood === 'sad' ? 'M52 86 Q68 76 88 82' : 'M50 82 Q70 76 90 88'} />
-        <path d={mood === 'sad' ? 'M148 86 Q132 76 112 82' : 'M150 82 Q130 76 110 88'} />
-      </motion.g>
-
-      {/* ojos */}
-      {eye(70, 1, mood === 'wink')}
-      {eye(130, -1)}
-
-      {/* líneas de lágrima del jaguar */}
-      <path d="M86 106 Q92 120 90 134" stroke={DARK} strokeWidth="3.2" strokeLinecap="round" fill="none" />
-      <path d="M114 106 Q108 120 110 134" stroke={DARK} strokeWidth="3.2" strokeLinecap="round" fill="none" />
 
       {/* hocico */}
-      <path d="M68 128 Q100 112 132 128 Q144 156 124 174 Q100 188 76 174 Q56 156 68 128 Z" fill={`url(#muzzle-${id})`} />
+      {MUZZLE.flatMap((m, i) => [
+        <path key={`ml${i}`} d={poly(m.pts)} fill={m.fill} />,
+        <path key={`mr${i}`} d={poly(mirror(m.pts))} fill={m.fill} />,
+      ])}
       {[
-        [76, 142],
-        [82, 150],
-        [72, 152],
-        [124, 142],
-        [118, 150],
-        [128, 152],
+        [78, 138], [84, 146], [76, 148], [122, 138], [116, 146], [124, 148],
       ].map(([x, y]) => (
-        <circle key={`w${x}${y}`} cx={x} cy={y} r="1.7" fill={DARK} opacity="0.75" />
+        <circle key={`w${x}${y}`} cx={x} cy={y} r="1.6" fill={INK} opacity="0.8" />
       ))}
-      {/* bigotes */}
-      <g stroke="#FBF5E8" strokeWidth="1.3" strokeLinecap="round" opacity="0.9" fill="none">
-        <path d="M70 146 Q46 140 18 144" />
-        <path d="M70 152 Q46 154 20 162" />
-        <path d="M130 146 Q154 140 182 144" />
-        <path d="M130 152 Q154 154 180 162" />
-      </g>
+
+      {/* contorno */}
+      <path
+        d={poly(HEAD)}
+        fill="none"
+        stroke={INK}
+        strokeWidth="3"
+        strokeLinejoin="round"
+      />
+
+      {/* ceño, ojos y líneas de lágrima */}
+      <motion.g animate={{ y: wide ? -4 : mood === 'sad' ? 2 : 0 }} transition={{ duration: 0.25 }}>
+        <path d={poly(BROW)} fill={INK} />
+        <path d={poly(mirror(BROW))} fill={INK} />
+      </motion.g>
+      {eye(1, mood === 'wink')}
+      {eye(-1)}
+      <path d={poly(TEAR)} fill={INK} />
+      <path d={poly(mirror(TEAR))} fill={INK} />
 
       {/* nariz */}
-      <path d="M85 128 Q100 120 115 128 Q113 140 100 146 Q87 140 85 128 Z" fill="#4A2A20" />
-      <path d="M91 128 Q100 124 109 128" stroke="#fff" strokeOpacity="0.25" strokeWidth="2.5" strokeLinecap="round" fill="none" />
+      <path d={poly([...NOSE, ...mirror(NOSE).reverse().slice(1, -1)])} fill="#3E2219" />
+      <path d="M92 120 L100 118 L108 120" stroke="#fff" strokeOpacity="0.22" strokeWidth="2.5" strokeLinecap="round" fill="none" />
+
+      {/* bigotes */}
+      <g stroke="#FBF5E8" strokeWidth="1.2" strokeLinecap="round" opacity="0.9" fill="none">
+        <path d="M74 144 L14 138" />
+        <path d="M74 150 L16 156" />
+        <path d="M126 144 L186 138" />
+        <path d="M126 150 L184 156" />
+      </g>
 
       {/* boca */}
-      {mood === 'happy' ? (
+      {roar ? (
         <g>
-          {/* rugido: boca abierta con colmillos */}
-          <path d="M78 152 Q100 146 122 152 Q120 182 100 186 Q80 182 78 152 Z" fill="#2A0D08" />
-          <ellipse cx="100" cy="176" rx="12" ry="6" fill="#9A3B3B" />
-          <path d="M84 153 L88 170 L92 153 Z" fill="#FFFDF5" />
-          <path d="M108 153 L112 170 L116 153 Z" fill="#FFFDF5" />
-          <path d="M87 182 L90 172 L93 183 Z" fill="#FFFDF5" />
-          <path d="M107 183 L110 172 L113 182 Z" fill="#FFFDF5" />
+          <path d={poly([[100, 140], [80, 150], [76, 164], [86, 182], [100, 186], [114, 182], [124, 164], [120, 150]])} fill="#240B07" stroke={INK} strokeWidth="2" />
+          <path d={poly([[88, 176], [100, 170], [112, 176], [100, 182]])} fill="#8E3434" />
+          <path d={poly([[82, 152], [88, 152], [86, 170]])} fill="#FFFBF0" />
+          <path d={poly([[112, 152], [118, 152], [114, 170]])} fill="#FFFBF0" />
+          <path d={poly([[86, 182], [90, 170], [93, 183]])} fill="#FFFBF0" />
+          <path d={poly([[107, 183], [110, 170], [114, 182]])} fill="#FFFBF0" />
         </g>
       ) : (
-        <g stroke={DARK} strokeWidth="3" strokeLinecap="round" fill="none">
-          <path d="M100 146 L100 156" />
-          {mood === 'sad' ? (
-            <>
-              <path d="M100 156 Q92 162 82 166" />
-              <path d="M100 156 Q108 162 118 166" />
-            </>
-          ) : (
-            <>
-              <path d="M100 156 Q90 162 80 160" />
-              <path d="M100 156 Q110 162 120 160" />
-            </>
-          )}
+        <g stroke={INK} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none">
+          <path d="M100 140 L100 152" />
+          {mood === 'sad' ? <path d="M80 164 L100 152 L120 164" /> : <path d="M80 158 L100 152 L120 158" />}
         </g>
       )}
     </svg>
