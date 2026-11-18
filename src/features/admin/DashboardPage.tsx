@@ -12,9 +12,11 @@ import {
   Trash2,
   Users,
 } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useState } from 'react'
 import { Button } from '../../components/ui/Button'
 import { SolidCard } from '../../components/ui/Card'
+import { useConfirm } from '../../components/ui/Confirm'
 import { useToast } from '../../components/ui/Toast'
 import { BRAND } from '../../lib/brand'
 import { friendlyError, supabase } from '../../lib/supabase'
@@ -38,7 +40,7 @@ const STATS = [
 
 const ROADMAP = [
   { phase: 1, title: 'Base de datos y acceso docente', done: true },
-  { phase: 2, title: 'Asignaturas, estudiantes y listas desde Excel' },
+  { phase: 2, title: 'Asignaturas, estudiantes y listas desde Excel', done: true },
   { phase: 3, title: 'Editor de evaluaciones y banco de preguntas' },
   { phase: 4, title: 'Partida en vivo con PIN y código QR' },
   { phase: 5, title: 'Modo examen, tareas y anti-copia' },
@@ -56,6 +58,8 @@ export function DashboardPage() {
   const toast = useToast()
   const [counts, setCounts] = useState<Counts | null>(null)
   const [busy, setBusy] = useState<'seed' | 'delete' | null>(null)
+  const qc = useQueryClient()
+  const confirm = useConfirm()
 
   const load = useCallback(async () => {
     const { data, error } = await supabase.rpc('dashboard_counts')
@@ -73,16 +77,18 @@ export function DashboardPage() {
     setBusy(null)
     if (error) return toast.error('No se pudieron cargar los datos', friendlyError(error.message))
     toast.success('¡Listo!', (data as { message: string }).message)
+    void qc.invalidateQueries()
     void load()
   }
 
   async function removeDemo() {
-    if (!window.confirm('¿Borrar todos los datos de ejemplo (DEMO)? Tus datos reales no se tocan.')) return
+    if (!(await confirm({ title: '¿Borrar los datos de ejemplo?', message: 'Se borra todo lo marcado como DEMO. Tus datos reales no se tocan.', confirmText: 'Borrar ejemplo', danger: true }))) return
     setBusy('delete')
     const { error } = await supabase.rpc('delete_demo_data')
     setBusy(null)
     if (error) return toast.error('No se pudieron borrar', friendlyError(error.message))
     toast.success('Datos de ejemplo eliminados')
+    void qc.invalidateQueries()
     void load()
   }
 

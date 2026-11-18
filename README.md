@@ -15,8 +15,8 @@ Docente responsable: **Ing. Jimmy Luis Laruta Villarreal**
 |---|---|---|
 | 0. Base | Proyecto, sistema de diseño, página de inicio, publicación automática | ✅ Lista |
 | 1. BD y login | Supabase, seguridad (RLS), login del docente, datos de ejemplo | ✅ Lista |
-| 2. Gestión académica | Gestiones, periodos, asignaturas, listas de estudiantes por Excel, plan de calificación | ⏳ Siguiente |
-| 3. Editor y banco | Editor visual, carga masiva de preguntas desde Excel | — |
+| 2. Gestión académica | Gestiones, periodos, asignaturas, listas de estudiantes por Excel, temas, plan de calificación | ✅ Lista |
+| 3. Editor y banco | Editor visual, carga masiva de preguntas desde Excel | ⏳ Siguiente |
 | 4. Juego en vivo | Sala, PIN/QR, partida en tiempo real, puntaje en el servidor | — |
 | 5. Examen y tarea | Autoritmo, tiempo total, apertura/cierre automático, anti-copia | — |
 | 6. Resultados y Sheets | Reportes, exportaciones, Google Sheets, conversor de notas | — |
@@ -56,7 +56,8 @@ Docente responsable: **Ing. Jimmy Luis Laruta Villarreal**
 - **Primer docente = administrador.** La primera cuenta creada en `/#/admin/login` queda como administrador
   aprobado; las siguientes deben ser aprobadas en *Configuración → Docentes*.
 - Al crear la cuenta llega un correo de confirmación; hay que abrir el enlace en el mismo navegador.
-- Pruebas de seguridad: `tests/sql/10_rls_test.sql` (se ejecutan en un PostgreSQL local con
+- Migraciones: `0001` esquema + RLS, `0002` datos de ejemplo, `0003` gestión académica (importar estudiantes, plan de calificación).
+- Pruebas de seguridad: `tests/sql/10_rls_test.sql` y `tests/sql/20_academic_test.sql` (se ejecutan en un PostgreSQL local con
   `tests/sql/00_supabase_stub.sql`).
 
 ## Cómo se publica
@@ -80,6 +81,14 @@ solo en GitHub Pages (archivo `.github/workflows/deploy.yml`). El avance se ve e
    npm run dev
    ```
 5. Abre la dirección que aparece (por ejemplo `http://localhost:5173/yaguarquiz/`).
+
+## Pruebas
+
+```bash
+npm test        # pruebas unitarias (importación de Excel, etc.)
+```
+
+`scripts/make-test-list.mjs` genera `lista_prueba_40_con_2_errores.xlsx` para probar la importación.
 
 ## Seguridad
 
