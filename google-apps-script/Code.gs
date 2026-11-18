@@ -15,6 +15,10 @@
  *   3. Implementar > Nueva implementación > Tipo: Aplicación web
  *        Ejecutar como: Yo   ·   Quién tiene acceso: Cualquier persona
  *   4. Autorice los permisos y copie la "URL de la aplicación web" en YaguarQuiz.
+ *      (Google mostrará "Google no verificó esta app" porque es su propio script:
+ *       Configuración avanzada > Ir a … (no seguro) > Permitir.)
+ *
+ * @OnlyCurrentDoc  ← el script solo puede tocar ESTA hoja, no el resto de su Drive.
  */
 const TOKEN = 'PEGUE_AQUI_SU_TOKEN';
 
