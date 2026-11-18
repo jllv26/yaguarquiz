@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { ArrowRight, GraduationCap, QrCode, Sparkles } from 'lucide-react'
+import { ArrowRight, GraduationCap, PawPrint, QrCode } from 'lucide-react'
 import { useRef, useState, type ClipboardEvent, type KeyboardEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { AnimatedBackground } from '../../components/AnimatedBackground'
@@ -83,7 +83,7 @@ export function HomePage() {
           className="text-center lg:text-left"
         >
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-uap-gold/40 bg-uap-gold/15 px-4 py-1.5 text-sm font-semibold text-[#7a5e12] dark:text-uap-gold-300">
-            <Sparkles className="size-4" /> Evaluaciones que se juegan
+            <PawPrint className="size-4" /> {BRAND.slogan}
           </div>
 
           <h1 className="font-display text-5xl font-black leading-[0.95] text-uap-blue sm:text-6xl lg:text-7xl dark:text-white">

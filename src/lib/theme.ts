@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 
 type Theme = 'light' | 'dark'
-const KEY = 'aq-theme'
+const KEY = 'yq-theme'
 
 function readTheme(): Theme {
   if (typeof document === 'undefined') return 'light'

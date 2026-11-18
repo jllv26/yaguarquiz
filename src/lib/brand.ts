@@ -2,7 +2,8 @@
 export const asset = (path: string) => `${import.meta.env.BASE_URL}${path.replace(/^\//, '')}`
 
 export const BRAND = {
-  appName: 'AmazoQuiz',
+  appName: 'YaguarQuiz',
+  slogan: '¡Demuestra tu garra!',
   institution: 'Universidad Amazónica de Pando',
   short: 'UAP',
   city: 'Cobija · Pando · Bolivia',

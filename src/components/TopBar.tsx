@@ -25,7 +25,7 @@ export function TopBar({ right }: { right?: ReactNode }) {
         <img src={BRAND.logoColor} alt="Escudo UAP" className="size-10 rounded-xl bg-white object-contain p-0.5" />
         <span className="leading-tight">
           <span className="block font-display text-lg font-extrabold text-uap-blue dark:text-white">
-            Amazo<span className="text-uap-green dark:text-game-selva">Quiz</span>
+            Yaguar<span className="text-uap-gold dark:text-uap-gold-300">Quiz</span>
           </span>
           <span className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-soft">{BRAND.short} · Cobija</span>
         </span>

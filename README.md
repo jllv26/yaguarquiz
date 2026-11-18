@@ -1,11 +1,11 @@
-# AmazoQuiz UAP
+# YaguarQuiz UAP
 
 Plataforma **gratuita** de evaluaciones gamificadas (estilo Kahoot, Wayground y Educaplay) de la
 **Universidad Amazónica de Pando** – Cobija, Pando, Bolivia.
 
 Docente responsable: **Ing. Jimmy Luis Laruta Villarreal**
 
-🌐 Sitio publicado: **https://jllv26.github.io/amazoquiz-uap/**
+🌐 Sitio publicado: **https://jllv26.github.io/yaguarquiz/**
 
 ---
 
@@ -56,8 +56,8 @@ solo en GitHub Pages (archivo `.github/workflows/deploy.yml`). El avance se ve e
 1. Instala **Node.js 22** desde <https://nodejs.org> (versión LTS).
 2. Descarga el proyecto:
    ```bash
-   git clone https://github.com/jllv26/amazoquiz-uap.git
-   cd amazoquiz-uap
+   git clone https://github.com/jllv26/yaguarquiz.git
+   cd yaguarquiz
    npm install
    ```
 3. Copia `.env.example` como `.env` (los valores de Supabase se completan en la Fase 1).
@@ -65,7 +65,7 @@ solo en GitHub Pages (archivo `.github/workflows/deploy.yml`). El avance se ve e
    ```bash
    npm run dev
    ```
-5. Abre la dirección que aparece (por ejemplo `http://localhost:5173/amazoquiz-uap/`).
+5. Abre la dirección que aparece (por ejemplo `http://localhost:5173/yaguarquiz/`).
 
 ## Seguridad
 
