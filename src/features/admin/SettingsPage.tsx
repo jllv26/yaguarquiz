@@ -1,6 +1,7 @@
-import { CheckCircle2, Clock, Construction, ShieldCheck, UserCheck } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
+import { CheckCircle2, Clock, Construction, KeyRound, ShieldCheck, UserCheck } from 'lucide-react'
+import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { Button } from '../../components/ui/Button'
+import { Input } from '../../components/ui/Input'
 import { SolidCard } from '../../components/ui/Card'
 import { useToast } from '../../components/ui/Toast'
 import { friendlyError, supabase } from '../../lib/supabase'
@@ -23,8 +24,53 @@ export function SettingsPage() {
           <Info label="Rol" value={isAdmin ? 'Administrador' : 'Docente'} />
         </dl>
       </SolidCard>
+      <PasswordCard />
       {isAdmin && <TeachersAdmin />}
     </div>
+  )
+}
+
+function PasswordCard() {
+  const { updatePassword, needsPassword } = useAuth()
+  const toast = useToast()
+  const [p1, setP1] = useState('')
+  const [p2, setP2] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+
+  async function onSubmit(e: FormEvent) {
+    e.preventDefault()
+    setError(null)
+    if (p1.length < 8) return setError('La contraseña debe tener al menos 8 caracteres.')
+    if (p1 !== p2) return setError('Las contraseñas no coinciden.')
+    setBusy(true)
+    const err = await updatePassword(p1)
+    setBusy(false)
+    if (err) return setError(err)
+    setP1('')
+    setP2('')
+    toast.success('Contraseña guardada', 'Desde ahora puedes ingresar con tu correo y esta contraseña.')
+  }
+
+  return (
+    <SolidCard className={needsPassword ? 'ring-4 ring-uap-gold/60' : ''}>
+      <h2 className="mb-1 flex items-center gap-2 font-display text-xl font-bold">
+        <KeyRound className="size-5 text-uap-gold" /> {needsPassword ? 'Crea tu contraseña' : 'Cambiar contraseña'}
+      </h2>
+      <p className="mb-4 text-sm text-ink-soft">
+        {needsPassword
+          ? '¡Bienvenido! Tu cuenta ya está creada. Elige una contraseña para ingresar las próximas veces.'
+          : 'Usa al menos 8 caracteres. También puedes ingresar con un enlace enviado a tu correo.'}
+      </p>
+      <form onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end" noValidate>
+        <Input label="Nueva contraseña" type="password" value={p1} onChange={(e) => setP1(e.target.value)} autoComplete="new-password" />
+        <Input label="Repítela" type="password" value={p2} onChange={(e) => setP2(e.target.value)} autoComplete="new-password" />
+        <Button type="submit" variant="success" disabled={busy}>
+          Guardar
+        </Button>
+      </form>
+      {error && <p role="alert" className="mt-3 text-sm font-medium text-uap-red dark:text-game-coral">{error}</p>}
+    </SolidCard>
   )
 }
 

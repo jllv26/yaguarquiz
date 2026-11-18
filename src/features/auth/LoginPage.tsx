@@ -15,7 +15,7 @@ import { useAuth } from './AuthProvider'
 type Mode = 'login' | 'signup'
 
 export function LoginPage() {
-  const { session, loading, signIn, signUp } = useAuth()
+  const { session, loading, signIn, signUp, sendMagicLink, sendPasswordReset, linkError } = useAuth()
   const toast = useToast()
   const [mode, setMode] = useState<Mode>('login')
   const [fullName, setFullName] = useState('')
@@ -24,10 +24,20 @@ export function LoginPage() {
   const [password2, setPassword2] = useState('')
   const [showPass, setShowPass] = useState(false)
   const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(linkError)
   const [sentTo, setSentTo] = useState<string | null>(null)
 
   if (!loading && session) return <Navigate to="/admin" replace />
+
+  async function emailLink(kind: 'magic' | 'reset') {
+    setError(null)
+    if (!/^\S+@\S+\.\S+$/.test(email.trim())) return setError('Escribe primero tu correo electrónico.')
+    setBusy(true)
+    const err = kind === 'magic' ? await sendMagicLink(email) : await sendPasswordReset(email)
+    setBusy(false)
+    if (err) return setError(err)
+    setSentTo(email.trim())
+  }
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
@@ -107,8 +117,8 @@ export function LoginPage() {
               <MailCheck className="mx-auto mb-2 size-10 text-uap-green dark:text-game-selva" />
               <p className="font-display text-lg font-bold">Revisa tu correo</p>
               <p className="mt-1 text-sm text-ink-soft">
-                Enviamos un enlace de confirmación a <strong className="text-ink">{sentTo}</strong>. Ábrelo en este
-                mismo navegador y entrarás directo a tu panel. Si no llega en 2 minutos, revisa la carpeta de spam.
+                Enviamos un enlace a <strong className="text-ink">{sentTo}</strong>. Ábrelo en este mismo navegador y
+                entrarás directo a tu panel. Si no llega en 2 minutos, revisa la carpeta de spam.
               </p>
               <Button
                 variant="secondary"
@@ -193,6 +203,27 @@ export function LoginPage() {
             <Button type="submit" variant={mode === 'login' ? 'primary' : 'success'} size="lg" block disabled={busy}>
               {busy ? 'Un momento…' : mode === 'login' ? 'Ingresar' : 'Crear mi cuenta'}
             </Button>
+
+            {mode === 'login' && (
+              <div className="flex flex-col items-center gap-1 text-sm">
+                <button
+                  type="button"
+                  onClick={() => void emailLink('magic')}
+                  disabled={busy}
+                  className="font-semibold text-uap-green hover:underline dark:text-game-selva"
+                >
+                  Enviarme un enlace para ingresar sin contraseña
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void emailLink('reset')}
+                  disabled={busy}
+                  className="text-ink-soft hover:text-ink hover:underline"
+                >
+                  Olvidé mi contraseña
+                </button>
+              </div>
+            )}
 
             {mode === 'signup' && (
               <p className="text-center text-xs text-ink-soft">
