@@ -144,6 +144,26 @@ await rpc(host, 'presentation_control', [pid, 'clear_tests', null, null])
 H = await rpc(host, 'presentation_host', [pid])
 check(H.presenters.every((p) => p.state === 'pending' && p.peer_n === 0) && H.participants.length === 0, '«Borrar pruebas» deja todo en cero')
 
+
+console.log('▶ PIN de la sala (0016)')
+{
+  await rpc(host, 'presentation_control', [pid, 'reopen', null, null])
+  const p0 = (await rpc(host, 'presentation_host', [pid])).presentation
+  await rpc(host, 'presentation_control', [pid, 'day', null, p0.current_day])
+  check((await rpc(host, 'presentation_host', [pid])).presentation.pin === p0.pin, 'mismo día: el PIN no cambia')
+  await rpc(host, 'presentation_control', [pid, 'day', null, p0.current_day + 1])
+  const p1 = (await rpc(host, 'presentation_host', [pid])).presentation
+  check(p1.pin !== p0.pin && /^\d{6}$/.test(p1.pin), `otro día: PIN nuevo (${p0.pin} → ${p1.pin})`)
+  check((await rpc(anon, 'presentation_info', [p0.pin])).ok !== true, 'el PIN de ayer ya no sirve')
+  await rpc(host, 'presentation_control', [pid, 'set_pin', null, 261926])
+  check((await rpc(host, 'presentation_host', [pid])).presentation.pin === '261926', 'el docente elige su PIN (261926)')
+  check(/6 dígitos/.test(await err(host, 'presentation_control', [pid, 'set_pin', null, 12345])), 'PIN de menos de 6 dígitos: rechazado')
+  const other = await rpc(host, 'create_session', [qz.id, subj.id, JSON.stringify({ mode: 'homework' })])
+  check(/en uso/.test(await err(host, 'presentation_control', [pid, 'set_pin', null, Number(other.pin)])), 'PIN de otra sesión abierta: rechazado')
+  await rpc(host, 'presentation_control', [pid, 'new_pin', null, null])
+  check((await rpc(host, 'presentation_host', [pid])).presentation.pin !== '261926', '«Generar uno al azar» cambia el PIN')
+}
+
 await Promise.all([admin.end(), host.end(), anon.end()])
 console.log(failures ? `✖ ${failures} verificaciones fallaron` : '✓ Exposiciones: todo correcto')
 process.exit(failures ? 1 : 0)

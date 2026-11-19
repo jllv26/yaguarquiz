@@ -6,6 +6,7 @@ import {
   BookCheck,
   CheckCircle2,
   Copy,
+  KeyRound,
   Download,
   Eye,
   Loader2,
@@ -34,6 +35,7 @@ import { Button } from '../../components/ui/Button'
 import { SolidCard } from '../../components/ui/Card'
 import { useConfirm } from '../../components/ui/Confirm'
 import { Badge, Select } from '../../components/ui/Field'
+import { Input } from '../../components/ui/Input'
 import { Modal } from '../../components/ui/Modal'
 import { useToast } from '../../components/ui/Toast'
 import { buildWorkbook, downloadBlob, headerCell } from '../../lib/excel'
@@ -77,21 +79,25 @@ function Host() {
   const q = useQuery({ queryKey: ['presentation-host', id], queryFn: () => presentationHost(id), refetchInterval: 2000 })
   const [tab, setTab] = useState<'control' | 'results'>('control')
   const [projector, setProjector] = useState(false)
+  const [pinOpen, setPinOpen] = useState(false)
+  const [pinDraft, setPinDraft] = useState('')
   const [scoring, setScoring] = useState<HostPresenter | null>(null)
   const [busy, setBusy] = useState(false)
   const st = q.data
   const offset = useMemo(() => (st ? new Date(st.server_now).getTime() - Date.now() : 0), [st])
   const now = useServerNow(offset, true, 500)
 
-  async function act(action: string, target: string | null = null, arg: number | null = null) {
+  async function act(action: string, target: string | null = null, arg: number | null = null): Promise<boolean> {
     setBusy(true)
     try {
       const r = await presentationControl(id, action, target, arg)
       if (!r.ok && r.error === 'no_pending') toast.info('No quedan expositores pendientes en este día', 'Cambie de día o cierre las evaluaciones.')
       if (action === 'next' && r.ok) sfx.go()
       await qc.invalidateQueries({ queryKey: ['presentation-host', id] })
+      return true
     } catch (e) {
       toast.error('No se pudo completar', (e as Error).message)
+      return false
     } finally {
       setBusy(false)
     }
@@ -120,12 +126,57 @@ function Host() {
           </div>
         }
       />
+      <Modal
+        open={pinOpen}
+        onClose={() => setPinOpen(false)}
+        title="Cambiar el PIN de la sala"
+        subtitle={`PIN actual: ${p.pin}. Los que ya entraron siguen dentro; solo los que lleguen necesitan el nuevo. Al cambiar de día, el PIN se cambia solo.`}
+        footer={
+          <>
+            <Button
+              variant="secondary"
+              disabled={busy}
+              onClick={() =>
+                void act('new_pin').then((ok) => {
+                  if (!ok) return
+                  setPinOpen(false)
+                  toast.success('PIN nuevo', 'Ya aparece en el proyector.')
+                })
+              }
+            >
+              Generar uno al azar
+            </Button>
+            <Button
+              variant="success"
+              disabled={busy || !/^[1-9]\d{5}$/.test(pinDraft)}
+              onClick={() =>
+                void act('set_pin', null, Number(pinDraft)).then((ok) => {
+                  if (!ok) return
+                  setPinOpen(false)
+                  toast.success(`PIN ${pinDraft}`, 'Ya aparece en el proyector.')
+                })
+              }
+            >
+              Usar este PIN
+            </Button>
+          </>
+        }
+      >
+        <Input
+          label="PIN que usted elige (6 dígitos, no puede empezar con 0)"
+          value={pinDraft}
+          onChange={(e) => setPinDraft(e.target.value.replace(/\D/g, '').slice(0, 6))}
+          inputMode="numeric"
+          placeholder="Ej.: 261926"
+          className="text-center font-display text-2xl tracking-[0.4em]"
+        />
+      </Modal>
       <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 px-4 pb-8">
         <header className="flex flex-wrap items-center gap-3">
           <Link to="/admin/exposiciones" className="rounded-xl p-2 hover:bg-ink/5" aria-label="Volver a exposiciones">
             <ArrowLeft className="size-5" />
           </Link>
-          <div className="min-w-0 flex-1">
+          <div className="min-w-[12rem] flex-1">
             <p className="text-xs font-bold uppercase tracking-wider text-ink-soft">
               Exposiciones · {p.subject.code} ({p.subject.parallel})
             </p>
@@ -194,6 +245,16 @@ function Host() {
                   >
                     <Copy className="size-4" /> Copiar enlace
                   </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      setPinDraft('')
+                      setPinOpen(true)
+                    }}
+                  >
+                    <KeyRound className="size-4" /> Cambiar PIN
+                  </Button>
                 </div>
               </SolidCard>
 
@@ -259,7 +320,7 @@ function Host() {
               </SolidCard>
 
               {/* presentes */}
-              <Presentes st={st} onRelease={(pid) => void act('release', pid)} onClear={() => void act('clear_tests')} onNewPin={() => void act('new_pin')} />
+              <Presentes st={st} onRelease={(pid) => void act('release', pid)} onClear={() => void act('clear_tests')} />
             </div>
 
             {/* agenda */}
@@ -319,7 +380,7 @@ function RowActions({
 }: {
   x: HostPresenter
   busy: boolean
-  onAct: (a: string, t?: string | null) => Promise<void>
+  onAct: (a: string, t?: string | null) => Promise<unknown>
   onScore: () => void
   confirm: ReturnType<typeof useConfirm>
 }) {
@@ -361,7 +422,7 @@ const IconBtn = ({ label, children, onClick, disabled }: { label: string; childr
   </button>
 )
 
-function Presentes({ st, onRelease, onClear, onNewPin }: { st: HostState; onRelease: (id: string) => void; onClear: () => void; onNewPin: () => void }) {
+function Presentes({ st, onRelease, onClear }: { st: HostState; onRelease: (id: string) => void; onClear: () => void }) {
   const [open, setOpen] = useState(false)
   const [word, setWord] = useState('')
   return (
@@ -403,9 +464,6 @@ function Presentes({ st, onRelease, onClear, onNewPin }: { st: HostState; onRele
             }}
           >
             <Trash2 className="size-4" /> Borrar todo
-          </Button>
-          <Button size="sm" variant="ghost" onClick={onNewPin}>
-            Nuevo PIN
           </Button>
         </div>
       </details>
