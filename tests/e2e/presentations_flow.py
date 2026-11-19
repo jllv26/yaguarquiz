@@ -58,7 +58,7 @@ TOPICS = ['Redes sociales para negocios', 'El community manager', 'Meta Business
 with sync_playwright() as p:
     b = p.chromium.launch()
     tc = b.new_context(viewport={'width': 1366, 'height': 900}, accept_downloads=True)
-    tc.add_init_script(f"localStorage.setItem('yq-auth', JSON.stringify({json.dumps(sess)})); localStorage.setItem('yq-theme','light'); sessionStorage.setItem('yq-intro-seen','1')")
+    tc.add_init_script(f"localStorage.setItem('yq-auth', JSON.stringify({json.dumps(sess)})); localStorage.setItem('yq-theme','light'); sessionStorage.setItem('yq-no-intro','1')")
     t = tc.new_page()
     t.on('pageerror', lambda e: errs.append(f'docente: {e}'))
 
@@ -93,7 +93,7 @@ with sync_playwright() as p:
     phones = {}
     for code in ['DEMO-001', 'DEMO-003', 'DEMO-007']:
         mc = b.new_context(viewport={'width': 390, 'height': 844}, has_touch=True, is_mobile=True)
-        mc.add_init_script("localStorage.setItem('yq-theme','light'); sessionStorage.setItem('yq-intro-seen','1')")
+        mc.add_init_script("localStorage.setItem('yq-theme','light'); sessionStorage.setItem('yq-no-intro','1')")
         m = mc.new_page()
         m.on('pageerror', lambda e, c=code: errs.append(f'{c}: {e}'))
         m.goto(BASE + f'#/play/{pin}')

@@ -211,11 +211,11 @@ def wk_click(text):
 with sync_playwright() as p:
     b = p.chromium.launch(args=['--autoplay-policy=no-user-gesture-required'])
     host_ctx = b.new_context(viewport={'width': 1920, 'height': 1080})
-    host_ctx.add_init_script(f"localStorage.setItem('yq-auth', JSON.stringify({json.dumps(sess)})); sessionStorage.setItem('yq-intro-seen','1')")
+    host_ctx.add_init_script(f"localStorage.setItem('yq-auth', JSON.stringify({json.dumps(sess)})); sessionStorage.setItem('yq-no-intro','1')")
     # Celular con la hora adelantada 3 horas (caso 8.7)
     mob_ctx = b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=2, is_mobile=True, has_touch=True)
     mob_ctx.add_init_script("""
-      sessionStorage.setItem('yq-intro-seen','1');
+      sessionStorage.setItem('yq-no-intro','1');
       (() => { const SHIFT = 3 * 3600 * 1000; const RD = Date; const now = RD.now;
         class D extends RD { constructor(...a) { a.length ? super(...a) : super(now() + SHIFT) } static now() { return now() + SHIFT } }
         window.Date = D; })();""")
@@ -246,7 +246,7 @@ with sync_playwright() as p:
     wk.get(BASE + f'#/play/{pin}')
     wk_ua = wk.execute_script('return navigator.userAgent')
     wk_wait_text('Tu RU')
-    wk.execute_script("sessionStorage.setItem('yq-intro-seen','1')")
+    wk.execute_script("sessionStorage.setItem('yq-no-intro','1')")
     wk_fill('Tu RU', 'DEMO-002')
     wk_click('Continuar')
     wk_wait_text('Últimos 3')
@@ -414,7 +414,7 @@ with sync_playwright() as p:
     sid2, pin2, *_ = new_session({'mode': 'exam', 'identification': 'roster', 'require_ci': True, 'time_limit_sec': 600,
                                    'shuffle_questions': True, 'shuffle_options': True, 'show_correct': 'after_close', 'max_attempts': 1, 'focus_mode': False})
     ex_ctx = b.new_context(viewport={'width': 1366, 'height': 768})
-    ex_ctx.add_init_script("sessionStorage.setItem('yq-intro-seen','1')")
+    ex_ctx.add_init_script("sessionStorage.setItem('yq-no-intro','1')")
     ex = ex_ctx.new_page()
     ex.goto(BASE + f'#/play/{pin2}')
     ex.wait_for_timeout(1500)
@@ -465,13 +465,13 @@ with sync_playwright() as p:
         for i in range(6):
             call('join_session', {'p_pin': pint, 'p_code': None, 'p_ci': None, 'p_nickname': ['Jaguar', 'Paiche', 'Tucán', 'Bufeo', 'Capibara', 'Londra'][i], 'p_avatar': AV[i], 'p_device': f't{i}'})
         c = b.new_context(viewport={'width': 1366, 'height': 768})
-        c.add_init_script(f"localStorage.setItem('yq-auth', JSON.stringify({json.dumps(sess)})); localStorage.setItem('yq-theme','light'); sessionStorage.setItem('yq-intro-seen','1')")
+        c.add_init_script(f"localStorage.setItem('yq-auth', JSON.stringify({json.dumps(sess)})); localStorage.setItem('yq-theme','light'); sessionStorage.setItem('yq-no-intro','1')")
         hp = c.new_page()
         hp.goto(BASE + f'#/host/{sidt}')
         hp.wait_for_timeout(3000)
         hp.screenshot(path=OUT + f'tema-{theme}-proyector-1366.png')
         mc = b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=2)
-        mc.add_init_script("localStorage.setItem('yq-theme','light'); sessionStorage.setItem('yq-intro-seen','1')")
+        mc.add_init_script("localStorage.setItem('yq-theme','light'); sessionStorage.setItem('yq-no-intro','1')")
         mp = mc.new_page()
         mp.goto(BASE + f'#/play/{pint}')
         mp.wait_for_timeout(2500)

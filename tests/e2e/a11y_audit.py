@@ -59,7 +59,7 @@ with sync_playwright() as p:
     b = p.chromium.launch()
     for name, path, teacher, scheme, *tab in PAGES:
         ctx = b.new_context(viewport={'width': 1366, 'height': 768}, color_scheme=scheme)
-        init = f"localStorage.setItem('yq-theme','{scheme}'); sessionStorage.setItem('yq-intro-seen','1');"
+        init = f"localStorage.setItem('yq-theme','{scheme}'); sessionStorage.setItem('yq-no-intro','1');"
         if teacher: init += f"localStorage.setItem('yq-auth', JSON.stringify({json.dumps(sess)}));"
         ctx.add_init_script(init)
         pg = ctx.new_page(); pg.goto(BASE + path); pg.wait_for_timeout(2500)

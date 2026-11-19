@@ -91,7 +91,7 @@ with sync_playwright() as p:
     # ======================================================================== A. docente
     print('\n== A. Docente: crear, editar, probar y lanzar un crucigrama (PC 1366)')
     tc = b.new_context(viewport={'width': 1366, 'height': 900})
-    tc.add_init_script(f"localStorage.setItem('yq-auth', JSON.stringify({json.dumps(sess)})); localStorage.setItem('yq-theme','light'); sessionStorage.setItem('yq-intro-seen','1')")
+    tc.add_init_script(f"localStorage.setItem('yq-auth', JSON.stringify({json.dumps(sess)})); localStorage.setItem('yq-theme','light'); sessionStorage.setItem('yq-no-intro','1')")
     t = tc.new_page()
     t.on('pageerror', lambda e: errs.append(f'docente: {e}'))
     t.goto(BASE + '#/admin/actividades')
@@ -138,7 +138,7 @@ with sync_playwright() as p:
     # ======================================================================== B. estudiante
     print('\n== B. Estudiante en el celular: crucigrama contra el servidor, recarga a mitad')
     mc = b.new_context(viewport={'width': 390, 'height': 844}, has_touch=True, is_mobile=True)
-    mc.add_init_script("localStorage.setItem('yq-theme','light'); sessionStorage.setItem('yq-intro-seen','1')")
+    mc.add_init_script("localStorage.setItem('yq-theme','light'); sessionStorage.setItem('yq-no-intro','1')")
     m = mc.new_page()
     m.on('pageerror', lambda e: errs.append(f'celular: {e}'))
     join(m, pin, 'DEMO-001', '001')

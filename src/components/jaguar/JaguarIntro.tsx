@@ -9,21 +9,20 @@ const ROAR_AT = 4.2
 /** Si el video no empieza en este tiempo (internet muy lento), se salta la entrada. */
 const START_TIMEOUT = 8000
 
-const INTRO_KEY = 'yq-intro-seen'
-/** La entrada se ve una vez por pestaña (en el inicio del estudiante o al entrar al panel docente). */
+/** Solo para pruebas automáticas: con sessionStorage "yq-no-intro" = "1" no se muestra la entrada. */
+const SKIP_KEY = 'yq-no-intro'
+let shownThisLoad = false
+/** La entrada se ve cada vez que se abre o recarga la página (no al moverse entre pantallas). */
 export function introPending() {
+  if (shownThisLoad) return false
   try {
-    return !sessionStorage.getItem(INTRO_KEY)
+    return sessionStorage.getItem(SKIP_KEY) !== '1'
   } catch {
-    return false
+    return true
   }
 }
 export function markIntroSeen() {
-  try {
-    sessionStorage.setItem(INTRO_KEY, '1')
-  } catch {
-    /* sin almacenamiento: no pasa nada */
-  }
+  shownThisLoad = true
 }
 
 /**
@@ -67,7 +66,15 @@ export function JaguarIntro({ onDone, onLanded }: { onDone?: () => void; onLande
     v?.addEventListener('playing', onPlay)
     v?.addEventListener('timeupdate', onTime)
     window.addEventListener('keydown', onKey)
-    const tryPlay = () => v?.play().catch(() => undefined)
+    // Si el navegador bloquea el video (p. ej. iPhone en ahorro de batería): título sobre la imagen y sigue
+    let blocked = false
+    const tryPlay = () =>
+      v?.play().catch((e: unknown) => {
+        if (blocked || started || (e as { name?: string })?.name !== 'NotAllowedError') return
+        blocked = true
+        setTitle(true)
+        window.setTimeout(finish, 2600)
+      })
     v?.addEventListener('canplay', tryPlay, { once: true })
     tryPlay()
     return () => {
