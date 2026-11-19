@@ -105,7 +105,7 @@ export function HomePage() {
             <PawPrint className="size-4" /> {BRAND.slogan}
           </div>
 
-          <h1 className="font-display text-5xl font-black leading-[0.95] text-uap-blue sm:text-6xl lg:text-7xl dark:text-white">
+          <h1 className="font-display text-[2.75rem] font-black leading-[0.95] text-uap-blue min-[400px]:text-5xl sm:text-6xl lg:text-7xl dark:text-white">
             Aprende,
             <br />
             <span className="bg-gradient-to-r from-uap-green via-game-teal to-game-electric bg-clip-text text-transparent">

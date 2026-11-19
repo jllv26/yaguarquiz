@@ -145,7 +145,7 @@ function Report({ rep, tab, setTab, refresh }: { rep: SessionReport; tab: Tab; s
         </SolidCard>
       )}
 
-      <nav className="flex gap-2" role="tablist">
+      <nav className="flex flex-wrap gap-2" role="tablist">
         {(
           [
             ['students', `Estudiantes (${rep.students.length})`, <Users key="u" className="size-4" />],

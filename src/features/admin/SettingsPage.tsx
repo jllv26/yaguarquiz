@@ -1,3 +1,4 @@
+import { MailCard } from './MailCard'
 import { SheetsCard } from './SheetsCard'
 import { CheckCircle2, Clock, Construction, KeyRound, ShieldCheck, UserCheck } from 'lucide-react'
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
@@ -15,7 +16,7 @@ export function SettingsPage() {
     <div className="flex flex-col gap-6">
       <header>
         <h1 className="font-display text-3xl font-black text-uap-blue dark:text-white">Configuración</h1>
-        <p className="text-ink-soft">Cuenta, conexión con Google Sheets y docentes.</p>
+        <p className="text-ink-soft">Cuenta, correos a los estudiantes, conexión con Google Sheets y docentes.</p>
       </header>
       <SolidCard>
         <h2 className="mb-3 font-display text-xl font-bold">Mi cuenta</h2>
@@ -26,6 +27,7 @@ export function SettingsPage() {
         </dl>
       </SolidCard>
       <PasswordCard />
+      <MailCard />
       <SheetsCard />
       {isAdmin && <TeachersAdmin />}
     </div>

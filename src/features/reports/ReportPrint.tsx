@@ -39,7 +39,7 @@ function Doc({ rep, teacher }: { rep: SessionReport; teacher: string }) {
     return p !== null && p < DIFFICULT_PCT
   })
   return (
-    <div className="print-doc mx-auto max-w-[210mm] bg-white p-8 text-[11pt] text-black">
+    <div className="print-doc mx-auto max-w-[210mm] overflow-x-auto bg-white p-4 text-[11pt] text-black sm:p-8">
       <style>{`
         @page { size: A4; margin: 14mm 12mm; }
         @media print { .no-print { display: none !important } body { background: #fff !important } .print-doc { padding: 0 !important; max-width: none !important } }

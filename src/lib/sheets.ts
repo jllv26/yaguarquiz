@@ -150,3 +150,51 @@ export async function syncSession(sessionId: string, s: SheetsSettings) {
   await logSheetSync(sessionId, res.ok, msg).catch(() => null)
   return { ok: res.ok, message: msg, url: res.url }
 }
+
+// ------------------------------------------------------------------ correos a estudiantes (0013)
+export interface MailStatus {
+  enabled: boolean
+  configured: boolean
+  pending: number
+  sent_today: number
+  last_sent: string | null
+  last_error: string | null
+  students: number
+  with_email: number
+}
+
+export function useMailStatus() {
+  return useQuery({
+    queryKey: ['mail-status'],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('mail_status')
+      if (error) throw new Error(friendlyError(error.message))
+      return data as MailStatus
+    },
+    refetchInterval: 60_000,
+  })
+}
+
+export async function setMailEnabled(on: boolean) {
+  const { data, error } = await supabase.rpc('mail_set', { p_enabled: on })
+  if (error) throw new Error(friendlyError(error.message))
+  return data as MailStatus
+}
+
+/** Pide al script de Google que envíe ya lo pendiente (p. ej. justo después de lanzar una tarea). */
+export async function mailNow(): Promise<{ ok: boolean; sent?: number; quota?: number; enabled?: boolean; error?: string; message?: string }> {
+  const { data } = await supabase.from('teacher_settings').select('sheets_webapp_url, sheets_token, mail_enabled').maybeSingle()
+  const s = data as (SheetsSettings & { mail_enabled?: boolean }) | null
+  if (!s?.sheets_webapp_url || !s.sheets_token || !s.mail_enabled) return { ok: false, error: 'off' }
+  return post(s.sheets_webapp_url, { token: s.sheets_token, action: 'mail_now' }) as Promise<{ ok: boolean; sent?: number }>
+}
+
+export const studentEmailNeeded = async (token: string) => {
+  const { data, error } = await supabase.rpc('student_email_needed', { p_token: token })
+  return !error && data === true
+}
+export const studentSetEmail = async (token: string, email: string) => {
+  const { data, error } = await supabase.rpc('student_set_email', { p_token: token, p_email: email })
+  if (error) return { ok: false, error: 'network' }
+  return data as { ok: boolean; error?: string }
+}

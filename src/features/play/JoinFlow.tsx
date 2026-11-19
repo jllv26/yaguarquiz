@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { ArrowLeft, ArrowRight, Loader2, LogIn, Shuffle } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Loader2, LogIn, Mail, Shuffle } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
@@ -7,6 +7,7 @@ import { Input } from '../../components/ui/Input'
 import { joinSession, lookupStudent, PLAY_ERRORS, deviceId, type Avatar } from '../../lib/api/live'
 import { ANIMALS, AVATAR_COLORS, randomAvatar } from '../../lib/avatars'
 import { cn } from '../../lib/cn'
+import { studentEmailNeeded, studentSetEmail } from '../../lib/sheets'
 import { AvatarBubble } from '../live/LiveBits'
 
 interface Info {
@@ -17,7 +18,7 @@ interface Info {
   subject: string
 }
 
-type Step = 'code' | 'confirm' | 'nickname' | 'avatar'
+type Step = 'code' | 'confirm' | 'nickname' | 'avatar' | 'email'
 
 /** Pasos para entrar a la sesión: RU → "¿Eres…?" (+CI) → avatar, o apodo → avatar. */
 export function JoinFlow({ pin, info, onJoined }: { pin: string; info: Info; onJoined: (token: string) => void }) {
@@ -26,7 +27,11 @@ export function JoinFlow({ pin, info, onJoined }: { pin: string; info: Info; onJ
   const [code, setCode] = useState('')
   const [name, setName] = useState('')
   const [ci, setCi] = useState('')
+  // se pide el CI solo si la sesión lo exige y el estudiante tiene CI registrado (lo dice el servidor)
+  const [needCi, setNeedCi] = useState(info.require_ci)
   const [nickname, setNickname] = useState('')
+  const [email, setEmail] = useState('')
+  const [joined, setJoined] = useState<string | null>(null)
   const [avatar, setAvatar] = useState<Avatar>(() => randomAvatar())
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -48,6 +53,7 @@ export function JoinFlow({ pin, info, onJoined }: { pin: string; info: Info; onJ
       const r = await lookupStudent(pin, code)
       if (!r.ok) return setError(PLAY_ERRORS[r.error] ?? 'No se pudo verificar el RU.')
       setName(r.name)
+      setNeedCi(r.require_ci ?? info.require_ci)
       setStep('confirm')
     })
 
@@ -60,7 +66,21 @@ export function JoinFlow({ pin, info, onJoined }: { pin: string; info: Info; onJ
         if (r.error.startsWith('nickname')) setStep('nickname')
         return
       }
+      // Si el estudiante no tiene correo registrado, se le ofrece dejarlo (para avisos de tareas y notas)
+      if (roster && (await studentEmailNeeded(r.token).catch(() => false))) {
+        setJoined(r.token)
+        setStep('email')
+        return
+      }
       onJoined(r.token)
+    })
+
+  const saveEmail = () =>
+    run(async () => {
+      if (!joined) return
+      const r = await studentSetEmail(joined, email)
+      if (!r.ok) return setError(r.error === 'email' ? 'Ese correo no parece válido. Revísalo.' : 'No se pudo guardar. Puedes seguir sin correo.')
+      onJoined(joined)
     })
 
   return (
@@ -96,7 +116,7 @@ export function JoinFlow({ pin, info, onJoined }: { pin: string; info: Info; onJ
               <p className="text-sm text-ink-soft">¿Eres tú?</p>
               <p className="font-display text-xl font-extrabold">{name}</p>
             </div>
-            {info.require_ci && (
+            {needCi && (
               <Input
                 label="Últimos 3 dígitos de tu CI"
                 value={ci}
@@ -118,8 +138,33 @@ export function JoinFlow({ pin, info, onJoined }: { pin: string; info: Info; onJ
               >
                 <ArrowLeft className="size-4" /> No soy yo
               </Button>
-              <Button type="submit" className="flex-1" disabled={info.require_ci && ci.length !== 3}>
+              <Button type="submit" className="flex-1" disabled={needCi && ci.length !== 3}>
                 Sí, soy yo <ArrowRight className="size-4" />
+              </Button>
+            </div>
+          </form>
+        )}
+
+        {step === 'email' && joined && (
+          <form
+            className="flex flex-col gap-4"
+            onSubmit={(e) => {
+              e.preventDefault()
+              if (email.trim()) void saveEmail()
+            }}
+          >
+            <div className="rounded-2xl bg-uap-blue/10 p-4 text-center">
+              <Mail className="mx-auto mb-1 size-6 text-uap-blue dark:text-game-electric" />
+              <p className="font-display text-lg font-extrabold">¿A qué correo te avisamos?</p>
+              <p className="text-sm text-ink-soft">Te llegarán las tareas nuevas y tu nota de cada actividad. Solo se pide una vez.</p>
+            </div>
+            <Input label="Tu correo" type="email" value={email} onChange={(e) => setEmail(e.target.value.trim())} inputMode="email" autoComplete="email" autoFocus placeholder="nombre@gmail.com" />
+            <div className="flex gap-2">
+              <Button type="button" variant="secondary" onClick={() => onJoined(joined)}>
+                Ahora no
+              </Button>
+              <Button type="submit" className="flex-1" disabled={!email.includes('@') || busy}>
+                {busy ? <Loader2 className="size-4 animate-spin" /> : <ArrowRight className="size-4" />} Guardar y entrar
               </Button>
             </div>
           </form>

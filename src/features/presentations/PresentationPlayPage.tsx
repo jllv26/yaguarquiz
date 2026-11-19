@@ -79,6 +79,7 @@ export function PresentationPlayPage() {
 // ================================================================ ingreso
 function Join({ pin, onJoined }: { pin: string; onJoined: (t: string) => void }) {
   const [info, setInfo] = useState<{ title: string; subject: string; require_ci: boolean } | null>(null)
+  const [needCi, setNeedCi] = useState(false)
   const [error, setError] = useState('')
   const [step, setStep] = useState<'code' | 'confirm'>('code')
   const [code, setCode] = useState('')
@@ -135,6 +136,7 @@ function Join({ pin, onJoined }: { pin: string; onJoined: (t: string) => void })
                 const r = await presentationLookup(pin, code)
                 if (!r.ok) return setError(PRES_ERRORS[r.error] ?? 'No se pudo verificar el RU.')
                 setName(r.name)
+                setNeedCi(r.require_ci ?? info?.require_ci ?? false)
                 setStep('confirm')
               })
           }}
@@ -150,7 +152,7 @@ function Join({ pin, onJoined }: { pin: string; onJoined: (t: string) => void })
           onSubmit={(e) => {
             e.preventDefault()
             void run(async () => {
-              const r = await presentationJoin(pin, code, info.require_ci ? ci : null, deviceId())
+              const r = await presentationJoin(pin, code, needCi ? ci : null, deviceId())
               if (!r.ok) return setError(PRES_ERRORS[r.error] ?? 'No se pudo entrar.')
               sfx.join()
               onJoined(r.token)
@@ -161,7 +163,7 @@ function Join({ pin, onJoined }: { pin: string; onJoined: (t: string) => void })
             <p className="text-sm text-ink-soft">¿Eres tú?</p>
             <p className="font-display text-xl font-extrabold">{name}</p>
           </div>
-          {info.require_ci && (
+          {needCi && (
             <Input
               label="Últimos 3 dígitos de tu CI"
               value={ci}
@@ -183,7 +185,7 @@ function Join({ pin, onJoined }: { pin: string; onJoined: (t: string) => void })
             >
               <ArrowLeft className="size-4" /> No soy yo
             </Button>
-            <Button type="submit" className="flex-1" disabled={busy || (info.require_ci && ci.length < 3)}>
+            <Button type="submit" className="flex-1" disabled={busy || (needCi && ci.length < 3)}>
               {busy ? <Loader2 className="size-5 animate-spin" /> : <LogIn className="size-5" />} Sí, soy yo
             </Button>
           </div>

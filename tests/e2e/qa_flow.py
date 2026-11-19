@@ -105,6 +105,7 @@ if not sql("select 1 from public.subjects where code = 'DEMO 023'"):
     call('seed_demo_data', {}, True)
 sql("update public.quizzes set visual_theme = 'amazonia'")
 sql('delete from public.teacher_settings')
+sql("update public.students set email = null where university_code like 'DEMO-%%'")  # el paso «¿a qué correo te avisamos?» aparece solo sin correo
 
 # ============================================================================ A. casos límite en el servidor
 print('\n== A. Casos límite verificados directamente en el servidor')
@@ -239,7 +240,12 @@ with sync_playwright() as p:
     mob.get_by_role('button', name='Sí, soy yo').click()
     mob.wait_for_timeout(400)
     mob.get_by_role('button', name='¡Entrar al juego!').click()
+    # paso nuevo (0013): si no tiene correo registrado, se le pide una vez
+    mob.get_by_label('Tu correo').wait_for(timeout=8000)
+    mob.get_by_label('Tu correo').fill('Demo001@Ejemplo.bo')
+    mob.get_by_role('button', name='Guardar y entrar').click()
     mob.wait_for_timeout(1800)
+    saved_mail = sql("select email from public.students where university_code = 'DEMO-001'")
     mob.screenshot(path=OUT + 'celular-1-sala.png')
 
     # --- PC del laboratorio en WebKit (Safari)
@@ -254,9 +260,12 @@ with sync_playwright() as p:
     wk_click('Sí, soy yo')
     time.sleep(0.8)
     wk_click('Entrar al juego')
+    wk_wait_text('A qué correo', 10)
+    wk_click('Ahora no')
     in_lobby = wk_wait_text('Esperando al docente', 20)
     wk.save_screenshot(OUT + 'pc-webkit-1-sala.png')
     check('7.2', 'Estudiante entra con PIN + RU + CI y elige avatar (Chromium y WebKit)', in_lobby and 'Esperando al docente' in mob.locator('body').inner_text(), f'WebKit: {wk_ua[:60]}…')
+    check('7.2b', 'Sin correo registrado: lo deja al entrar (o «Ahora no»)', saved_mail and saved_mail[0][0] == 'demo001@ejemplo.bo', f'guardado: {saved_mail}')
 
     # --- 7 compañeros directo al servidor
     bots = [call('join_session', {'p_pin': pin, 'p_code': f'DEMO-{i:03d}', 'p_ci': f'{i:03d}', 'p_nickname': None, 'p_avatar': AV[i % 8], 'p_device': f'lab-{i}'})['token'] for i in range(3, 10)]
@@ -425,6 +434,7 @@ with sync_playwright() as p:
     ex.keyboard.press('Enter')
     ex.wait_for_timeout(400)
     ex.get_by_role('button', name='Entrar').click()
+    ex.get_by_role('button', name='Ahora no').click(timeout=8000)
     ex.wait_for_timeout(1500)
     ex.get_by_role('button', name='Comenzar').click()
     ex.wait_for_timeout(2000)

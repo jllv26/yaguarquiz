@@ -117,6 +117,14 @@
   color-scheme: dark;
 }
 
+@layer base {
+  /* Los hijos de una grilla pueden encogerse: así una tabla, un tablero o un texto largo no ensancha
+     toda la pantalla en el celular (lo ancho se desplaza dentro de su propio recuadro). */
+  :where(.grid) > * {
+    min-width: 0;
+  }
+}
+
 html,
 body,
 #root {

@@ -13,6 +13,7 @@ import { useSubjectsLite } from '../../lib/api/quizzes'
 import { cn } from '../../lib/cn'
 import { TERM_LABEL } from '../academic/gradingDefaults'
 import { ACTIVITY_META, type ActivityType } from '../activities/types'
+import { mailNow } from '../../lib/sheets'
 
 type Mode = 'live' | 'exam' | 'homework'
 
@@ -140,6 +141,8 @@ function LaunchModalInner({ open, onClose, quiz }: Props & { quiz: NonNullable<P
         toast.error('Falta actualizar la base de datos', 'El modo examen/tarea estará disponible cuando se aplique la migración 0006 en Supabase.')
         return
       }
+      // aviso por correo a los estudiantes (si está activado): se pide al script que envíe ya
+      if (mode === 'homework') void mailNow().catch(() => null)
       onClose()
       navigate(`/host/${r.id}`)
     } catch (e) {

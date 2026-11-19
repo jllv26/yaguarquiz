@@ -108,11 +108,11 @@ function ActivityCard({ z }: { z: QuizListRow }) {
         <Badge tone={ready ? 'green' : 'gold'}>{ready ? 'Lista' : `Faltan palabras (mín. ${m.min})`}</Badge>
         {z.topics && <Badge tone="blue">{z.topics.name}</Badge>}
       </div>
-      <div className="mt-auto flex items-center justify-between gap-2 pt-1">
+      <div className="mt-auto flex flex-wrap items-center justify-between gap-2 pt-1">
         <span className="font-display text-2xl font-black">
           {n} <span className="text-sm font-semibold text-ink-soft">{type === 'fill_text' ? 'espacios' : type === 'memory' || type === 'matching' ? 'parejas' : 'palabras'}</span>
         </span>
-        <div className="flex gap-1.5">
+        <div className="ml-auto flex flex-wrap justify-end gap-1.5">
           <Button
             size="sm"
             variant="ghost"

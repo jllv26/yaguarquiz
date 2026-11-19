@@ -9,6 +9,10 @@
  *   - Analisis_Preguntas   (% de acierto por pregunta)
  * Reenviar la misma sesión NO duplica filas: se usa el identificador de la sesión como clave.
  *
+ * Además envía CORREOS a los estudiantes desde su Gmail (aviso de cada tarea y la nota de cada
+ * actividad): cada 5 minutos pregunta a YaguarQuiz qué hay pendiente y manda un correo por estudiante.
+ * Gmail gratuito permite unos 100 correos al día; lo que no alcanza sale al día siguiente.
+ *
  * INSTALACIÓN (una sola vez):
  *   1. En YaguarQuiz > Configuración > Google Sheets, presione "Generar token" y cópielo.
  *   2. Pegue el token abajo, entre las comillas de TOKEN.
@@ -21,6 +25,10 @@
  * @OnlyCurrentDoc  ← el script solo puede tocar ESTA hoja, no el resto de su Drive.
  */
 const TOKEN = 'PEGUE_AQUI_SU_TOKEN';
+
+// YaguarQuiz (datos públicos del sistema; la clave publicable no es secreta)
+const YQ_URL = 'https://ywoamnwsacphjfjokmkg.supabase.co';
+const YQ_KEY = 'sb_publishable_WJyzJzbWEvLTRztsEbvP5g_pKXe6OsZ';
 
 const SHEET_SUMMARY = 'Resumen_Sesiones';
 const SHEET_ANSWERS = 'Detalle_Respuestas';
@@ -39,7 +47,8 @@ function doPost(e) {
       return json_({ ok: false, error: 'token', message: 'El token no coincide. Revise que sea el mismo en YaguarQuiz y en el script.' });
     }
     const book = SpreadsheetApp.getActiveSpreadsheet();
-    if (data.action === 'ping') return json_({ ok: true, name: book.getName(), url: book.getUrl() });
+    if (data.action === 'ping') return json_({ ok: true, name: book.getName(), url: book.getUrl(), mail: mailInfo_() });
+    if (data.action === 'mail_now') return json_(enviarCorreos());
     if (data.action !== 'sync' || !data.session || !data.session.id) return json_({ ok: false, error: 'payload' });
 
     lock.waitLock(20000);
@@ -164,3 +173,67 @@ function lastDataRow_(sh, width) {
 function json_(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
 }
+
+// ------------------------------------------------------------------ correos a estudiantes
+/**
+ * EJECUTE ESTA FUNCIÓN UNA VEZ (menú de arriba: elegir «activarCorreos» y presionar ▶ Ejecutar).
+ * Pide permiso para enviar correos desde su Gmail y deja programado el envío cada 5 minutos.
+ */
+function activarCorreos() {
+  ScriptApp.getProjectTriggers().forEach(function (t) {
+    if (t.getHandlerFunction() === 'enviarCorreos') ScriptApp.deleteTrigger(t);
+  });
+  ScriptApp.newTrigger('enviarCorreos').timeBased().everyMinutes(5).create();
+  return enviarCorreos();
+}
+
+/** Envía lo pendiente (la llama el reloj cada 5 minutos y YaguarQuiz al lanzar una tarea). */
+function enviarCorreos() {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(1000)) return { ok: true, busy: true, sent: 0 };
+  try {
+    const quota = MailApp.getRemainingDailyQuota();
+    if (quota <= 0) return { ok: true, sent: 0, quota: 0 };
+    const r = rpc_('mail_pull', { p_token: TOKEN, p_max: Math.min(quota, 50) });
+    if (!r || !r.ok) return { ok: false, error: (r && r.error) || 'pull' };
+    if (!r.enabled) return { ok: true, enabled: false, sent: 0 };
+    let sent = 0;
+    (r.messages || []).forEach(function (m) {
+      try {
+        MailApp.sendEmail({ to: m.to, subject: m.subject, htmlBody: m.html, name: 'YaguarQuiz UAP' });
+        rpc_('mail_ack', { p_token: TOKEN, p_ids: m.ids, p_ok: true });
+        sent++;
+      } catch (err) {
+        rpc_('mail_ack', { p_token: TOKEN, p_ids: m.ids, p_ok: false, p_error: String(err && err.message ? err.message : err) });
+      }
+    });
+    return { ok: true, enabled: true, sent: sent, quota: MailApp.getRemainingDailyQuota() };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function mailInfo_() {
+  try {
+    const on = ScriptApp.getProjectTriggers().some(function (t) { return t.getHandlerFunction() === 'enviarCorreos'; });
+    return { scheduled: on, quota: MailApp.getRemainingDailyQuota() };
+  } catch (e) {
+    return { scheduled: false, error: 'permiso' };
+  }
+}
+
+function rpc_(fn, body) {
+  const res = UrlFetchApp.fetch(YQ_URL + '/rest/v1/rpc/' + fn, {
+    method: 'post',
+    contentType: 'application/json',
+    headers: { apikey: YQ_KEY, Authorization: 'Bearer ' + YQ_KEY },
+    payload: JSON.stringify(body),
+    muteHttpExceptions: true,
+  });
+  try {
+    return JSON.parse(res.getContentText());
+  } catch (e) {
+    return { ok: false, error: 'http ' + res.getResponseCode() };
+  }
+}
+

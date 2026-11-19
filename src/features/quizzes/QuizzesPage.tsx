@@ -82,7 +82,7 @@ export function QuizzesPage() {
             ))}
           </Select>
         </div>
-        <div className="flex rounded-2xl bg-ink/5 p-1">
+        <div className="flex max-w-full flex-wrap rounded-2xl bg-ink/5 p-1">
           {(
             [
               ['active', 'Activas'],

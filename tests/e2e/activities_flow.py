@@ -79,6 +79,9 @@ def join(pg, pin, code, ci):
         pg.get_by_role('button', name='Sí, soy yo').click()
     pg.get_by_role('button', name='Entrar').wait_for(timeout=8000)
     pg.get_by_role('button', name='Entrar').click()
+    pg.wait_for_timeout(1200)
+    if pg.get_by_role('button', name='Ahora no').count():
+        pg.get_by_role('button', name='Ahora no').click()
     pg.get_by_role('button', name='Comenzar').wait_for(timeout=8000)
 
 

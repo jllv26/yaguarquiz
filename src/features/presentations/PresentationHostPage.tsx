@@ -110,6 +110,7 @@ function Host() {
     <div className="relative flex min-h-dvh flex-col">
       <AnimatedBackground />
       <TopBar
+        crowded
         right={
           <div className="flex items-center gap-2">
             <Badge tone={PRES_STATUS[p.status].tone}>{PRES_STATUS[p.status].label}</Badge>
