@@ -45,7 +45,9 @@ const ROADMAP = [
   { phase: 4, title: 'Partida en vivo con PIN y código QR', done: true },
   { phase: 5, title: 'Modo examen, tareas y anti-copia', done: true },
   { phase: 6, title: 'Reportes, Google Sheets y conversor de notas', done: true },
-  { phase: 7, title: 'Sonido, podio, insignias y mascota Yaguar' },
+  { phase: 7, title: 'Sonido, podio, insignias y mascota Yaguar', done: true },
+  { phase: 8, title: 'Pruebas, accesibilidad y publicación', done: true },
+  { phase: 9, title: 'Actividades estilo Educaplay (juegos de práctica)' },
 ]
 
 function greeting() {
