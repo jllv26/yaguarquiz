@@ -37,6 +37,7 @@ Docente responsable: **Ing. Jimmy Luis Laruta Villarreal**
 | 7. Pulido | Música y efectos, mascota jaguar, entrada animada, 5 temas visuales, podio, insignias, accesibilidad AA, carga rápida | ✅ |
 | 8. QA final | 23 verificaciones de punta a punta en 2 navegadores, casos límite, manuales | ✅ ([docs/QA.md](docs/QA.md)) |
 | 9. Actividades estilo Educaplay | 10 juegos: crucigrama, sopa de letras, relacionar, memoria, completar, rosco, ordenar letras, ordenar frase, adivina la palabra, clasificar | ✅ |
+| 10. Exposiciones | Evaluación entre pares con rúbrica (antes «Copa Salvando el Semestre»), nota del docente, cronómetro, proyector, libreta | ✅ |
 
 ---
 
@@ -70,7 +71,7 @@ Docente responsable: **Ing. Jimmy Luis Laruta Villarreal**
 
 1. En Supabase abra **SQL Editor → New query**.
 2. Abra en GitHub la carpeta [`supabase/migrations`](supabase/migrations). Para **cada archivo, en orden**
-   (`0001`, `0002`, … `0009`): ábralo → botón **Raw** → copie todo → péguelo en el SQL Editor → **Run**.
+   (`0001`, `0002`, … `0010`): ábralo → botón **Raw** → copie todo → péguelo en el SQL Editor → **Run**.
    Debe decir *Success*. Si Supabase muestra “Potential issue detected”, presione **Run query** (es normal: las
    migraciones crean funciones y permisos).
 3. Se pueden volver a ejecutar sin dañar nada.
@@ -86,6 +87,7 @@ Docente responsable: **Ing. Jimmy Luis Laruta Villarreal**
 | `0007_reports` | Reportes, libreta de notas, registro de envíos a Google Sheets |
 | `0008_theme` | Tema visual de la evaluación en el celular del estudiante |
 | `0009_activities` | Actividades estilo Educaplay (cada jugada se corrige en el servidor) |
+| `0010_presentations` | Exposiciones con evaluación entre pares |
 
 ### Paso 4 — Conectar su copia con su Supabase
 
@@ -208,6 +210,21 @@ las parejas con muchos errores valen menos (mín. 50 %); en adivina, cada letra 
 La respuesta nunca llega al navegador del estudiante: cada jugada se corrige en el servidor y el avance queda guardado
 aunque recargue la página.
 
+### Exposiciones (evaluación entre pares)
+
+Menú **Exposiciones** → **Nueva exposición**: título, asignatura, **expositores** (de la lista oficial: grupo, tema, día y orden;
+o pegue desde Excel *RU · Grupo · Tema · Día*), **rúbrica** (la de la Copa Salvando el Semestre viene lista; también hay una
+general de 4 niveles y puede editar criterios y niveles) y **peso de su nota** (por defecto 50 % usted, 50 % compañeros).
+
+El día de la exposición, en **Control**: abra la sala (PIN + QR, también en el **Proyector**), toque **Primer / Siguiente
+expositor** (cronómetro sin límite; al pasar al siguiente se guarda cuánto expuso), **Calificar** con la misma rúbrica,
+**Ausente** (nota 0) o **Deshacer**. Los estudiantes entran con el PIN, su RU (+ CI) desde el celular o la PC, califican los
+criterios de cada compañero que pasa al frente (nunca a sí mismos ni a su grupo) y explican su nota («¿por qué?» y «¿qué
+entendiste?»). En **Resultados**: podio, notas, comentarios, **Excel** y **Enviar a la libreta** (categoría Exposiciones).
+
+Nota de cada calificación = suma de los criterios ÷ (criterios × nivel máximo) × 100 (13 de 15 = 86,7 = 4,33 sobre 5).
+Nota final = peso del docente × su nota + el resto × promedio de los compañeros; si falta una de las dos, cuenta la otra.
+
 ---
 
 ## Reportes, libreta de notas y Google Sheets
@@ -245,7 +262,7 @@ aunque recargue la página.
 
 ```bash
 npm test                 # pruebas unitarias (Excel, conversor de notas, Apps Script simulado)
-bash tests/run-all.sh    # todo lo anterior + pruebas del servidor (45 estudiantes, examen, reportes, 10 actividades) + RLS
+bash tests/run-all.sh    # todo lo anterior + pruebas del servidor (45 estudiantes, examen, reportes, 10 actividades, exposiciones) + RLS
 ```
 
 Prueba de punta a punta en **dos navegadores** (Chromium y WebKit/Safari) contra el motor real — ver
@@ -257,6 +274,7 @@ VITE_SUPABASE_URL=http://localhost:5555 npx vite build --outDir /tmp/dist-qa
 npx vite preview --outDir /tmp/dist-qa --port 4174 &
 python3 tests/e2e/qa_flow.py                              # 23 verificaciones
 python3 tests/e2e/activities_flow.py                      # actividades: docente crea/lanza, estudiante juega (15)
+python3 tests/e2e/presentations_flow.py                   # exposiciones: docente + 3 celulares califican (15)
 python3 tests/e2e/a11y_audit.py                           # accesibilidad (axe-core)
 ```
 

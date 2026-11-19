@@ -1,7 +1,8 @@
 import { motion } from 'framer-motion'
 import { ArrowLeft, Clock, Flame, Loader2, Pause, RefreshCw, WifiOff } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import { presentationInfo } from '../../lib/api/presentations'
 import { AnimatedBackground } from '../../components/AnimatedBackground'
 import { TopBar } from '../../components/TopBar'
 import { SoundControl, useMuteHotkey, useSoundPrefs } from '../../components/SoundControl'
@@ -62,6 +63,7 @@ type Screen =
 export function PlayPage() {
   const { pin = '' } = useParams()
   const [screen, setScreen] = useState<Screen>({ kind: 'loading' })
+  const navigate = useNavigate()
   const [token, setToken] = useState<{ t: string; m: PlayMode } | null>(() => readToken(pin))
   const theme = useSessionTheme({ pin: /^\d{6}$/.test(pin) ? pin : undefined })
   useForcedDark(theme)
@@ -70,12 +72,17 @@ export function PlayPage() {
     setScreen({ kind: 'loading' })
     try {
       const info = await sessionInfo(pin)
+      if (!info.ok && info.error === 'pin') {
+        // ¿es el PIN de una exposición?
+        const ex = await presentationInfo(pin).catch(() => null)
+        if (ex?.ok) return navigate(`/expo/${pin}`, { replace: true })
+      }
       if (!info.ok) return setScreen({ kind: 'error', message: PLAY_ERRORS[info.error] ?? 'No se pudo abrir la sesión.' })
       setScreen({ kind: 'join', info })
     } catch {
       setScreen({ kind: 'error', message: 'Sin conexión a internet. Revisa el wifi e intenta de nuevo.', retry: true })
     }
-  }, [pin])
+  }, [pin, navigate])
 
   useEffect(() => {
     if (!/^\d{6}$/.test(pin)) {

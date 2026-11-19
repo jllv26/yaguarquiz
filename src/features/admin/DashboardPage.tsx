@@ -47,7 +47,8 @@ const ROADMAP = [
   { phase: 6, title: 'Reportes, Google Sheets y conversor de notas', done: true },
   { phase: 7, title: 'Sonido, podio, insignias y mascota Yaguar', done: true },
   { phase: 8, title: 'Pruebas, accesibilidad y publicación', done: true },
-  { phase: 9, title: 'Actividades estilo Educaplay (juegos de práctica)' },
+  { phase: 9, title: 'Actividades estilo Educaplay (10 juegos)', done: true },
+  { phase: 10, title: 'Exposiciones con evaluación entre pares', done: true },
 ]
 
 function greeting() {

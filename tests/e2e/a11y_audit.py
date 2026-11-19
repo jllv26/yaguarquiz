@@ -41,6 +41,13 @@ PAGES = [
     ('Manual del estudiante', '#/ayuda', False, 'light'),
     ('Actividades (docente)', '#/admin/actividades', True, 'light'),
 ]
+expo = q("select id::text, pin from public.presentations where status <> 'closed' order by created_at desc limit 1")
+if expo:
+    PAGES.append(('Exposiciones (docente)', '#/admin/exposiciones', True, 'light'))
+    PAGES.append(('Editor de exposición', f'#/admin/exposiciones/{expo[0][0]}', True, 'light'))
+    PAGES.append(('Control de la exposición', f'#/expo-host/{expo[0][0]}', True, 'light'))
+    PAGES.append(('Control de la exposición (oscuro)', f'#/expo-host/{expo[0][0]}', True, 'dark'))
+    PAGES.append(('Exposición: ingreso del estudiante', f'#/expo/{expo[0][1]}', False, 'light'))
 act = q("select id::text from public.quizzes where settings ? 'activity' order by updated_at desc limit 1")
 if act:
     PAGES.append(('Editor de actividad', f'#/admin/actividades/{act[0][0]}', True, 'light'))

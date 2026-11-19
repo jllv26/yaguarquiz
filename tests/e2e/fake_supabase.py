@@ -48,7 +48,9 @@ def call(fn, args, teacher):
             c.execute("select set_config('request.jwt.claim.sub', '', false)")
         names = list(args.keys())
         q = f'select public.{fn}(' + ', '.join(f'{n} => %s' for n in names) + ')'
-        vals = [Jsonb(v) if isinstance(v, (dict, list)) else v for v in args.values()]
+        # como PostgREST: una lista de valores simples va a un parámetro arreglo (int[], uuid[]); objetos y listas de objetos, a jsonb
+        vals = [v if isinstance(v, list) and all(not isinstance(x, (dict, list)) for x in v) and v
+                else Jsonb(v) if isinstance(v, (dict, list)) else v for v in args.values()]
         try:
             c.execute(q, vals)
             return c.fetchone()[0]

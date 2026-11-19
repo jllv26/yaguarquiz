@@ -102,3 +102,16 @@ copiar una actividad desordenaba el tablero; en el crucigrama, al tocar una pist
 horizontal y el avance automático podía mover el cursor si el estudiante ya había elegido otra palabra; las claves de
 memoria/relacionar se podían calcular desde el navegador (ahora llevan un secreto por intento); contraste de 5 colores
 de juego; al lanzar una tarea “ahora”, la hora de apertura se redondeaba hacia adelante (quedaba cerrada unos minutos).
+
+
+## Fase 10 — Exposiciones con evaluación entre pares (19/11/2026)
+
+Integración de la «Copa Salvando el Semestre» (repositorio `copases`) con las mismas reglas: 5 criterios × 3 niveles,
+explicar la nota, nadie se califica a sí mismo ni a su grupo, ausente = 0, cronómetro sin límite.
+
+| Prueba | Resultado |
+|---|---|
+| Servidor (`tests/load/presentations-test.mjs`): ingreso con RU + CI y un solo equipo, reglas de calificación, 13/15 = 86,67, corregir no duplica, promedio de pares, peso del docente, ausente, deshacer, comentarios, libreta (solo categorías manuales), PIN distinto del de las sesiones, cierre y «borrar pruebas» | ✅ todo correcto |
+| Punta a punta (`tests/e2e/presentations_flow.py`): docente crea y pega grupos desde Excel; 3 celulares entran por la pantalla de inicio; expositor ve «¡Es tu turno!», su grupo no lo califica, los demás califican y explican; el docente califica; proyector; resultados, Excel y libreta | ✅ 15/15 |
+| Accesibilidad (axe): lista, editor, control (claro y oscuro) e ingreso del estudiante | ✅ 0 fallas |
+| Regresión: 23/23 (clase en vivo y examen) y 15/15 (actividades); servidor 6/6 bloques | ✅ |

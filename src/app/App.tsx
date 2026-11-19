@@ -22,6 +22,10 @@ const StudentsPage = lazy(() => import('../features/students/StudentsPage').then
 const DashboardPage = lazy(() => import('../features/admin/DashboardPage').then((m) => ({ default: m.DashboardPage })))
 const ActivitiesPage = lazy(() => import('../features/activities/ActivitiesPage').then((m) => ({ default: m.ActivitiesPage })))
 const ActivityEditorPage = lazy(() => import('../features/activities/ActivityEditorPage').then((m) => ({ default: m.ActivityEditorPage })))
+const PresentationPlayPage = lazy(() => import('../features/presentations/PresentationPlayPage').then((m) => ({ default: m.PresentationPlayPage })))
+const PresentationsPage = lazy(() => import('../features/presentations/PresentationsPage').then((m) => ({ default: m.PresentationsPage })))
+const PresentationEditorPage = lazy(() => import('../features/presentations/PresentationEditorPage').then((m) => ({ default: m.PresentationEditorPage })))
+const PresentationHostPage = lazy(() => import('../features/presentations/PresentationHostPage').then((m) => ({ default: m.PresentationHostPage })))
 const DesignPage = lazy(() => import('../features/design/DesignPage').then((m) => ({ default: m.DesignPage })))
 const AdminLayout = lazy(() => import('../features/admin/AdminLayout').then((m) => ({ default: m.AdminLayout })))
 const SettingsPage = lazy(() => import('../features/admin/SettingsPage').then((m) => ({ default: m.SettingsPage })))
@@ -47,6 +51,8 @@ export function App() {
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/play/:pin" element={<PlayPage />} />
+            <Route path="/expo/:pin" element={<PresentationPlayPage />} />
+            <Route path="/expo-host/:id" element={<PresentationHostPage />} />
             <Route path="/ayuda" element={<HelpPage />} />
             <Route path="/diseno" element={<DesignPage />} />
             <Route path="/admin/login" element={<LoginPage />} />
@@ -61,6 +67,8 @@ export function App() {
               <Route path="evaluaciones/:id" element={<QuizEditorPage />} />
               <Route path="actividades" element={<ActivitiesPage />} />
               <Route path="actividades/:id" element={<ActivityEditorPage />} />
+              <Route path="exposiciones" element={<PresentationsPage />} />
+              <Route path="exposiciones/:id" element={<PresentationEditorPage />} />
               <Route path="sesiones" element={<SessionsPage />} />
               <Route path="reportes" element={<ReportsPage />} />
               <Route path="reportes/:id" element={<SessionReportPage />} />
