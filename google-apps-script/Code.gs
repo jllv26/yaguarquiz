@@ -26,6 +26,12 @@
  */
 const TOKEN = 'PEGUE_AQUI_SU_TOKEN';
 
+/** Token en uso: el pegado arriba o, si no hay, el que «activarCorreos» obtuvo solo de YaguarQuiz. */
+function token_() {
+  if (TOKEN && TOKEN !== 'PEGUE_AQUI_SU_TOKEN') return TOKEN;
+  return PropertiesService.getScriptProperties().getProperty('YQ_TOKEN') || '';
+}
+
 // YaguarQuiz (datos públicos del sistema; la clave publicable no es secreta)
 const YQ_URL = 'https://ywoamnwsacphjfjokmkg.supabase.co';
 const YQ_KEY = 'sb_publishable_WJyzJzbWEvLTRztsEbvP5g_pKXe6OsZ';
@@ -43,7 +49,7 @@ function doPost(e) {
   const lock = LockService.getScriptLock();
   try {
     const data = JSON.parse((e && e.postData && e.postData.contents) || '{}');
-    if (!TOKEN || TOKEN === 'PEGUE_AQUI_SU_TOKEN' || data.token !== TOKEN) {
+    if (!token_() || data.token !== token_()) {
       return json_({ ok: false, error: 'token', message: 'El token no coincide. Revise que sea el mismo en YaguarQuiz y en el script.' });
     }
     const book = SpreadsheetApp.getActiveSpreadsheet();
@@ -180,6 +186,15 @@ function json_(obj) {
  * Pide permiso para enviar correos desde su Gmail y deja programado el envío cada 5 minutos.
  */
 function activarCorreos() {
+  // Sin token: se conecta solo con YaguarQuiz (el docente abrió la ventana de conexión para este correo)
+  if (!token_()) {
+    const email = Session.getEffectiveUser().getEmail();
+    const c = rpc_('mail_claim', { p_email: email });
+    if (!c || !c.ok || !c.token) {
+      throw new Error('YaguarQuiz no tiene abierta la conexión para ' + email + '. En YaguarQuiz > Configuración > Correos pulse «Conectar» y vuelva a ejecutar.');
+    }
+    PropertiesService.getScriptProperties().setProperty('YQ_TOKEN', c.token);
+  }
   ScriptApp.getProjectTriggers().forEach(function (t) {
     if (t.getHandlerFunction() === 'enviarCorreos') ScriptApp.deleteTrigger(t);
   });
@@ -194,17 +209,17 @@ function enviarCorreos() {
   try {
     const quota = MailApp.getRemainingDailyQuota();
     if (quota <= 0) return { ok: true, sent: 0, quota: 0 };
-    const r = rpc_('mail_pull', { p_token: TOKEN, p_max: Math.min(quota, 50) });
+    const r = rpc_('mail_pull', { p_token: token_(), p_max: Math.min(quota, 50) });
     if (!r || !r.ok) return { ok: false, error: (r && r.error) || 'pull' };
     if (!r.enabled) return { ok: true, enabled: false, sent: 0 };
     let sent = 0;
     (r.messages || []).forEach(function (m) {
       try {
         MailApp.sendEmail({ to: m.to, subject: m.subject, htmlBody: m.html, name: 'YaguarQuiz UAP' });
-        rpc_('mail_ack', { p_token: TOKEN, p_ids: m.ids, p_ok: true });
+        rpc_('mail_ack', { p_token: token_(), p_ids: m.ids, p_ok: true });
         sent++;
       } catch (err) {
-        rpc_('mail_ack', { p_token: TOKEN, p_ids: m.ids, p_ok: false, p_error: String(err && err.message ? err.message : err) });
+        rpc_('mail_ack', { p_token: token_(), p_ids: m.ids, p_ok: false, p_error: String(err && err.message ? err.message : err) });
       }
     });
     return { ok: true, enabled: true, sent: sent, quota: MailApp.getRemainingDailyQuota() };
