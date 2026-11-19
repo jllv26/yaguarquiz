@@ -6,12 +6,31 @@ import { JAGUAR } from './assets'
 
 /** Momento del rugido en el video (s): aparece el título. */
 const ROAR_AT = 4.2
-/** Si el video no empieza en este tiempo (internet lento), se salta la entrada. */
-const START_TIMEOUT = 3500
+/** Si el video no empieza en este tiempo (internet muy lento), se salta la entrada. */
+const START_TIMEOUT = 8000
+
+const INTRO_KEY = 'yq-intro-seen'
+/** La entrada se ve una vez por pestaña (en el inicio del estudiante o al entrar al panel docente). */
+export function introPending() {
+  try {
+    return !sessionStorage.getItem(INTRO_KEY)
+  } catch {
+    return false
+  }
+}
+export function markIntroSeen() {
+  try {
+    sessionStorage.setItem(INTRO_KEY, '1')
+  } catch {
+    /* sin almacenamiento: no pasa nada */
+  }
+}
 
 /**
  * Entrada al sistema: video real de un jaguar que sale de la selva y ruge (~7 s, sin audio).
- * Se puede saltar con el botón o con Escape. Respeta "reducir movimiento" y el "ahorro de datos".
+ * Se puede saltar con el botón o con Escape. Solo se omite con el "ahorro de datos" activado.
+ * Con "reducir movimiento" (animaciones apagadas en Windows, común en laboratorios) el video
+ * se muestra igual, pero el título aparece sin rebote ni zoom.
  */
 export function JaguarIntro({ onDone, onLanded }: { onDone?: () => void; onLanded?: () => void }) {
   const video = useRef<HTMLVideoElement>(null)
@@ -21,12 +40,13 @@ export function JaguarIntro({ onDone, onLanded }: { onDone?: () => void; onLande
 
   const skip =
     typeof window !== 'undefined' &&
-    (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ||
-      (navigator as unknown as { connection?: { saveData?: boolean } }).connection?.saveData === true)
+    (navigator as unknown as { connection?: { saveData?: boolean } }).connection?.saveData === true
+  const calm = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 
   const finish = () => {
     if (done.current) return
     done.current = true
+    markIntroSeen()
     setOpen(false)
     onLanded?.()
     window.setTimeout(() => onDone?.(), 450)
@@ -34,6 +54,7 @@ export function JaguarIntro({ onDone, onLanded }: { onDone?: () => void; onLande
 
   useEffect(() => {
     if (skip) {
+      markIntroSeen()
       onDone?.()
       return
     }
@@ -46,11 +67,14 @@ export function JaguarIntro({ onDone, onLanded }: { onDone?: () => void; onLande
     v?.addEventListener('playing', onPlay)
     v?.addEventListener('timeupdate', onTime)
     window.addEventListener('keydown', onKey)
-    v?.play().catch(() => finish())
+    const tryPlay = () => v?.play().catch(() => undefined)
+    v?.addEventListener('canplay', tryPlay, { once: true })
+    tryPlay()
     return () => {
       window.clearTimeout(t)
       v?.removeEventListener('playing', onPlay)
       v?.removeEventListener('timeupdate', onTime)
+      v?.removeEventListener('canplay', tryPlay)
       window.removeEventListener('keydown', onKey)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -63,7 +87,7 @@ export function JaguarIntro({ onDone, onLanded }: { onDone?: () => void; onLande
         <motion.div
           className="fixed inset-0 z-[60] overflow-hidden bg-black"
           initial={{ opacity: 1 }}
-          exit={{ opacity: 0, scale: 1.04 }}
+          exit={calm ? { opacity: 0 } : { opacity: 0, scale: 1.04 }}
           transition={{ duration: 0.45 }}
           role="dialog"
           aria-label="Entrada de YaguarQuiz"
@@ -88,9 +112,9 @@ export function JaguarIntro({ onDone, onLanded }: { onDone?: () => void; onLande
             {title && (
               <motion.div
                 className="absolute inset-x-0 bottom-[12%] flex flex-col items-center text-center"
-                initial={{ opacity: 0, y: 30, scale: 0.9 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ type: 'spring', stiffness: 200, damping: 16 }}
+                initial={calm ? { opacity: 0 } : { opacity: 0, y: 30, scale: 0.9 }}
+                animate={calm ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
+                transition={calm ? { duration: 0.4 } : { type: 'spring', stiffness: 200, damping: 16 }}
               >
                 <p className="font-display text-5xl font-black tracking-tight text-white drop-shadow-[0_4px_20px_rgba(0,0,0,.8)] sm:text-7xl">
                   Yaguar<span className="text-[#FFD34D]">Quiz</span>

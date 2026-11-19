@@ -12,16 +12,7 @@ import { cn } from '../../lib/cn'
 import { JaguarFace } from '../../components/jaguar/JaguarFace'
 import { useLook } from '../../components/jaguar/useLook'
 import { sfx } from '../../lib/sound'
-import { JaguarIntro } from '../../components/jaguar/JaguarIntro'
-
-const INTRO_KEY = 'yq-intro-seen'
-function introPending() {
-  try {
-    return !sessionStorage.getItem(INTRO_KEY)
-  } catch {
-    return false
-  }
-}
+import { JaguarIntro, introPending } from '../../components/jaguar/JaguarIntro'
 
 const PIN_LENGTH = 6
 const YEAR = new Date().getFullYear()
@@ -40,14 +31,7 @@ export function HomePage() {
     return () => window.clearTimeout(t)
   }, [])
   const [roar, setRoar] = useState(false)
-  const endIntro = () => {
-    try {
-      sessionStorage.setItem(INTRO_KEY, '1')
-    } catch {
-      /* sin almacenamiento: no pasa nada */
-    }
-    setIntro(false)
-  }
+  const endIntro = () => setIntro(false)
   const onLanded = () => {
     setRoar(true)
     window.setTimeout(() => setRoar(false), 1600)

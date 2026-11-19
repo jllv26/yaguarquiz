@@ -1,6 +1,7 @@
 import {
   BarChart3,
   BookOpen,
+  ClapperboardIcon,
   ClipboardList,
   Gamepad2,
   Presentation,
@@ -12,8 +13,10 @@ import {
   Settings,
   Users,
 } from 'lucide-react'
+import { useState } from 'react'
 import { Navigate, NavLink, Outlet } from 'react-router-dom'
 import { AnimatedBackground } from '../../components/AnimatedBackground'
+import { JaguarIntro, introPending } from '../../components/jaguar/JaguarIntro'
 import { ThemeToggle } from '../../components/TopBar'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
@@ -35,6 +38,10 @@ const NAV = [
 
 export function AdminLayout() {
   const { loading, session, teacher, signOut } = useAuth()
+  // Entrada del jaguar: una vez por pestaña al entrar al panel; se puede volver a ver con el botón 🎬
+  const [intro, setIntro] = useState(0)
+  const [first] = useState(introPending)
+  const showIntro = intro > 0 || (first && intro === 0)
 
   if (loading) return <FullScreenLoader />
   if (!session) return <Navigate to="/admin/login" replace />
@@ -43,6 +50,7 @@ export function AdminLayout() {
   return (
     <div className="relative flex min-h-dvh">
       <AnimatedBackground variant="calm" />
+      {showIntro && <JaguarIntro key={intro} onDone={() => setIntro(-1)} />}
 
       {/* Barra lateral (escritorio) */}
       <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col gap-2 p-4 lg:flex">
@@ -66,6 +74,15 @@ export function AdminLayout() {
             <p className="truncate text-xs text-ink-soft">{teacher.email}</p>
             <div className="mt-3 flex items-center gap-2">
               <ThemeToggle />
+              <button
+                type="button"
+                onClick={() => setIntro((n) => Math.max(n, 0) + 1)}
+                className="glass grid size-11 shrink-0 place-items-center rounded-2xl text-ink-soft hover:text-ink"
+                aria-label="Ver la entrada del jaguar"
+                title="Ver la entrada del jaguar"
+              >
+                <ClapperboardIcon className="size-5" />
+              </button>
               <Button variant="secondary" size="sm" className="flex-1" onClick={() => void signOut()}>
                 <LogOut className="size-4" /> Salir
               </Button>
