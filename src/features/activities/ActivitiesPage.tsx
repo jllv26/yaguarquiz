@@ -1,7 +1,8 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { Copy, Gamepad2, Pencil, Rocket, Trash2 } from 'lucide-react'
+import { Copy, Gamepad2, KeyRound, Pencil, Printer, Rocket, Trash2 } from 'lucide-react'
 import { useMemo, useState, type FormEvent } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
 import { SolidCard } from '../../components/ui/Card'
@@ -10,7 +11,7 @@ import { Badge, EmptyState, Select, Skeleton } from '../../components/ui/Field'
 import { Input } from '../../components/ui/Input'
 import { Modal } from '../../components/ui/Modal'
 import { useToast } from '../../components/ui/Toast'
-import { saveActivity } from '../../lib/api/activities'
+import { fetchActivityItems, saveActivity } from '../../lib/api/activities'
 import { qkq, useDeleteQuiz, useDuplicateQuiz, useQuizzes, useSaveQuiz, useSubjectsLite, type QuizListRow } from '../../lib/api/quizzes'
 import { LaunchModal, launchHint } from '../sessions/LaunchModal'
 import { ACTIVITY_META, ACTIVITY_TYPES, type ActivitySettings, type ActivityType } from './types'
@@ -82,6 +83,7 @@ function ActivityCard({ z }: { z: QuizListRow }) {
   const dup = useDuplicateQuiz()
   const del = useDeleteQuiz()
   const [launch, setLaunch] = useState(false)
+  const [keyOpen, setKeyOpen] = useState(false)
   const type = activityOf(z)!
   const m = ACTIVITY_META[type]
   const n = z.questions?.[0]?.count ?? 0
@@ -139,6 +141,9 @@ function ActivityCard({ z }: { z: QuizListRow }) {
           >
             <Trash2 className="size-4" />
           </Button>
+          <Button size="sm" variant="secondary" onClick={() => setKeyOpen(true)} aria-label="Ver las respuestas correctas">
+            <KeyRound className="size-4" /> Respuestas
+          </Button>
           <Button size="sm" variant="secondary" onClick={() => navigate(`/admin/actividades/${z.id}`)}>
             <Pencil className="size-4" /> Editar
           </Button>
@@ -149,6 +154,7 @@ function ActivityCard({ z }: { z: QuizListRow }) {
           )}
         </div>
       </div>
+      {keyOpen && <AnswerKeyModal quizId={z.id} title={z.title} type={type} onClose={() => setKeyOpen(false)} />}
       <LaunchModal open={launch} onClose={() => setLaunch(false)} quiz={launch ? { id: z.id, title: z.title, subject_id: z.subject_id, questionCount: n, activity: type, launch: launchHint(z.settings) } : null} />
     </SolidCard>
   )
@@ -225,3 +231,73 @@ function NewActivityModal({ type, onClose }: { type: ActivityType | null; onClos
     </Modal>
   )
 }
+
+/** Hoja de respuestas solo para el docente (los estudiantes nunca la ven mientras la actividad está abierta). */
+function AnswerKeyModal({ quizId, title, type, onClose }: { quizId: string; title: string; type: ActivityType; onClose: () => void }) {
+  const items = useQuery({ queryKey: ['activity-key', quizId], queryFn: () => fetchActivityItems(quizId) })
+  const m = ACTIVITY_META[type]
+  const showGroup = type === 'classify' || type === 'rosco'
+  const clueLabel = type === 'classify' ? 'Tarjeta' : type === 'matching' || type === 'memory' ? 'Pareja' : type === 'fill_text' ? 'Espacio' : 'Pista'
+  function print() {
+    const rows = (items.data ?? [])
+      .map((it, i) => `<tr><td>${i + 1}</td><td>${esc(type === 'classify' ? it.term : it.prompt)}</td><td><b>${esc(type === 'classify' ? (it.group ?? '') : it.term)}</b></td></tr>`)
+      .join('')
+    const w = window.open('', '_blank')
+    if (!w) return
+    w.document.write(`<!doctype html><meta charset="utf-8"><title>Respuestas · ${esc(title)}</title><style>body{font-family:system-ui,sans-serif;margin:24px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #999;padding:6px 8px;text-align:left;vertical-align:top}th{background:#eee}</style><h2>Hoja de respuestas · ${esc(title)}</h2><p>${esc(m.label)} · uso exclusivo del docente</p><table><tr><th>#</th><th>${clueLabel}</th><th>Respuesta correcta</th></tr>${rows}</table>`)
+    w.document.close()
+    w.print()
+  }
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      size="lg"
+      title="Respuestas correctas"
+      subtitle={`${title} · solo para usted`}
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose}>
+            Cerrar
+          </Button>
+          <Button onClick={print} disabled={!items.data?.length}>
+            <Printer className="size-4" /> Imprimir
+          </Button>
+        </>
+      }
+    >
+      <p className="mb-3 rounded-2xl bg-uap-gold/15 px-4 py-2 text-sm">
+        🔒 Los estudiantes ven si aciertan o fallan, pero la respuesta correcta recién cuando usted cierra la actividad. Cada estudiante recibe sus propias preguntas al azar; lo que le tocó y lo que respondió cada uno está en <b>Reportes</b> → la sesión.
+      </p>
+      {items.isLoading ? (
+        <Skeleton className="h-40" />
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-ink-soft">
+                <th className="px-2 py-1">#</th>
+                <th className="px-2 py-1">{clueLabel}</th>
+                <th className="px-2 py-1">Respuesta correcta</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(items.data ?? []).map((it, i) => (
+                <tr key={it.id ?? i} className="border-t border-line align-top">
+                  <td className="px-2 py-1.5 tabular-nums">{i + 1}</td>
+                  <td className="px-2 py-1.5">{type === 'classify' ? it.term : it.prompt}</td>
+                  <td className="px-2 py-1.5 font-display font-black">
+                    {type === 'classify' ? it.group : it.term}
+                    {showGroup && type === 'rosco' && it.group ? <span className="ml-1 text-xs font-normal text-ink-soft">({it.contains ? 'contiene' : 'empieza con'} {it.group})</span> : null}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </Modal>
+  )
+}
+
+const esc = (t: string) => t.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] as string)

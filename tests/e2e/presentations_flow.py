@@ -156,13 +156,16 @@ with sync_playwright() as p:
     t.get_by_role('button', name='Calificar', exact=True).click()
     t.wait_for_timeout(700)
     dlg = t.get_by_role('dialog')
-    for rg in dlg.get_by_role('radiogroup').all():
-        rg.get_by_role('radio').last.click()
+    qs = dlg.get_by_role('radiogroup', name=re.compile('^Pregunta')).all()
+    check('10.8b', 'El docente califica con 5 preguntas (Respondió / A medias / No respondió)', len(qs) == 5 and 'Respondió a medias' in dlg.inner_text(), f'{len(qs)} preguntas')
+    dlg.get_by_label('Qué preguntó en la pregunta 1').fill('¿Qué es el embudo?')
+    for rg in qs:
+        rg.get_by_role('radio', name=re.compile('Respondió$')).first.click()
     dlg.get_by_role('button', name=re.compile('^Guardar mi nota')).click()
     t.wait_for_timeout(1500)
     fin = call('presentation_host', {'p_id': pid})['presenters']
     f0 = next(x for x in fin if x['state'] == 'live')
-    check('10.9', 'Nota final = 50 % docente + 50 % compañeros', f0['teacher'] == 100 and abs(float(f0['final']) - (50 + float(f0['peer_avg']) / 2)) < 0.02, f"docente {f0['teacher']}, compañeros {f0['peer_avg']}, final {f0['final']}")
+    check('10.9', 'Nota final = 50 % docente (5 preguntas) + 50 % compañeros', f0['teacher'] == 100 and (f0.get('teacher_notes') or [''])[0] == '¿Qué es el embudo?' and abs(float(f0['final']) - (50 + float(f0['peer_avg']) / 2)) < 0.02, f"docente {f0['teacher']}, compañeros {f0['peer_avg']}, final {f0['final']}")
     time.sleep(1)
     t.get_by_role('button', name='Siguiente expositor').first.click()
     t.wait_for_timeout(2500)

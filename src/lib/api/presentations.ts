@@ -40,6 +40,8 @@ export interface HostPresenter {
   criteria: number[] | null
   teacher_scores: number[] | null
   teacher_comment: string | null
+  /** lo que el docente anotó que preguntó (una por pregunta) */
+  teacher_notes?: string[] | null
 }
 export interface HostState {
   server_now: string
@@ -68,8 +70,8 @@ export const deletePresentation = (id: string) => rpc<void>('delete_presentation
 export const presentationHost = (id: string) => rpc<HostState>('presentation_host', { p_id: id })
 export const presentationControl = (id: string, action: string, target: string | null = null, arg: number | null = null) =>
   rpc<{ ok: boolean; error?: string }>('presentation_control', { p_id: id, p_action: action, p_target: target, p_arg: arg })
-export const teacherScore = (presenter: string, scores: number[] | null, comment: string | null) =>
-  rpc<{ ok: true; score: number | null }>('presentation_teacher_score', { p_presenter: presenter, p_scores: scores, p_comment: comment })
+export const teacherScore = (presenter: string, scores: number[] | null, comment: string | null, notes: string[] | null = null) =>
+  rpc<{ ok: true; score: number | null }>('presentation_teacher_score', { p_presenter: presenter, p_scores: scores, p_comment: comment, p_notes: notes })
 export const reviewsOf = (presenter: string) =>
   rpc<{ evaluator: string; code: string; scores: number[]; score: number; why: string; understood: string; at: string }[]>('presentation_reviews_of', { p_presenter: presenter })
 export const toGradebook = (id: string, item: string) => rpc<number>('presentation_to_gradebook', { p_id: id, p_item: item })

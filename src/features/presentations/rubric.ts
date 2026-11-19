@@ -21,6 +21,10 @@ export interface PresentationSettings {
   block_own_group: boolean
   min_why: number
   min_understood: number
+  /** cómo califica el docente: 'questions' (5 preguntas: Respondió / A medias / No respondió) o 'rubric' */
+  teacher_eval?: 'questions' | 'rubric'
+  /** cantidad de preguntas del docente (5) */
+  teacher_q?: number
 }
 export const DEFAULT_SETTINGS: PresentationSettings = { teacher_weight: 50, require_ci: true, block_own_group: true, min_why: 15, min_understood: 25 }
 
@@ -71,3 +75,18 @@ export function scoreOf(scores: (number | null | undefined)[], r: Rubric): numbe
 }
 export const fmt = (n: number | null | undefined, d = 1) => (n == null ? '—' : Number(n).toLocaleString('es-BO', { maximumFractionDigits: d, minimumFractionDigits: 0 }))
 export const mmss = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`
+
+/** Las 3 respuestas posibles a cada pregunta del docente (mismo valor que en el servidor) */
+export const ANSWER_LEVELS = [
+  { v: 2, emoji: '✅', label: 'Respondió' },
+  { v: 1, emoji: '🌗', label: 'Respondió a medias' },
+  { v: 0, emoji: '❌', label: 'No respondió' },
+] as const
+export const teacherMode = (s: Partial<PresentationSettings> | undefined) => (s?.teacher_eval === 'rubric' ? 'rubric' : 'questions')
+export const teacherQ = (s: Partial<PresentationSettings> | undefined) => Math.max(1, Math.min(10, s?.teacher_q ?? 5))
+/** Nota del docente por preguntas: suma ÷ (preguntas × 2) × 100 */
+export function questionsScoreOf(scores: (number | null | undefined)[]): number | null {
+  if (!scores.length || scores.some((s) => s == null)) return null
+  const sum = (scores as number[]).reduce((a, b) => a + b, 0)
+  return Math.round((10000 * sum) / (scores.length * 2)) / 100
+}

@@ -54,7 +54,7 @@ import { sfx } from '../../lib/sound'
 import { useAuth } from '../auth/AuthProvider'
 import { celebrate, useServerNow } from '../live/clock'
 import { PRES_STATUS } from './PresentationsPage'
-import { fmt, mmss, scoreOf } from './rubric'
+import { ANSWER_LEVELS, fmt, mmss, questionsScoreOf, scoreOf, teacherMode, teacherQ } from './rubric'
 
 export function PresentationHostPage() {
   const { loading, session, teacher } = useAuth()
@@ -476,17 +476,22 @@ function ScoreModal({ st, presenter, onClose }: { st: HostState; presenter: Host
   const toast = useToast()
   const qc = useQueryClient()
   const rubric = st.presentation.rubric
-  const [scores, setScores] = useState<(number | null)[]>(presenter.teacher_scores ?? Array(rubric.criteria.length).fill(null))
+  const byQuestions = teacherMode(st.presentation.settings) === 'questions'
+  const nQ = byQuestions ? teacherQ(st.presentation.settings) : rubric.criteria.length
+  const prev = presenter.teacher_scores && presenter.teacher_scores.length === nQ ? presenter.teacher_scores : null
+  const [scores, setScores] = useState<(number | null)[]>(prev ?? Array(nQ).fill(null))
+  const [notes, setNotes] = useState<string[]>(() => Array.from({ length: nQ }, (_, i) => presenter.teacher_notes?.[i] ?? ''))
   const [comment, setComment] = useState(presenter.teacher_comment ?? '')
   const [busy, setBusy] = useState(false)
   const reviews = useQuery({ queryKey: ['pres-reviews', presenter.id, presenter.peer_n], queryFn: () => reviewsOf(presenter.id) })
-  const score = scoreOf(scores, rubric)
+  const score = byQuestions ? questionsScoreOf(scores) : scoreOf(scores, rubric)
+  const tw = st.presentation.settings.teacher_weight ?? 50
   const levels = [...rubric.levels].sort((a, b) => a.v - b.v)
 
   async function save(clear = false) {
     setBusy(true)
     try {
-      await teacherScore(presenter.id, clear ? null : (scores as number[]), clear ? null : comment)
+      await teacherScore(presenter.id, clear ? null : (scores as number[]), clear ? null : comment, clear || !byQuestions ? null : notes.map((n) => n.trim()))
       await qc.invalidateQueries({ queryKey: ['presentation-host', st.presentation.id] })
       toast.success(clear ? 'Su nota se quitó' : 'Su nota quedó guardada')
       onClose()
@@ -522,8 +527,44 @@ function ScoreModal({ st, presenter, onClose }: { st: HostState; presenter: Host
     >
       <div className="grid gap-5 lg:grid-cols-2">
         <div className="flex flex-col gap-3">
-          <h3 className="font-display font-black">Su calificación</h3>
-          {rubric.criteria.map((c, i) => (
+          <h3 className="font-display font-black">{byQuestions ? `Sus ${nQ} preguntas · valen el ${tw} % de la nota` : 'Su calificación'}</h3>
+          {byQuestions && (
+            <p className="-mt-1 text-xs text-ink-soft">
+              Respondió = 2 · A medias = 1 · No respondió = 0. Su nota = puntos ÷ {nQ * 2} × 100.
+            </p>
+          )}
+          {byQuestions &&
+            scores.map((v, i) => (
+              <div key={i} className="rounded-2xl border border-line p-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-display font-black">Pregunta {i + 1}</span>
+                  <input
+                    value={notes[i] ?? ''}
+                    onChange={(e) => setNotes((n) => n.map((x, k) => (k === i ? e.target.value : x)))}
+                    placeholder="¿Qué le preguntó? (opcional)"
+                    aria-label={`Qué preguntó en la pregunta ${i + 1}`}
+                    className="h-9 min-w-0 flex-1 rounded-xl border-2 border-line bg-surface-2 px-2 text-sm"
+                  />
+                </div>
+                <div className="mt-2 grid grid-cols-3 gap-1.5" role="radiogroup" aria-label={`Pregunta ${i + 1}`}>
+                  {ANSWER_LEVELS.map((l) => (
+                    <button
+                      key={l.v}
+                      role="radio"
+                      aria-checked={v === l.v}
+                      onClick={() => setScores((s) => s.map((x, k) => (k === i ? l.v : x)))}
+                      className={cn(
+                        'rounded-xl border-2 px-2 py-2 text-sm font-bold leading-tight',
+                        v === l.v ? (l.v === 2 ? 'border-uap-green bg-uap-green/15' : l.v === 1 ? 'border-uap-gold bg-uap-gold/20' : 'border-uap-red bg-uap-red/10') : 'border-line hover:border-uap-gold',
+                      )}
+                    >
+                      {l.emoji} {l.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          {!byQuestions && rubric.criteria.map((c, i) => (
             <div key={i} className="rounded-2xl border border-line p-3">
               <p className="font-semibold">
                 {c.icon} {c.title}

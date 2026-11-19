@@ -299,7 +299,8 @@ function Editor({ id, initial }: { id: string | null; initial: HostState | null 
               </span>
             </label>
             <p className="rounded-2xl bg-ink/5 p-3 text-xs text-ink-soft">
-              Nota de cada calificación = suma de los criterios ÷ ({rubric.criteria.length} × {maxV}) × 100. Si usted no califica a alguien, cuenta solo el promedio de los compañeros (y al revés). Ausente = 0.
+              <b>Su nota:</b> {settings.teacher_q ?? 5} preguntas a cada expositor (Respondió = 2 · A medias = 1 · No respondió = 0) → puntos ÷ {(settings.teacher_q ?? 5) * 2} × 100.{' '}
+              <b>Compañeros:</b> la rúbrica → suma de los criterios ÷ ({rubric.criteria.length} × {maxV}) × 100. Si usted no califica a alguien, cuenta solo el promedio de los compañeros (y al revés). Ausente = 0.
             </p>
             <Toggle on={settings.block_own_group} onChange={(v) => setSettings({ ...settings, block_own_group: v })} title="No calificar a su propio grupo" />
             <Toggle on={settings.require_ci} onChange={(v) => setSettings({ ...settings, require_ci: v })} title="Pedir los últimos 3 dígitos del CI al entrar" />

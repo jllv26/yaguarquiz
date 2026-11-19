@@ -105,10 +105,13 @@ check(p0.peer_n === 3 && Math.abs(p0.peer_avg - 84.45) < 0.01, `promedio de los 
 check((await rpc(anon, 'presentation_review', [tok[4], ids[0], S(3), WHY, UND])).ok, 'se puede seguir evaluando a quien ya terminó')
 
 console.log('▶ Nota del docente, ausente y nota final')
-await rpc(host, 'presentation_teacher_score', [ids[0], S(3), 'Excelente apertura'])
+check(/Marque las 5 preguntas/.test(await err(host, 'presentation_teacher_score', [ids[0], S(3), null])), 'docente: solo Respondió (2) / A medias (1) / No respondió (0)')
+check(/Marque las 5 preguntas/.test(await err(host, 'presentation_teacher_score', [ids[0], [2, 2, 1], null])), 'docente: tiene que marcar las 5 preguntas')
+await rpc(host, 'presentation_teacher_score', [ids[0], [2, 2, 2, 1, 0], 'Excelente apertura', ['¿Qué es un KPI?', '', '', '', '¿Y el ROI?']])
 H = await rpc(host, 'presentation_host', [pid])
 const f0 = H.presenters[0]
-check(f0.teacher === 100 && Math.abs(f0.final - (0.5 * 100 + 0.5 * f0.peer_avg)) < 0.02, `final = 50 % docente + 50 % compañeros = ${f0.final}`)
+check(f0.teacher === 70 && f0.teacher_notes?.[0] === '¿Qué es un KPI?', `5 preguntas: 2+2+2+1+0 = 7 de 10 → 70 (con lo que preguntó anotado)`)
+check(Math.abs(f0.final - (0.5 * 70 + 0.5 * f0.peer_avg)) < 0.02, `final = 50 % docente (preguntas) + 50 % compañeros = ${f0.final}`)
 await rpc(host, 'presentation_control', [pid, 'absent', ids[2], null])
 H = await rpc(host, 'presentation_host', [pid])
 check(H.presenters[2].state === 'absent' && H.presenters[2].final == 0, 'ausente = 0')

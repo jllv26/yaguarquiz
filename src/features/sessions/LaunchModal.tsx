@@ -74,6 +74,40 @@ function LaunchModalInner({ open, onClose, quiz }: Props & { quiz: NonNullable<P
   const n = quiz.questionCount
   const act = quiz.activity ? ACTIVITY_META[quiz.activity] : null
   const hint = quiz.launch ?? null
+  // Rubro de la nota: actividades en clase → «Ejercicios en clase»; de tarea → «Prácticas para casa»
+  const terms = [...new Set(items.map((i) => i.term))]
+  const [term, setTerm] = useState<number | null>(() => {
+    const t = Number(localStorage.getItem('yq-term') ?? '')
+    return Number.isFinite(t) && t > 0 ? t : null
+  })
+  const curTerm = term != null && terms.includes(term) ? term : (terms[terms.length - 1] ?? null)
+  const findItem = (t: number | null, kind: 'clase' | 'casa') =>
+    items.find((i) => i.term === t && (kind === 'clase' ? /ejercicio|clase/i.test(i.category) && !/casa/i.test(i.category) : /pr[aá]ctica/i.test(i.category)))
+  const kindOf = (id: string | null | undefined) => {
+    const it = items.find((i) => i.id === id)
+    if (!it) return null
+    return findItem(it.term, 'clase')?.id === id ? 'clase' : findItem(it.term, 'casa')?.id === id ? 'casa' : 'otro'
+  }
+  const [rubroTouched, setRubroTouched] = useState(false)
+  useEffect(() => {
+    if (rubroTouched || !items.length || s.identification !== 'roster') return
+    const it = findItem(curTerm, mode === 'homework' ? 'casa' : 'clase')
+    if (it && it.id !== s.grading_item_id) setS((x) => ({ ...x, grading_item_id: it.id }))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items.length, mode, curTerm, rubroTouched, s.identification])
+  function pickRubro(t: number | null, kind: 'clase' | 'casa' | null) {
+    setRubroTouched(true)
+    if (t != null) {
+      setTerm(t)
+      try {
+        localStorage.setItem('yq-term', String(t))
+      } catch {
+        /* sin almacenamiento */
+      }
+    }
+    const k = kind ?? (kindOf(s.grading_item_id) === 'casa' ? 'casa' : 'clase')
+    setS((x) => ({ ...x, grading_item_id: findItem(t ?? curTerm, k)?.id ?? x.grading_item_id }))
+  }
 
   function pickMode(m: Mode) {
     setMode(m)
@@ -307,11 +341,44 @@ function LaunchModalInner({ open, onClose, quiz }: Props & { quiz: NonNullable<P
         )}
 
         {s.identification === 'roster' && items.length > 0 && (
+          <div className="flex flex-col gap-2 rounded-2xl border-2 border-uap-gold/60 bg-uap-gold/10 p-3">
+            <p className="font-display font-black">¿A qué nota va?</p>
+            <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Parcial">
+              {terms.map((t) => (
+                <button key={t} role="radio" aria-checked={curTerm === t} onClick={() => pickRubro(t, null)} className={cn('rounded-xl border-2 px-3 py-1 text-sm font-bold', curTerm === t ? 'border-uap-green bg-uap-green/15' : 'border-line bg-surface')}>
+                  {TERM_LABEL(t)}
+                </button>
+              ))}
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2" role="radiogroup" aria-label="Rubro">
+              {(['clase', 'casa'] as const).map((k) => {
+                const it = findItem(curTerm, k)
+                return (
+                  <button
+                    key={k}
+                    role="radio"
+                    disabled={!it}
+                    aria-checked={!!it && s.grading_item_id === it.id}
+                    onClick={() => pickRubro(null, k)}
+                    className={cn('rounded-2xl border-2 p-3 text-left disabled:opacity-40', it && s.grading_item_id === it.id ? 'border-uap-green bg-uap-green/15' : 'border-line bg-surface hover:border-uap-gold')}
+                  >
+                    <span className="block font-display font-black">{k === 'clase' ? '📝 Ejercicio de clase' : '🏠 Práctica para casa'}</span>
+                    <span className="text-xs text-ink-soft">{it ? `${it.category} · ${it.weight} pts` : 'No está en su plan de calificación'}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
+        {s.identification === 'roster' && items.length > 0 && (
           <Select
-            label="¿A qué nota corresponde? (opcional)"
-            hint="Se usará en Reportes para pasar las notas a su registro."
+            label="Otro rubro (o sin nota)"
+            hint="La nota de cada estudiante pasa a este rubro en Reportes → Notas."
             value={s.grading_item_id ?? ''}
-            onChange={(e) => setS({ ...s, grading_item_id: e.target.value || null })}
+            onChange={(e) => {
+              setRubroTouched(true)
+              setS({ ...s, grading_item_id: e.target.value || null })
+            }}
           >
             <option value="">— Solo práctica, sin nota —</option>
             {items.map((i) => (
