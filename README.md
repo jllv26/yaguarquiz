@@ -71,7 +71,7 @@ Docente responsable: **Ing. Jimmy Luis Laruta Villarreal**
 
 1. En Supabase abra **SQL Editor → New query**.
 2. Abra en GitHub la carpeta [`supabase/migrations`](supabase/migrations). Para **cada archivo, en orden**
-   (`0001`, `0002`, … `0010`): ábralo → botón **Raw** → copie todo → péguelo en el SQL Editor → **Run**.
+   (`0001`, `0002`, … `0011`): ábralo → botón **Raw** → copie todo → péguelo en el SQL Editor → **Run**.
    Debe decir *Success*. Si Supabase muestra “Potential issue detected”, presione **Run query** (es normal: las
    migraciones crean funciones y permisos).
 3. Se pueden volver a ejecutar sin dañar nada.
@@ -88,6 +88,7 @@ Docente responsable: **Ing. Jimmy Luis Laruta Villarreal**
 | `0008_theme` | Tema visual de la evaluación en el celular del estudiante |
 | `0009_activities` | Actividades estilo Educaplay (cada jugada se corrige en el servidor) |
 | `0010_presentations` | Exposiciones con evaluación entre pares |
+| `0011_balanced_draw` | Sorteo equilibrado por tema y versiones de casos (una por estudiante) |
 
 ### Paso 4 — Conectar su copia con su Supabase
 
