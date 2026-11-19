@@ -5,7 +5,7 @@ import { cn } from '../../../lib/cn'
 import { looseNorm } from '../types'
 import { ClueImage, useGame } from '../ActivityGame'
 
-const COLORS = ['#1F3864', '#1B7339', '#8B1A1A', '#7C3AED', '#C9A23A', '#14B8A6']
+const COLORS = ['#1F3864', '#1B7339', '#8B1A1A', '#7C3AED', '#8a6416', '#0f766e']
 
 export default function Classify() {
   const { board, progress, play, busy } = useGame<'classify'>()
@@ -38,8 +38,10 @@ export default function Classify() {
     }
   }
 
+  const picked = pick ? cards.find((c) => c.key === pick) : null
+
   return (
-    <div className="flex flex-col gap-4">
+    <div className={cn('flex flex-col gap-4', picked && 'pb-44 sm:pb-0')}>
       <div className="min-h-20 rounded-3xl border-2 border-dashed border-line bg-surface-2/70 p-3">
         <p className="mb-2 text-center text-sm text-ink-soft">
           <FolderInput className="mr-1 inline size-4" /> Toque un elemento y luego el grupo al que pertenece.
@@ -96,6 +98,35 @@ export default function Classify() {
         ))}
       </div>
       {lost.length > 0 && <p className="text-center text-sm text-uap-red">Sin intentos: {lost.map((c) => c.text).join(', ')}</p>}
+
+      {/* En el celular: al elegir un elemento, los grupos aparecen abajo sin tener que bajar la pantalla */}
+      {picked && (
+        <motion.div
+          initial={{ y: 80, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface-2/95 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-8px_30px_rgba(0,0,0,.15)] backdrop-blur sm:hidden"
+          role="group"
+          aria-label="Elige el grupo"
+        >
+          <p className="mb-2 line-clamp-2 text-center text-sm font-semibold">
+            <span className="text-ink-soft">¿A qué grupo va? </span>«{picked.text}»
+          </p>
+          <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${groups.length > 3 ? 2 : groups.length}, minmax(0, 1fr))` }}>
+            {groups.map((g, i) => (
+              <button
+                key={g}
+                type="button"
+                onClick={() => void drop(g)}
+                disabled={busy}
+                className="min-h-11 rounded-2xl px-2 py-2 font-display text-sm font-black leading-tight text-white shadow-sm active:scale-95"
+                style={{ background: COLORS[i % COLORS.length] }}
+              >
+                {g}
+              </button>
+            ))}
+          </div>
+        </motion.div>
+      )}
     </div>
   )
 }

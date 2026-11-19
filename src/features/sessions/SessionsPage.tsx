@@ -9,7 +9,7 @@ import { Modal } from '../../components/ui/Modal'
 import { useSessions, type Phase, type SessionListRow } from '../../lib/api/live'
 import { useQuizzes } from '../../lib/api/quizzes'
 import { fmtDateTime } from '../../lib/dates'
-import { LaunchModal } from './LaunchModal'
+import { LaunchModal, launchHint } from './LaunchModal'
 
 const PHASE: Record<Phase, string> = {
   lobby: 'Sala de espera',
@@ -193,7 +193,7 @@ function PickQuizModal({ open, onClose }: { open: boolean; onClose: () => void }
           setLaunch(false)
           onClose()
         }}
-        quiz={quiz ? { id: quiz.id, title: quiz.title, subject_id: quiz.subject_id, questionCount: quiz.questions[0]?.count } : null}
+        quiz={quiz ? { id: quiz.id, title: quiz.title, subject_id: quiz.subject_id, questionCount: quiz.questions[0]?.count, launch: launchHint(quiz.settings) } : null}
       />
     </>
   )

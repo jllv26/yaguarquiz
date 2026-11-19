@@ -39,7 +39,7 @@ import { cn } from '../../lib/cn'
 import { exportQuizToExcel } from '../quizzes/quizExport'
 import { newQuestion, QUESTION_TYPES, uid, validateQuestion, type EditorQuestion, type QuestionType } from '../quizzes/questionModel'
 import { QuizSettingsModal } from '../quizzes/QuizSettingsModal'
-import { LaunchModal } from '../sessions/LaunchModal'
+import { LaunchModal, launchHint } from '../sessions/LaunchModal'
 import { BankModal, ImportQuestionsModal, MoveModal, PreviewModal } from './EditorModals'
 import { QuestionCanvas } from './QuestionCanvas'
 import { SettingsPanel } from './SettingsPanel'
@@ -427,7 +427,7 @@ function Editor({ quiz, initial }: { quiz: NonNullable<ReturnType<typeof useQuiz
       <MoveModal open={modal === 'move'} onClose={() => setModal(null)} currentQuizId={quiz.id} onMove={onMove} />
       <ImportQuestionsModal open={modal === 'import'} onClose={() => setModal(null)} onImport={onImport} />
       <QuizSettingsModal open={modal === 'settings'} onClose={() => setModal(null)} quiz={quiz} />
-      <LaunchModal open={launchOpen} onClose={() => setLaunchOpen(false)} quiz={{ id: quiz.id, title: quiz.title, subject_id: quiz.subject_id, questionCount: qs.length }} />
+      <LaunchModal open={launchOpen} onClose={() => setLaunchOpen(false)} quiz={{ id: quiz.id, title: quiz.title, subject_id: quiz.subject_id, questionCount: qs.length, launch: launchHint(quiz.settings) }} />
     </div>
   )
 }

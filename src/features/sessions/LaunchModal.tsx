@@ -16,10 +16,24 @@ import { ACTIVITY_META, type ActivityType } from '../activities/types'
 
 type Mode = 'live' | 'exam' | 'homework'
 
+/** Configuración sugerida guardada en la evaluación (quizzes.settings.launch): se precarga al lanzar. */
+export interface LaunchHint {
+  mode?: 'exam' | 'homework'
+  pick_count?: number
+  time_limit_min?: number
+  max_attempts?: number
+}
+
 interface Props {
   open: boolean
   onClose: () => void
-  quiz: { id: string; title: string; subject_id: string; questionCount?: number; activity?: ActivityType | null } | null
+  quiz: { id: string; title: string; subject_id: string; questionCount?: number; activity?: ActivityType | null; launch?: LaunchHint | null } | null
+}
+
+/** Lee la configuración sugerida de quizzes.settings (si existe y es válida). */
+export function launchHint(settings: unknown): LaunchHint | null {
+  const l = (settings as { launch?: LaunchHint } | null)?.launch
+  return l && typeof l === 'object' ? l : null
 }
 
 /** "2026-11-18T08:00" en hora local (para <input type="datetime-local">). */
@@ -58,6 +72,7 @@ function LaunchModalInner({ open, onClose, quiz }: Props & { quiz: NonNullable<P
   const items = (plan.data?.grading_items ?? []).filter((i) => i.source === 'yaguarquiz').sort((a, b) => a.term - b.term || (a.sort_order ?? 0) - (b.sort_order ?? 0))
   const n = quiz.questionCount
   const act = quiz.activity ? ACTIVITY_META[quiz.activity] : null
+  const hint = quiz.launch ?? null
 
   function pickMode(m: Mode) {
     setMode(m)
@@ -79,10 +94,23 @@ function LaunchModalInner({ open, onClose, quiz }: Props & { quiz: NonNullable<P
       ...(act ? { show_correct: m === 'homework' ? ('each' as const) : ('end' as const), shuffle_questions: !act.fixedBoard, max_attempts: m === 'homework' ? 3 : 1 } : {}),
     }))
     if (act) setLimitOn(m === 'exam')
+    // configuración sugerida por quien preparó la evaluación
+    if (hint && m !== 'live') {
+      const pick = hint.pick_count && (!n || hint.pick_count < n) && !act?.fixedBoard ? hint.pick_count : null
+      if (pick) setPickOn(true)
+      setS((x) => ({
+        ...x,
+        pick_count: pick ?? x.pick_count,
+        ...(hint.mode === m && hint.max_attempts ? { max_attempts: hint.max_attempts } : {}),
+        ...(hint.mode === m && hint.time_limit_min ? { time_limit_min: hint.time_limit_min } : {}),
+      }))
+      if (hint.mode === m && hint.time_limit_min) setLimitOn(true)
+    }
   }
   // las actividades no se juegan en vivo: empiezan como tarea
   useEffect(() => {
-    if (act) pickMode('homework')
+    if (hint?.mode) pickMode(hint.mode)
+    else if (act) pickMode('homework')
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 

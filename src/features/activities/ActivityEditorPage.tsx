@@ -12,7 +12,7 @@ import { fetchActivityItems, saveActivity } from '../../lib/api/activities'
 import { fetchQuestions, qkq, useQuiz, useQuizzes, useSaveQuiz } from '../../lib/api/quizzes'
 import { cn } from '../../lib/cn'
 import { ImageField } from '../editor/ImageField'
-import { LaunchModal } from '../sessions/LaunchModal'
+import { LaunchModal, launchHint } from '../sessions/LaunchModal'
 import { ActivityGame } from './ActivityGame'
 import { activityOf } from './ActivitiesPage'
 import { buildCrossword, buildWordsearch } from './generators'
@@ -478,7 +478,7 @@ function Editor({
           setDirty(true)
         }}
       />
-      <LaunchModal open={launch} onClose={() => setLaunch(false)} quiz={launch ? { id: quiz.id, title, subject_id: quiz.subject_id, questionCount: effItems.length, activity: type } : null} />
+      <LaunchModal open={launch} onClose={() => setLaunch(false)} quiz={launch ? { id: quiz.id, title, subject_id: quiz.subject_id, questionCount: effItems.length, activity: type, launch: launchHint(quiz.settings) } : null} />
     </div>
   )
 }

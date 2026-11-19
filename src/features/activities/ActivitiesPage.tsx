@@ -12,7 +12,7 @@ import { Modal } from '../../components/ui/Modal'
 import { useToast } from '../../components/ui/Toast'
 import { saveActivity } from '../../lib/api/activities'
 import { qkq, useDeleteQuiz, useDuplicateQuiz, useQuizzes, useSaveQuiz, useSubjectsLite, type QuizListRow } from '../../lib/api/quizzes'
-import { LaunchModal } from '../sessions/LaunchModal'
+import { LaunchModal, launchHint } from '../sessions/LaunchModal'
 import { ACTIVITY_META, ACTIVITY_TYPES, type ActivitySettings, type ActivityType } from './types'
 
 export const activityOf = (z: { settings?: Record<string, unknown> | null }) => (z.settings?.activity as ActivitySettings | undefined)?.type ?? null
@@ -149,7 +149,7 @@ function ActivityCard({ z }: { z: QuizListRow }) {
           )}
         </div>
       </div>
-      <LaunchModal open={launch} onClose={() => setLaunch(false)} quiz={launch ? { id: z.id, title: z.title, subject_id: z.subject_id, questionCount: n, activity: type } : null} />
+      <LaunchModal open={launch} onClose={() => setLaunch(false)} quiz={launch ? { id: z.id, title: z.title, subject_id: z.subject_id, questionCount: n, activity: type, launch: launchHint(z.settings) } : null} />
     </SolidCard>
   )
 }

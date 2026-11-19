@@ -49,6 +49,8 @@ export default function Hangman() {
     return () => window.removeEventListener('keydown', onKey)
   })
   if (!it) return null
+  // palabras largas: letras más pequeñas para que quepan en el celular
+  const longest = Math.max(0, ...mask.split(' ').map((w) => w.length))
   const used = new Set([...(tried[it.key] ?? []), ...mask.replace(/[_ ]/g, '').split('')])
 
   return (
@@ -85,9 +87,9 @@ export default function Hangman() {
           </p>
           <p className="flex flex-wrap justify-center gap-x-4 gap-y-2 font-display text-3xl font-black tracking-wide" aria-hidden>
             {mask.split(' ').map((w, wi) => (
-              <span key={wi} className="flex gap-1.5">
+              <span key={wi} className={cn('flex', longest > 8 ? 'gap-1' : 'gap-1.5')}>
                 {w.split('').map((c, ci) => (
-                  <span key={ci} className={cn('grid h-11 w-8 place-items-end justify-center border-b-4 pb-0.5', p?.done ? (p.correct ? 'border-uap-green text-uap-green' : 'border-uap-red text-uap-red') : 'border-ink/40')}>
+                  <span key={ci} className={cn('grid place-items-end justify-center border-b-4 pb-0.5', longest > 11 ? 'h-9 w-5 text-xl' : longest > 8 ? 'h-10 w-6 text-2xl' : 'h-11 w-8', p?.done ? (p.correct ? 'border-uap-green text-uap-green' : 'border-uap-red text-uap-red') : 'border-ink/40')}>
                     {c === '_' ? '' : c}
                   </span>
                 ))}

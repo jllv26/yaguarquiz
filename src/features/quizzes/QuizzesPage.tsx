@@ -13,7 +13,7 @@ import { normalizeText } from '../../lib/text'
 import { exportQuizToExcel } from './quizExport'
 import { downloadQuestionTemplate } from './questionTemplate'
 import { QuizSettingsModal } from './QuizSettingsModal'
-import { LaunchModal } from '../sessions/LaunchModal'
+import { LaunchModal, launchHint } from '../sessions/LaunchModal'
 
 const STATUS: Record<QuizStatus, { label: string; tone: 'neutral' | 'green' | 'gold' }> = {
   draft: { label: 'Borrador', tone: 'gold' },
@@ -228,7 +228,7 @@ function QuizCard({ z, index }: { z: QuizListRow; index: number }) {
               </Button>
             )}
           </div>
-          <LaunchModal open={launch} onClose={() => setLaunch(false)} quiz={launch ? { id: z.id, title: z.title, subject_id: z.subject_id, questionCount: n } : null} />
+          <LaunchModal open={launch} onClose={() => setLaunch(false)} quiz={launch ? { id: z.id, title: z.title, subject_id: z.subject_id, questionCount: n, launch: launchHint(z.settings) } : null} />
         </div>
       </SolidCard>
     </motion.div>
