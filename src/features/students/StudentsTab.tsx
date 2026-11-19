@@ -1,4 +1,4 @@
-import { Download, FileSpreadsheet, Pencil, Search, UserMinus, UserPlus, Users } from 'lucide-react'
+import { Download, FileSpreadsheet, Loader2, MailCheck, Pencil, Search, UserMinus, UserPlus, Users } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Button } from '../../components/ui/Button'
 import { SolidCard } from '../../components/ui/Card'
@@ -7,6 +7,7 @@ import { Badge, EmptyState, Skeleton } from '../../components/ui/Field'
 import { useToast } from '../../components/ui/Toast'
 import { useEnrolled, useUnenroll } from '../../lib/api/academic'
 import { buildWorkbook, downloadBlob, headerCell } from '../../lib/excel'
+import { mailNow, mailSendAccess } from '../../lib/sheets'
 import { normalizeText } from '../../lib/text'
 import type { EnrolledStudent } from '../../types/db'
 import { ImportStudentsModal } from './ImportStudentsModal'
@@ -21,6 +22,28 @@ export function StudentsTab({ subjectId, subjectLabel }: { subjectId: string; su
   const [q, setQ] = useState('')
   const [importOpen, setImportOpen] = useState(false)
   const [modal, setModal] = useState<{ open: boolean; student?: EnrolledStudent }>({ open: false })
+  const [sending, setSending] = useState(false)
+
+  async function sendAccess() {
+    const n = (enrolled.data ?? []).filter((s) => s.email && s.active && s.enrollment_active !== false).length
+    const ok = await confirm({
+      title: 'Enviar acceso por correo',
+      message: `A ${n} estudiante(s) con correo les llega cómo entrar a YaguarQuiz: el enlace, que el PIN lo da usted, su RU y (si se le pide) los últimos 3 dígitos de su CI. Se envía desde su Gmail en los próximos minutos.`,
+      confirmText: 'Enviar',
+    })
+    if (!ok) return
+    setSending(true)
+    try {
+      const r = await mailSendAccess(subjectId)
+      if (!r.ok && r.error === 'disabled') return toast.error('Los correos están apagados', 'Actívelos en Configuración → Correos a los estudiantes.')
+      void mailNow().catch(() => null)
+      toast.success(`${r.queued ?? 0} correo(s) de acceso en camino`, r.without_email ? `${r.without_email} estudiante(s) no tienen correo registrado.` : 'Salen desde su Gmail en los próximos minutos.')
+    } catch (e) {
+      toast.error('No se pudo enviar', (e as Error).message)
+    } finally {
+      setSending(false)
+    }
+  }
 
   const list = useMemo(() => {
     const all = enrolled.data ?? []
@@ -53,10 +76,10 @@ export function StudentsTab({ subjectId, subjectLabel }: { subjectId: string; su
       {
         sheet: 'Lista',
         data: [
-          ['N°', 'codigo_universitario', 'ci', 'apellidos', 'nombres', 'correo', 'carrera'].map(headerCell),
-          ...rows.map((s, i) => [i + 1, s.university_code, s.ci, s.last_names, s.first_names, s.email, s.career]),
+          ['N°', 'codigo_universitario', 'ci', 'apellidos', 'nombres', 'correo', 'celular', 'correos_adicionales', 'direccion', 'grado_academico', 'estado', 'carrera'].map(headerCell),
+          ...rows.map((s, i) => [i + 1, s.university_code, s.ci, s.last_names, s.first_names, s.email, s.phone ?? '', s.extra_emails ?? '', s.address ?? '', s.degree ?? '', s.status_label ?? (s.active ? 'ACTIVO' : 'INACTIVO'), s.career]),
         ],
-        columns: [{ width: 6 }, { width: 20 }, { width: 14 }, { width: 26 }, { width: 24 }, { width: 30 }, { width: 24 }],
+        columns: [{ width: 6 }, { width: 20 }, { width: 14 }, { width: 26 }, { width: 24 }, { width: 30 }, { width: 14 }, { width: 26 }, { width: 26 }, { width: 18 }, { width: 12 }, { width: 24 }],
         stickyRowsCount: 1,
       },
     ])
@@ -79,6 +102,11 @@ export function StudentsTab({ subjectId, subjectLabel }: { subjectId: string; su
         <Button variant="secondary" onClick={() => setModal({ open: true })}>
           <UserPlus className="size-5" /> Agregar
         </Button>
+        {!!enrolled.data?.length && (
+          <Button variant="secondary" disabled={sending} onClick={() => void sendAccess()}>
+            {sending ? <Loader2 className="size-5 animate-spin" /> : <MailCheck className="size-5" />} Enviar acceso por correo
+          </Button>
+        )}
       </div>
 
       {enrolled.isLoading ? (
@@ -119,7 +147,7 @@ export function StudentsTab({ subjectId, subjectLabel }: { subjectId: string; su
             </Button>
           </div>
           <div className="overflow-x-auto rounded-2xl border border-line">
-            <table className="w-full min-w-[720px] text-sm">
+            <table className="w-full min-w-[820px] text-sm">
               <thead className="bg-ink/[0.04] text-left text-ink-soft">
                 <tr>
                   <th className="px-3 py-2.5">N°</th>
@@ -127,6 +155,7 @@ export function StudentsTab({ subjectId, subjectLabel }: { subjectId: string; su
                   <th className="px-3 py-2.5">Apellidos y nombres</th>
                   <th className="px-3 py-2.5">CI</th>
                   <th className="px-3 py-2.5">Correo</th>
+                  <th className="px-3 py-2.5">Celular</th>
                   <th className="px-3 py-2.5" />
                 </tr>
               </thead>
@@ -145,6 +174,13 @@ export function StudentsTab({ subjectId, subjectLabel }: { subjectId: string; su
                     </td>
                     <td className="px-3 py-2">{s.ci}</td>
                     <td className="px-3 py-2 text-ink-soft">{s.email}</td>
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      {s.phone ? (
+                        <a className="text-uap-blue underline-offset-2 hover:underline dark:text-game-electric" href={`https://wa.me/591${s.phone.replace(/\D/g, '').slice(-8)}`} target="_blank" rel="noreferrer" title="Escribir por WhatsApp">
+                          {s.phone}
+                        </a>
+                      ) : null}
+                    </td>
                     <td className="px-3 py-2">
                       <div className="flex justify-end gap-1">
                         <Button size="sm" variant="ghost" onClick={() => setModal({ open: true, student: s })} aria-label="Editar">

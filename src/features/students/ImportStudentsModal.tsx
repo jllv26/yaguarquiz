@@ -241,6 +241,7 @@ export function ImportStudentsModal({
                     <td className="px-3 py-2">{r.data.ci}</td>
                     <td className="px-3 py-2">
                       {r.data.email}
+                      {r.data.phone && <span className="block text-xs text-ink-soft">cel. {r.data.phone}</span>}
                       {[...r.errors, ...r.warnings].map((m) => (
                         <p
                           key={m}

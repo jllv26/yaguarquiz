@@ -37,6 +37,13 @@ export interface Student {
   email: string | null
   career: string | null
   active: boolean
+  paternal_last_name?: string | null
+  maternal_last_name?: string | null
+  phone?: string | null
+  extra_emails?: string | null
+  address?: string | null
+  degree?: string | null
+  status_label?: string | null
 }
 
 export interface EnrolledStudent extends Student {

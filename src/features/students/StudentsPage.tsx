@@ -29,7 +29,7 @@ export function StudentsPage() {
     return (students.data ?? []).filter(
       (s) =>
         (filter === 'all' || (filter === 'active' ? s.active : !s.active)) &&
-        (!nq || normalizeText(`${s.university_code} ${s.ci ?? ''} ${s.last_names} ${s.first_names} ${s.email ?? ''}`).includes(nq)),
+        (!nq || normalizeText(`${s.university_code} ${s.ci ?? ''} ${s.last_names} ${s.first_names} ${s.email ?? ''} ${s.phone ?? ''}`).includes(nq)),
     )
   }, [students.data, q, filter])
 
@@ -124,7 +124,11 @@ export function StudentsPage() {
                     <td className="px-3 py-2 font-mono font-semibold">{s.university_code}</td>
                     <td className="px-3 py-2">
                       <span className="font-semibold">{s.last_names}</span>, {s.first_names}
-                      {s.email && <p className="text-xs text-ink-soft">{s.email}</p>}
+                      {(s.email || s.phone) && (
+                        <p className="text-xs text-ink-soft">
+                          {[s.email, s.phone && `cel. ${s.phone}`].filter(Boolean).join(' · ')}
+                        </p>
+                      )}
                     </td>
                     <td className="px-3 py-2">{s.ci}</td>
                     <td className="px-3 py-2">

@@ -1,6 +1,19 @@
 import { cleanCell, EMAIL_RE, normalizeCode, normalizeText } from '../../lib/text'
 
-export type StudentField = 'university_code' | 'ci' | 'last_names' | 'first_names' | 'email' | 'career'
+export type StudentField =
+  | 'university_code'
+  | 'ci'
+  | 'last_names'
+  | 'first_names'
+  | 'email'
+  | 'career'
+  | 'paternal_last_name'
+  | 'maternal_last_name'
+  | 'phone'
+  | 'extra_emails'
+  | 'address'
+  | 'degree'
+  | 'status_label'
 
 export interface StudentData {
   university_code: string
@@ -9,6 +22,13 @@ export interface StudentData {
   first_names: string
   email: string
   career: string
+  paternal_last_name: string
+  maternal_last_name: string
+  phone: string
+  extra_emails: string
+  address: string
+  degree: string
+  status_label: string
 }
 
 export type RowStatus = 'new' | 'existing' | 'enrolled' | 'error'
@@ -38,6 +58,11 @@ export const TEMPLATE_HEADERS: { field: StudentField; header: string; required: 
   { field: 'first_names', header: 'nombres', required: true, example: ['Ana Lucía', 'Carlos', 'María José'] },
   { field: 'email', header: 'correo', required: false, example: ['ana.perez@gmail.com', '', 'mjrojas@gmail.com'] },
   { field: 'career', header: 'carrera', required: false, example: ['Turismo Sostenible', 'Turismo Sostenible', 'Turismo Sostenible'] },
+  { field: 'phone', header: 'celular', required: false, example: ['72912345', '', '68012345'] },
+  { field: 'extra_emails', header: 'correos_adicionales', required: false, example: ['', '', ''] },
+  { field: 'address', header: 'direccion', required: false, example: ['', '', ''] },
+  { field: 'degree', header: 'grado_academico', required: false, example: ['', '', ''] },
+  { field: 'status_label', header: 'estado', required: false, example: ['ACTIVO', 'ACTIVO', 'ACTIVO'] },
 ]
 
 /** Sinónimos aceptados en los encabezados (ya normalizados: sin tildes ni mayúsculas). */
@@ -49,8 +74,15 @@ const SYNONYMS: Record<StudentField | 'full_name', string[]> = {
   ci: ['ci', 'c i', 'carnet', 'carnet de identidad', 'cedula', 'cedula de identidad', 'documento', 'dni'],
   last_names: ['apellidos', 'apellido', 'apellido paterno y materno', 'apellidos completos'],
   first_names: ['nombres', 'nombre', 'nombre s'],
-  email: ['correo', 'correo electronico', 'email', 'e mail', 'mail', 'gmail'],
+  email: ['correo', 'correo electronico', 'email', 'e mail', 'mail', 'gmail', 'email principal', 'correo principal'],
   career: ['carrera', 'programa', 'especialidad'],
+  paternal_last_name: ['apellido paterno', 'paterno', 'primer apellido'],
+  maternal_last_name: ['apellido materno', 'materno', 'segundo apellido'],
+  phone: ['celular', 'telefono', 'cel', 'telefono celular', 'movil', 'whatsapp', 'nro celular', 'numero de celular'],
+  extra_emails: ['correos adicionales', 'correo adicional', 'otros correos', 'email adicional', 'emails adicionales'],
+  address: ['direccion', 'domicilio', 'direccion domicilio'],
+  degree: ['grado academico', 'grado', 'nivel academico'],
+  status_label: ['estado', 'situacion', 'estado del estudiante'],
   full_name: ['apellidos y nombres', 'nombre completo', 'nombres y apellidos', 'estudiante', 'nombre y apellido'],
 }
 
@@ -61,6 +93,13 @@ const FIELD_LABEL: Record<StudentField, string> = {
   first_names: 'nombres',
   email: 'correo',
   career: 'carrera',
+  paternal_last_name: 'apellido paterno',
+  maternal_last_name: 'apellido materno',
+  phone: 'celular',
+  extra_emails: 'correos adicionales',
+  address: 'dirección',
+  degree: 'grado académico',
+  status_label: 'estado',
 }
 
 function matchHeader(cell: unknown): StudentField | 'full_name' | null {
@@ -80,7 +119,8 @@ function findHeaderRow(matrix: unknown[][]) {
       const f = matchHeader(cell)
       if (f && !map.has(f)) map.set(f, c)
     })
-    if (map.has('university_code') && (map.has('full_name') || (map.has('last_names') && map.has('first_names')))) {
+    const hasLast = map.has('last_names') || map.has('paternal_last_name')
+    if (map.has('university_code') && (map.has('full_name') || (hasLast && map.has('first_names')))) {
       return { headerRow: r, map }
     }
   }
@@ -149,7 +189,10 @@ export function parseStudentMatrix(
 
     const errors: string[] = []
     const warnings: string[] = []
-    let last = get(raw, 'last_names')
+    const paternal = get(raw, 'paternal_last_name')
+    const maternal = get(raw, 'maternal_last_name')
+    // lista oficial con apellido paterno y materno separados: «apellidos» = paterno + materno
+    let last = get(raw, 'last_names') || [paternal, maternal].filter(Boolean).join(' ')
     let first = get(raw, 'first_names')
     if (!last && !first && map.has('full_name')) {
       const split = splitFullName(get(raw, 'full_name'))
@@ -165,6 +208,13 @@ export function parseStudentMatrix(
       first_names: first,
       email: get(raw, 'email').toLowerCase(),
       career: get(raw, 'career'),
+      paternal_last_name: paternal,
+      maternal_last_name: maternal,
+      phone: get(raw, 'phone').replace(/[^\d+ ]/g, '').trim(),
+      extra_emails: get(raw, 'extra_emails').toLowerCase(),
+      address: get(raw, 'address'),
+      degree: get(raw, 'degree'),
+      status_label: get(raw, 'status_label').toUpperCase(),
     }
 
     if (!data.university_code) errors.push(`Falta el ${FIELD_LABEL.university_code}.`)
@@ -173,6 +223,8 @@ export function parseStudentMatrix(
     if (!data.first_names) errors.push('Faltan los nombres.')
     if (data.email && !EMAIL_RE.test(data.email)) errors.push(`El correo "${data.email}" no tiene un formato válido.`)
     if (data.ci && !/^[0-9]{4,10}(-?[0-9A-Z]{1,3})?$/i.test(data.ci)) warnings.push(`Revisa el CI "${data.ci}".`)
+    if (data.status_label && /^(INACTIV|RETIR|ABANDON|BAJA|SUSPEND)/.test(data.status_label)) warnings.push(`Estado ${data.status_label}: se registra como inactivo.`)
+    if (/^(LIC|ING|MSC|MGR|DR|PHD)/.test(data.degree.toUpperCase())) warnings.push(`Tiene grado académico «${data.degree}»: ¿es el docente? Si no es estudiante, elimínelo después en Estudiantes.`)
 
     if (data.university_code) {
       const prev = seen.get(data.university_code)

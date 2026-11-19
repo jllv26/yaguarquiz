@@ -186,7 +186,7 @@ export function useEnrolled(subjectId: string) {
       const rows = check(
         await supabase
           .from('enrollments')
-          .select('active, students(id, university_code, ci, last_names, first_names, email, career, active)')
+          .select('active, students(id, university_code, ci, last_names, first_names, email, career, active, paternal_last_name, maternal_last_name, phone, extra_emails, address, degree, status_label)')
           .eq('subject_id', subjectId),
       ) as unknown as { active: boolean; students: Student }[]
       return rows
@@ -203,7 +203,7 @@ export function useAllStudents() {
       const rows = check(
         await supabase
           .from('students')
-          .select('id, university_code, ci, last_names, first_names, email, career, active, enrollments(subjects(code, parallel))')
+          .select('id, university_code, ci, last_names, first_names, email, career, active, paternal_last_name, maternal_last_name, phone, extra_emails, address, degree, status_label, enrollments(subjects(code, parallel))')
           .order('last_names'),
       ) as unknown as (Student & { enrollments: { subjects: { code: string; parallel: string } | null }[] })[]
       return rows
@@ -244,6 +244,13 @@ export function useSaveStudent() {
         email: v.email?.trim().toLowerCase() || null,
         career: v.career?.trim() || null,
         active: v.active ?? true,
+        paternal_last_name: v.paternal_last_name?.trim() || null,
+        maternal_last_name: v.maternal_last_name?.trim() || null,
+        phone: v.phone?.trim() || null,
+        extra_emails: v.extra_emails?.trim().toLowerCase() || null,
+        address: v.address?.trim() || null,
+        degree: v.degree?.trim() || null,
+        status_label: v.status_label?.trim().toUpperCase() || null,
       }
       if (v.id) return check(await supabase.from('students').update(row).eq('id', v.id))
       if (v.enrollIn) {

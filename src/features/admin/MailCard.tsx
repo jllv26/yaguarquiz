@@ -44,7 +44,7 @@ export function MailCard() {
         </span>
         <div className="min-w-0 flex-1">
           <h2 className="font-display text-xl font-bold">Correos a los estudiantes</h2>
-          <p className="text-sm text-ink-soft">Aviso de cada tarea que lance y la nota de cada actividad, desde su Gmail.</p>
+          <p className="text-sm text-ink-soft">Acceso al sistema (enlace y RU), aviso de cada tarea que lance y la nota de cada actividad, desde su Gmail.</p>
         </div>
         {s && (
           <Button variant={s.enabled ? 'secondary' : 'success'} disabled={busy !== null} onClick={() => void toggle()}>
@@ -86,6 +86,9 @@ export function MailCard() {
             </li>
             <li>
               En el editor de su script, elija la función <b>activarCorreos</b> y presione <b>▶ Ejecutar</b> una vez: Google pide permiso para enviar correos desde su Gmail y desde ahí envía cada 5 minutos.
+            </li>
+            <li>
+              El correo de <b>acceso</b> (enlace, RU y cómo entrar) se envía desde la lista de cada asignatura: <b>Asignaturas → Estudiantes → Enviar acceso por correo</b>.
             </li>
             <li>Gmail gratuito permite unos 100 correos por día: cada estudiante recibe un solo correo con todo lo nuevo; lo que no alcanza sale al día siguiente.</li>
           </ol>

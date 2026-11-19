@@ -21,7 +21,8 @@ export function StudentModal({
 }) {
   const toast = useToast()
   const save = useSaveStudent()
-  const [f, setF] = useState({ university_code: '', ci: '', last_names: '', first_names: '', email: '', career: '' })
+  const EMPTY = { university_code: '', ci: '', last_names: '', first_names: '', email: '', career: '', phone: '', extra_emails: '', address: '', degree: '', status_label: '', paternal_last_name: '', maternal_last_name: '' }
+  const [f, setF] = useState(EMPTY)
   const [lastKey, setLastKey] = useState<string | null>(null)
   const key = open ? (student?.id ?? 'new') : null
   if (key !== lastKey) {
@@ -33,6 +34,13 @@ export function StudentModal({
       first_names: student?.first_names ?? '',
       email: student?.email ?? '',
       career: student?.career ?? '',
+      phone: student?.phone ?? '',
+      extra_emails: student?.extra_emails ?? '',
+      address: student?.address ?? '',
+      degree: student?.degree ?? '',
+      status_label: student?.status_label ?? '',
+      paternal_last_name: student?.paternal_last_name ?? '',
+      maternal_last_name: student?.maternal_last_name ?? '',
     })
   }
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF((x) => ({ ...x, [k]: e.target.value }))
@@ -42,6 +50,11 @@ export function StudentModal({
     if (!f.university_code.trim() || !f.last_names.trim() || !f.first_names.trim())
       return toast.error('Faltan datos', 'El código universitario, los apellidos y los nombres son obligatorios.')
     if (f.email.trim() && !EMAIL_RE.test(f.email.trim())) return toast.error('Correo inválido')
+    // si se cambian los apellidos a mano, los separados dejan de valer
+    if (student && f.last_names.trim() !== (student.last_names ?? '')) {
+      f.paternal_last_name = ''
+      f.maternal_last_name = ''
+    }
     try {
       await save.mutateAsync({ id: student?.id, ...f, active: student?.active ?? true, enrollIn: student ? undefined : enrollIn })
       toast.success(student ? 'Datos actualizados' : 'Estudiante agregado')
@@ -73,8 +86,12 @@ export function StudentModal({
         <Input label="Carnet de identidad (CI)" value={f.ci} onChange={set('ci')} />
         <Input label="Apellidos *" value={f.last_names} onChange={set('last_names')} />
         <Input label="Nombres *" value={f.first_names} onChange={set('first_names')} />
-        <Input label="Correo" type="email" value={f.email} onChange={set('email')} />
+        <Input label="Correo principal" type="email" value={f.email} onChange={set('email')} />
+        <Input label="Celular" inputMode="tel" value={f.phone} onChange={set('phone')} />
+        <Input label="Correos adicionales" value={f.extra_emails} onChange={set('extra_emails')} />
         <Input label="Carrera" value={f.career} onChange={set('career')} />
+        <Input label="Dirección" value={f.address} onChange={set('address')} />
+        <Input label="Grado académico" value={f.degree} onChange={set('degree')} />
       </form>
     </Modal>
   )

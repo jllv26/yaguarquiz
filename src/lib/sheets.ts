@@ -198,3 +198,10 @@ export const studentSetEmail = async (token: string, email: string) => {
   if (error) return { ok: false, error: 'network' }
   return data as { ok: boolean; error?: string }
 }
+
+/** Pone en cola el correo de acceso (enlace + RU + cómo entrar) para los inscritos de una asignatura (0015). */
+export async function mailSendAccess(subjectId: string, studentId?: string) {
+  const { data, error } = await supabase.rpc('mail_send_access', { p_subject: subjectId, p_student: studentId ?? null })
+  if (error) throw new Error(friendlyError(error.message))
+  return data as { ok: boolean; error?: string; queued?: number; without_email?: number }
+}
