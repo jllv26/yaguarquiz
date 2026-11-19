@@ -66,6 +66,26 @@ export function ActivityAttempt({
     lastTick.current = sec
   }, [left])
 
+  // anti-trampa: no se puede pegar texto en las respuestas (queda registrado para el docente)
+  useEffect(() => {
+    const onPaste = (e: ClipboardEvent) => {
+      const t = e.target as HTMLElement | null
+      if (!t || !(t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t.isContentEditable)) return
+      e.preventDefault()
+      void reportFocus(token, 'paste')
+      toast.error('No se puede pegar texto', 'Escribe tu respuesta con tus palabras.')
+    }
+    const onDrop = (e: DragEvent) => {
+      if (e.dataTransfer?.types?.includes('text/plain')) e.preventDefault()
+    }
+    document.addEventListener('paste', onPaste, true)
+    document.addEventListener('drop', onDrop, true)
+    return () => {
+      document.removeEventListener('paste', onPaste, true)
+      document.removeEventListener('drop', onDrop, true)
+    }
+  }, [token, toast])
+
   // modo enfoque: salir de la pestaña queda registrado (igual que en el examen)
   useEffect(() => {
     if (!st.session.focus_mode) return
@@ -141,6 +161,11 @@ export function ActivityReview({ items, type }: { items: ActivityReviewItem[]; t
   return (
     <div className="flex flex-col gap-3">
       <h2 className="font-display text-xl font-black">Revisión de {meta ? meta.label.toLowerCase() : 'la actividad'}</h2>
+      {items.some((it) => it.hidden) && (
+        <p className="rounded-2xl bg-uap-gold/15 px-4 py-2 text-sm font-semibold">
+          🔒 Las respuestas correctas de lo que fallaste se muestran cuando cierre la actividad (así nadie se las pasa a sus compañeros).
+        </p>
+      )}
       <div className="grid gap-2 sm:grid-cols-2">
         {items.map((it, i) => (
           <SolidCard key={i} className={cn('flex items-start gap-3 border-l-8 p-3', it.correct ? 'border-l-uap-green' : 'border-l-uap-red')}>
@@ -148,7 +173,7 @@ export function ActivityReview({ items, type }: { items: ActivityReviewItem[]; t
             {it.image_url && <img src={it.image_url} alt="" className="size-12 rounded-lg bg-white object-contain" />}
             <div className="min-w-0 flex-1 text-sm">
               {it.clue && <p className="text-ink-soft">{it.clue}</p>}
-              <p className="font-display font-black">{it.answer}</p>
+              {it.answer ? <p className="font-display font-black">{it.answer}</p> : <p className="font-semibold text-ink-soft">Respuesta correcta: al cerrar la actividad</p>}
               {!it.correct && <p className="text-uap-red">Tu respuesta: {it.response || 'sin resolver'}</p>}
               {it.correct && it.partial < 1 && <p className="text-[#9a6a00]">Con más de un intento ({Math.round(it.partial * 100)} %)</p>}
             </div>

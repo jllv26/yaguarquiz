@@ -104,7 +104,7 @@ for (const type of Object.keys(ACTS)) {
     check(r2.correct && r2.points === 600, 'acierta al 2.º intento: 60 %')
     await play(bad, 'answer', { item: qs[1].id, value: 'x' })
     const r3 = await play(bad, 'answer', { item: qs[1].id, value: 'y' })
-    check(r3.done && !r3.correct && r3.answer, 'agota intentos: se revela (retroalimentación inmediata)')
+    check(r3.done && !r3.correct && !r3.answer, 'agota intentos: NO revela la respuesta mientras la actividad está abierta (anti-trampa)')
     check((await play(bad, 'answer', { item: qs[1].id, value: termOf(type, 1) })).error === 'already', 'no puede responder otra vez')
   } else if (type === 'matching') {
     for (const q of qs) {
@@ -157,6 +157,10 @@ for (const type of Object.keys(ACTS)) {
   check(Array.isArray(g1.review ?? (await rpc(anon, 'activity_state', [bad])).review), 'revisión disponible al terminar')
   const rv = (await rpc(anon, 'activity_state', [bad])).review
   check(rv?.length === qs.length && rv.some((x) => x.correct === false), `revisión con ${rv?.length} palabras`)
+  check(rv?.every((x) => x.correct || x.answer === null), 'la revisión no muestra las respuestas falladas mientras está abierta')
+  await admin.query(`update public.sessions set status = 'finished' where id = $1`, [ses.id])
+  const rv2 = (await rpc(anon, 'activity_state', [bad])).review
+  check(rv2?.every((x) => x.answer), 'al cerrar la actividad, la revisión muestra todas las respuestas')
   const rep = await rpc(host, 'session_report', [ses.id])
   check(rep && JSON.stringify(rep).includes('"grade"'), 'el reporte de la sesión funciona')
 }

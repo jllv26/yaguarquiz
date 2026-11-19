@@ -13,7 +13,9 @@ async function rpc<T>(fn: string, args: Record<string, unknown>): Promise<T> {
 export interface ActivityReviewItem {
   clue: string | null
   image_url: string | null
-  answer: string
+  /** null mientras la actividad sigue abierta (anti-trampa): la correcta se muestra al cerrar */
+  answer: string | null
+  hidden?: boolean
   response: string
   correct: boolean
   partial: number
