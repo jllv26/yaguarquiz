@@ -20,6 +20,8 @@ const AcademicPage = lazy(() => import('../features/academic/AcademicPage').then
 const SubjectDetailPage = lazy(() => import('../features/academic/SubjectDetailPage').then((m) => ({ default: m.SubjectDetailPage })))
 const StudentsPage = lazy(() => import('../features/students/StudentsPage').then((m) => ({ default: m.StudentsPage })))
 const DashboardPage = lazy(() => import('../features/admin/DashboardPage').then((m) => ({ default: m.DashboardPage })))
+const ActivitiesPage = lazy(() => import('../features/activities/ActivitiesPage').then((m) => ({ default: m.ActivitiesPage })))
+const ActivityEditorPage = lazy(() => import('../features/activities/ActivityEditorPage').then((m) => ({ default: m.ActivityEditorPage })))
 const DesignPage = lazy(() => import('../features/design/DesignPage').then((m) => ({ default: m.DesignPage })))
 const AdminLayout = lazy(() => import('../features/admin/AdminLayout').then((m) => ({ default: m.AdminLayout })))
 const SettingsPage = lazy(() => import('../features/admin/SettingsPage').then((m) => ({ default: m.SettingsPage })))
@@ -57,6 +59,8 @@ export function App() {
               <Route path="estudiantes" element={<StudentsPage />} />
               <Route path="evaluaciones" element={<QuizzesPage />} />
               <Route path="evaluaciones/:id" element={<QuizEditorPage />} />
+              <Route path="actividades" element={<ActivitiesPage />} />
+              <Route path="actividades/:id" element={<ActivityEditorPage />} />
               <Route path="sesiones" element={<SessionsPage />} />
               <Route path="reportes" element={<ReportsPage />} />
               <Route path="reportes/:id" element={<SessionReportPage />} />

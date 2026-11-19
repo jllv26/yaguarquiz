@@ -1,5 +1,5 @@
 import { BookOpenCheck, Eye, Home, IdCard, Lock, Maximize, MonitorPlay, Rocket, Shuffle, Smile, Trophy, UserCheck } from 'lucide-react'
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
 import { Select } from '../../components/ui/Field'
@@ -12,13 +12,14 @@ import { createSession, hostEnd, type SessionSettings } from '../../lib/api/live
 import { useSubjectsLite } from '../../lib/api/quizzes'
 import { cn } from '../../lib/cn'
 import { TERM_LABEL } from '../academic/gradingDefaults'
+import { ACTIVITY_META, type ActivityType } from '../activities/types'
 
 type Mode = 'live' | 'exam' | 'homework'
 
 interface Props {
   open: boolean
   onClose: () => void
-  quiz: { id: string; title: string; subject_id: string; questionCount?: number } | null
+  quiz: { id: string; title: string; subject_id: string; questionCount?: number; activity?: ActivityType | null } | null
 }
 
 /** "2026-11-18T08:00" en hora local (para <input type="datetime-local">). */
@@ -26,7 +27,8 @@ function toLocalInput(d: Date) {
   const p = (n: number) => String(n).padStart(2, '0')
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`
 }
-const roundTo5 = (d: Date) => new Date(Math.ceil(d.getTime() / 300000) * 300000)
+// hacia abajo: lo que se publica "ahora" queda abierto de inmediato
+const roundTo5 = (d: Date) => new Date(Math.floor(d.getTime() / 300000) * 300000)
 
 /** Configura y lanza una sesión: en vivo, examen de laboratorio o tarea. */
 export function LaunchModal({ open, onClose, quiz }: Props) {
@@ -55,6 +57,7 @@ function LaunchModalInner({ open, onClose, quiz }: Props & { quiz: NonNullable<P
   const [busy, setBusy] = useState(false)
   const items = (plan.data?.grading_items ?? []).filter((i) => i.source === 'yaguarquiz').sort((a, b) => a.term - b.term || (a.sort_order ?? 0) - (b.sort_order ?? 0))
   const n = quiz.questionCount
+  const act = quiz.activity ? ACTIVITY_META[quiz.activity] : null
 
   function pickMode(m: Mode) {
     setMode(m)
@@ -72,8 +75,16 @@ function LaunchModalInner({ open, onClose, quiz }: Props & { quiz: NonNullable<P
       show_ranking: m === 'live',
       show_grade: true,
       pick_count: null,
+      // actividades: retroalimentación inmediata por defecto (es parte del juego)
+      ...(act ? { show_correct: m === 'homework' ? ('each' as const) : ('end' as const), shuffle_questions: !act.fixedBoard, max_attempts: m === 'homework' ? 3 : 1 } : {}),
     }))
+    if (act) setLimitOn(m === 'exam')
   }
+  // las actividades no se juegan en vivo: empiezan como tarea
+  useEffect(() => {
+    if (act) pickMode('homework')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   async function launch() {
     let settings: SessionSettings = { ...s, mode }
@@ -128,7 +139,7 @@ function LaunchModalInner({ open, onClose, quiz }: Props & { quiz: NonNullable<P
       open={open}
       onClose={onClose}
       size="lg"
-      title="Lanzar evaluación"
+      title={act ? `Lanzar actividad: ${act.label}` : 'Lanzar evaluación'}
       subtitle={quiz.title}
       footer={
         <>
@@ -142,10 +153,10 @@ function LaunchModalInner({ open, onClose, quiz }: Props & { quiz: NonNullable<P
       }
     >
       <div className="flex flex-col gap-5">
-        <div className="grid gap-3 sm:grid-cols-3">
-          <Choice on={mode === 'live'} onClick={() => pickMode('live')} icon={<MonitorPlay className="size-6" />} title="En vivo" text="Tipo Kahoot: usted marca el ritmo desde el proyector." />
-          <Choice on={mode === 'exam'} onClick={() => pickMode('exam')} icon={<BookOpenCheck className="size-6" />} title="Examen" text="Cada uno a su ritmo con tiempo total. Se abre y cierra solo." />
-          <Choice on={mode === 'homework'} onClick={() => pickMode('homework')} icon={<Home className="size-6" />} title="Tarea / práctica" text="Disponible entre dos fechas, desde casa o el celular." />
+        <div className={cn('grid gap-3', act ? 'sm:grid-cols-2' : 'sm:grid-cols-3')}>
+          {!act && <Choice on={mode === 'live'} onClick={() => pickMode('live')} icon={<MonitorPlay className="size-6" />} title="En vivo" text="Tipo Kahoot: usted marca el ritmo desde el proyector." />}
+          <Choice on={mode === 'homework'} onClick={() => pickMode('homework')} icon={<Home className="size-6" />} title={act ? 'Tarea / práctica' : 'Tarea / práctica'} text={act ? 'Cada estudiante juega desde su celular o casa entre dos fechas.' : 'Disponible entre dos fechas, desde casa o el celular.'} />
+          <Choice on={mode === 'exam'} onClick={() => pickMode('exam')} icon={<BookOpenCheck className="size-6" />} title={act ? 'En el laboratorio' : 'Examen'} text={act ? 'Con RU + CI, tiempo total y modo enfoque.' : 'Cada uno a su ritmo con tiempo total. Se abre y cierra solo.'} />
         </div>
 
         <Select label="Asignatura y paralelo" value={subjectId} onChange={(e) => setSubjectId(e.target.value)}>
@@ -186,6 +197,7 @@ function LaunchModalInner({ open, onClose, quiz }: Props & { quiz: NonNullable<P
 
         {exam && (
           <Section title="Anti-copia">
+            {!act?.fixedBoard && (
             <Toggle
               on={pickOn}
               onChange={(v) => {
@@ -193,13 +205,18 @@ function LaunchModalInner({ open, onClose, quiz }: Props & { quiz: NonNullable<P
                 if (v && !s.pick_count) setS({ ...s, pick_count: n ? Math.max(1, Math.min(n, Math.round(n * 0.6))) : 10 })
               }}
               icon={<Shuffle className="size-5" />}
-              title="Preguntas al azar"
-              text={`Cada estudiante recibe preguntas distintas${n ? ` de las ${n} de esta evaluación` : ''}.`}
+              title={act ? 'Palabras al azar' : 'Preguntas al azar'}
+              text={act ? `Cada estudiante juega con palabras distintas${n ? ` de las ${n} de la actividad` : ''}.` : `Cada estudiante recibe preguntas distintas${n ? ` de las ${n} de esta evaluación` : ''}.`}
             >
               {pickOn && numberInput(s.pick_count, (v) => setS({ ...s, pick_count: v }), 'Cantidad de preguntas', n ?? 500)}
             </Toggle>
-            <Toggle on={!!s.shuffle_questions} onChange={(v) => setS({ ...s, shuffle_questions: v })} title="Mezclar el orden de las preguntas" text="Cada estudiante las ve en distinto orden." />
-            <Toggle on={!!s.shuffle_options} onChange={(v) => setS({ ...s, shuffle_options: v })} title="Mezclar las opciones" text="La primera opción de uno no es la primera de su compañero." />
+            )}
+            {!act && (
+              <>
+                <Toggle on={!!s.shuffle_questions} onChange={(v) => setS({ ...s, shuffle_questions: v })} title="Mezclar el orden de las preguntas" text="Cada estudiante las ve en distinto orden." />
+                <Toggle on={!!s.shuffle_options} onChange={(v) => setS({ ...s, shuffle_options: v })} title="Mezclar las opciones" text="La primera opción de uno no es la primera de su compañero." />
+              </>
+            )}
             {s.identification === 'roster' && (
               <Toggle on={s.require_ci} onChange={(v) => setS({ ...s, require_ci: v })} icon={<IdCard className="size-5" />} title="Pedir los últimos 3 dígitos del CI" text="Evita que alguien entre con el RU de un compañero." />
             )}
@@ -231,7 +248,7 @@ function LaunchModalInner({ open, onClose, quiz }: Props & { quiz: NonNullable<P
                   </option>
                 ))}
               </Select>
-              <Select label="Mostrar las respuestas correctas" value={s.show_correct} onChange={(e) => setS({ ...s, show_correct: e.target.value as ShowCorrect })}>
+              <Select label={act ? 'Mostrar la respuesta al fallar una palabra' : 'Mostrar las respuestas correctas'} value={s.show_correct} onChange={(e) => setS({ ...s, show_correct: e.target.value as ShowCorrect })}>
                 {(Object.keys(SHOW_CORRECT_LABEL) as ShowCorrect[]).map((k) => (
                   <option key={k} value={k}>
                     {SHOW_CORRECT_LABEL[k]}

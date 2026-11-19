@@ -36,6 +36,7 @@ Docente responsable: **Ing. Jimmy Luis Laruta Villarreal**
 | 6. Resultados y Sheets | Reportes, exportaciones, Google Sheets, libreta de notas (conversor) | ✅ |
 | 7. Pulido | Música y efectos, mascota jaguar, entrada animada, 5 temas visuales, podio, insignias, accesibilidad AA, carga rápida | ✅ |
 | 8. QA final | 23 verificaciones de punta a punta en 2 navegadores, casos límite, manuales | ✅ ([docs/QA.md](docs/QA.md)) |
+| 9. Actividades estilo Educaplay | 10 juegos: crucigrama, sopa de letras, relacionar, memoria, completar, rosco, ordenar letras, ordenar frase, adivina la palabra, clasificar | ✅ |
 
 ---
 
@@ -69,7 +70,7 @@ Docente responsable: **Ing. Jimmy Luis Laruta Villarreal**
 
 1. En Supabase abra **SQL Editor → New query**.
 2. Abra en GitHub la carpeta [`supabase/migrations`](supabase/migrations). Para **cada archivo, en orden**
-   (`0001`, `0002`, … `0008`): ábralo → botón **Raw** → copie todo → péguelo en el SQL Editor → **Run**.
+   (`0001`, `0002`, … `0009`): ábralo → botón **Raw** → copie todo → péguelo en el SQL Editor → **Run**.
    Debe decir *Success*. Si Supabase muestra “Potential issue detected”, presione **Run query** (es normal: las
    migraciones crean funciones y permisos).
 3. Se pueden volver a ejecutar sin dañar nada.
@@ -84,6 +85,7 @@ Docente responsable: **Ing. Jimmy Luis Laruta Villarreal**
 | `0006_exam` | Examen y tarea (intentos, horarios, anti-copia, monitor) |
 | `0007_reports` | Reportes, libreta de notas, registro de envíos a Google Sheets |
 | `0008_theme` | Tema visual de la evaluación en el celular del estudiante |
+| `0009_activities` | Actividades estilo Educaplay (cada jugada se corrige en el servidor) |
 
 ### Paso 4 — Conectar su copia con su Supabase
 
@@ -183,6 +185,29 @@ retirar a un participante · autorizar cambio de equipo. En sesiones con apodo, 
    entregar ahora, abrir/cerrar/reabrir, Excel. Compartir PIN por WhatsApp.
 6. Si se corta el internet, cada respuesta queda guardada en el equipo y se envía sola al volver.
 
+### Actividades estilo Educaplay
+
+Menú **Actividades** → elija el tipo de juego → escriba (o pegue desde Excel, o traiga de una evaluación) las palabras
+y sus pistas → **Probar** → **Lanzar** como **tarea** (desde el celular o la casa) o **en el laboratorio** (RU + CI,
+tiempo total, modo enfoque). La nota (0–100) va a reportes, libreta y Google Sheets como cualquier evaluación.
+
+| Juego | Qué hace el estudiante |
+|---|---|
+| Crucigrama | Escribe las palabras que se cruzan a partir de sus definiciones (el tablero se arma solo) |
+| Sopa de letras | Marca las palabras escondidas (fácil, media o difícil; puede ver las palabras o solo las definiciones) |
+| Relacionar columnas | Une cada concepto con su definición o imagen |
+| Memoria | Voltea cartas hasta encontrar las parejas |
+| Completar el texto | Completa los [espacios] escribiendo o con un banco de palabras (con distractores) |
+| Rosco | Una palabra por letra, con “Pasapalabra” |
+| Ordenar letras / la frase | Arma la palabra o la oración con fichas desordenadas |
+| Adivina la palabra | Descubre la palabra letra por letra con 6 vidas |
+| Clasificar | Lleva cada elemento a su grupo |
+
+**Calificación:** palabras resueltas ÷ total × 100. Acertar en el 2.º intento vale 60 % y en el 3.º, 30 %; en memoria,
+las parejas con muchos errores valen menos (mín. 50 %); en adivina, cada letra equivocada resta 10 % (mín. 40 %).
+La respuesta nunca llega al navegador del estudiante: cada jugada se corrige en el servidor y el avance queda guardado
+aunque recargue la página.
+
 ---
 
 ## Reportes, libreta de notas y Google Sheets
@@ -220,7 +245,7 @@ retirar a un participante · autorizar cambio de equipo. En sesiones con apodo, 
 
 ```bash
 npm test                 # pruebas unitarias (Excel, conversor de notas, Apps Script simulado)
-bash tests/run-all.sh    # todo lo anterior + pruebas del servidor (45 estudiantes, examen, reportes) + RLS
+bash tests/run-all.sh    # todo lo anterior + pruebas del servidor (45 estudiantes, examen, reportes, 10 actividades) + RLS
 ```
 
 Prueba de punta a punta en **dos navegadores** (Chromium y WebKit/Safari) contra el motor real — ver
@@ -231,6 +256,7 @@ python3 tests/e2e/fake_supabase.py &                      # imita la API de Supa
 VITE_SUPABASE_URL=http://localhost:5555 npx vite build --outDir /tmp/dist-qa
 npx vite preview --outDir /tmp/dist-qa --port 4174 &
 python3 tests/e2e/qa_flow.py                              # 23 verificaciones
+python3 tests/e2e/activities_flow.py                      # actividades: docente crea/lanza, estudiante juega (15)
 python3 tests/e2e/a11y_audit.py                           # accesibilidad (axe-core)
 ```
 

@@ -39,18 +39,28 @@ PAGES = [
     ('Proyector: sala', f'#/host/{sid}', True, 'dark'),
     ('Vitrina de diseño', '#/diseno', False, 'light'),
     ('Manual del estudiante', '#/ayuda', False, 'light'),
+    ('Actividades (docente)', '#/admin/actividades', True, 'light'),
 ]
+act = q("select id::text from public.quizzes where settings ? 'activity' order by updated_at desc limit 1")
+if act:
+    PAGES.append(('Editor de actividad', f'#/admin/actividades/{act[0][0]}', True, 'light'))
+# cada juego de la vitrina (mismos componentes que ve el estudiante), en claro y en oscuro
+for tab in ['Crucigrama', 'Sopa', 'Relacionar', 'Memoria', 'Completar', 'Rosco', 'Letras', 'Frases', 'Adivina', 'Clasificar']:
+    PAGES.append((f'Juego: {tab}', '#/diseno', False, 'light' if tab not in ('Rosco', 'Memoria', 'Adivina') else 'dark', tab))
 total = {}
 with sync_playwright() as p:
     b = p.chromium.launch()
-    for name, path, teacher, scheme in PAGES:
+    for name, path, teacher, scheme, *tab in PAGES:
         ctx = b.new_context(viewport={'width': 1366, 'height': 768}, color_scheme=scheme)
         init = f"localStorage.setItem('yq-theme','{scheme}'); sessionStorage.setItem('yq-intro-seen','1');"
         if teacher: init += f"localStorage.setItem('yq-auth', JSON.stringify({json.dumps(sess)}));"
         ctx.add_init_script(init)
         pg = ctx.new_page(); pg.goto(BASE + path); pg.wait_for_timeout(2500)
+        if tab:
+            pg.get_by_role('tab', name=tab[0]).click(); pg.wait_for_timeout(1200)
         pg.add_script_tag(content=AXE)
-        r = pg.evaluate("axe.run(document, {runOnly: {type: 'tag', values: ['wcag2a','wcag2aa','wcag21a','wcag21aa']}}).then(r => r.violations.map(v => ({id: v.id, impact: v.impact, help: v.help, n: v.nodes.length, ex: v.nodes.slice(0,3).map(n => n.target.join(' ') + ' :: ' + (n.failureSummary||'').split('\\n').slice(1,2).join(''))})))")
+        target = "document.querySelector('[data-testid=activity-demo]')" if tab else 'document'
+        r = pg.evaluate("axe.run(" + target + ", {runOnly: {type: 'tag', values: ['wcag2a','wcag2aa','wcag21a','wcag21aa']}}).then(r => r.violations.map(v => ({id: v.id, impact: v.impact, help: v.help, n: v.nodes.length, ex: v.nodes.slice(0,3).map(n => n.target.join(' ') + ' :: ' + (n.failureSummary||'').split('\\n').slice(1,2).join(''))})))")
         total[name] = r
         print(f'\n== {name}: {len(r)} reglas con fallas')
         for v in r:

@@ -118,6 +118,32 @@ class H(BaseHTTPRequestHandler):
             r = admin('select q.visual_theme from public.sessions s join public.quizzes q on q.id = s.quiz_id where s.id::text = %s', [sid])
             row = {'quizzes': {'visual_theme': r[0][0]}} if r else None
             return self.reply(200, row if self.single() else ([row] if row else []))
+        # Panel docente (lo mínimo para Actividades: lista, editor y selector de asignaturas)
+        qs = parse_qs(u.query or '')
+        eq = lambda k: (qs.get(k, [''])[0] or '').removeprefix('eq.') or None
+        if u.path == '/rest/v1/quizzes' and self.teacher:
+            qid = eq('id')
+            r = admin('''select coalesce(json_agg(x order by x.updated_at desc), '[]') from (
+                select q.*,
+                  (select json_build_object('id', s.id, 'code', s.code, 'parallel', s.parallel, 'name', s.name, 'theme_color', s.theme_color,
+                          'topics', (select coalesce(json_agg(json_build_object('id', t.id, 'name', t.name, 'unit', t.unit, 'sort_order', t.sort_order)), '[]') from public.topics t where t.subject_id = s.id))
+                     from public.subjects s where s.id = q.subject_id) as subjects,
+                  (select json_build_object('name', t.name, 'unit', t.unit) from public.topics t where t.id = q.topic_id) as topics,
+                  json_build_array(json_build_object('count', (select count(*) from public.questions where quiz_id = q.id))) as questions
+                from public.quizzes q where q.teacher_id = %s and (%s::uuid is null or q.id = %s::uuid)) x''', [UID, qid, qid])[0][0]
+            return self.reply(200, (r[0] if r else None) if self.single() else r)
+        if u.path == '/rest/v1/questions' and self.teacher and eq('type') == 'game_item':
+            r = admin('''select coalesce(json_agg(json_build_object('id', id, 'term', term, 'prompt', prompt, 'image_url', image_url, 'tags', tags) order by sort_order), '[]')
+                         from public.questions where quiz_id = %s and type = 'game_item' ''', [eq('quiz_id')])[0][0]
+            return self.reply(200, r)
+        if u.path == '/rest/v1/subjects' and self.teacher:
+            r = admin('''select coalesce(json_agg(json_build_object('id', s.id, 'code', s.code, 'name', s.name, 'parallel', s.parallel, 'theme_color', s.theme_color,
+                           'periods', json_build_object('name', p.name, 'academic_years', json_build_object('year', y.year)),
+                           'topics', (select coalesce(json_agg(json_build_object('id', t.id, 'name', t.name, 'unit', t.unit, 'sort_order', t.sort_order)), '[]') from public.topics t where t.subject_id = s.id))
+                           order by s.code), '[]')
+                         from public.subjects s left join public.periods p on p.id = s.period_id left join public.academic_years y on y.id = p.academic_year_id
+                        where s.teacher_id = %s''', [UID])[0][0]
+            return self.reply(200, r)
         if u.path == '/rest/v1/teacher_settings' and self.teacher:
             r = admin('select row_to_json(t) from public.teacher_settings t where teacher_id = %s', [UID])
             row = r[0][0] if r else None
@@ -145,6 +171,18 @@ class H(BaseHTTPRequestHandler):
                     phase = r[0][0] if r else None
                 log({'fn': fn, 'phase': phase, 'res': res})
             return self.reply(200, res)
+        if u.path == '/rest/v1/quizzes' and self.teacher:
+            b = self.body()
+            b = b[0] if isinstance(b, list) else b
+            qid = (parse_qs(u.query or '').get('id', [''])[0] or '').removeprefix('eq.')
+            cols = [k for k in b if k in ('subject_id', 'topic_id', 'title', 'description', 'status', 'visual_theme')]
+            if self.command == 'PATCH' and qid:
+                admin('update public.quizzes set ' + ', '.join(f'{k} = %s' for k in cols) + ' where id = %s and teacher_id = %s', [b[k] for k in cols] + [qid, UID])
+                rid = qid
+            else:
+                rid = admin('insert into public.quizzes (teacher_id, ' + ', '.join(cols) + ') values (%s' + ', %s' * len(cols) + ') returning id', [UID] + [b[k] for k in cols])[0][0]
+            row = admin('select row_to_json(q) from public.quizzes q where id = %s', [rid])[0][0]
+            return self.reply(201 if self.command == 'POST' else 200, row if self.single() else [row])
         if u.path == '/rest/v1/teacher_settings' and self.teacher:
             b = self.body()
             b = b[0] if isinstance(b, list) else b

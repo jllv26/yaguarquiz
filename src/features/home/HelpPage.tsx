@@ -81,6 +81,23 @@ export function HelpPage() {
           </ul>
         </Section>
 
+        <Section icon={<Gamepad2 className="size-5" />} title="Actividades: crucigrama, sopa de letras, memoria…">
+          <ul className="list-disc space-y-1.5 pl-5">
+            <li>
+              Entras como a una tarea (PIN y RU) y tocas <b>Comenzar</b>. Cada palabra se corrige <b>al instante</b>; si fallas, te quedan más
+              intentos (el primero vale 100 %, el segundo 60 %).
+            </li>
+            <li>Tu avance se guarda solo: si recargas, sigues donde te quedaste.</li>
+            <li>
+              Al resolver todo <b>se entrega sola</b>. Si no terminas, toca <b>Entregar</b>: lo que falta cuenta como 0.
+            </li>
+            <li>
+              Crucigrama: <b>Enter</b> comprueba y <b>Tab</b> pasa a la siguiente. Sopa de letras: arrastra de la primera a la última letra, o
+              tócalas una tras otra.
+            </li>
+          </ul>
+        </Section>
+
         <Section icon={<LifeBuoy className="size-5" />} title="4. Si algo falla">
           <dl className="grid gap-3 sm:grid-cols-[minmax(0,14rem)_1fr]">
             <Faq q="Se cortó el internet o se cerró la pestaña">

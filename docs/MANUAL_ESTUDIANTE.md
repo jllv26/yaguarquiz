@@ -35,6 +35,14 @@ También puedes ver este manual en la app: **https://jllv26.github.io/yaguarquiz
 - No se puede copiar ni pegar en las preguntas, y cada estudiante recibe las preguntas y opciones en distinto orden.
 - Las respuestas correctas se muestran **cuando cierra la actividad** (si el docente lo activó).
 
+## Actividades (crucigrama, sopa de letras, memoria…)
+
+- Entras igual que a una tarea (PIN y RU) y tocas **Comenzar**.
+- Cada palabra se corrige **al instante**: verde si acertaste; si fallas te quedan otros intentos (el primero vale 100 %, el segundo 60 %).
+- Tu avance **se guarda solo**: si recargas o se corta el internet, sigues donde te quedaste.
+- Cuando resuelves todo, la actividad **se entrega sola**. Si no terminas, toca **Entregar**: lo que falta cuenta como 0.
+- Atajos con teclado: en el crucigrama **Enter** comprueba y **Tab** pasa a la siguiente palabra; en la sopa de letras arrastra de la primera a la última letra (o tócalas una tras otra).
+
 ## 4. Si algo falla
 
 | Problema | Qué hacer |

@@ -17,7 +17,7 @@ import {
   Upload,
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, Navigate, useParams } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
 import { SolidCard } from '../../components/ui/Card'
 import { useConfirm } from '../../components/ui/Confirm'
@@ -64,6 +64,8 @@ export function QuizEditorPage() {
         }
       />
     )
+  // las actividades (crucigrama, sopa…) tienen su propio editor
+  if (quiz.data.settings?.activity) return <Navigate to={`/admin/actividades/${id}`} replace />
   return <Editor key={id} quiz={quiz.data} initial={questions.data ?? []} />
 }
 

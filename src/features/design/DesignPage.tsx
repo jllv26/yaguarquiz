@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion'
 import confetti from 'canvas-confetti'
 import { Flame, PartyPopper, Timer, Trophy } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { AnimatedBackground } from '../../components/AnimatedBackground'
 import { AnswerButton } from '../../components/AnswerButton'
 import { TopBar } from '../../components/TopBar'
@@ -14,7 +14,11 @@ import { ClawSwipe, JaguarEye, PawTrail } from '../../components/jaguar/JaguarFx
 import { useLook } from '../../components/jaguar/useLook'
 import { JAGUAR } from '../../components/jaguar/assets'
 import { JaguarIntro } from '../../components/jaguar/JaguarIntro'
+import { ActivityGame } from '../activities/ActivityGame'
+import { demoActivity } from '../activities/demo'
+import { ACTIVITY_META, ACTIVITY_TYPES, type ActivityType } from '../activities/types'
 import { setMusic, sfx, type Track } from '../../lib/sound'
+import { cn } from '../../lib/cn'
 import { SoundControl } from '../../components/SoundControl'
 import { VISUAL_THEMES } from '../../lib/visualThemes'
 
@@ -71,6 +75,7 @@ export function DesignPage() {
         </header>
 
         <JaguarShowcase />
+        <ActivityShowcase />
         <SoundShowcase />
         <ThemeShowcase />
 
@@ -371,6 +376,45 @@ function ThemeShowcase() {
           ))}
         </div>
       </SolidCard>
+    </section>
+  )
+}
+
+/** Las 10 actividades estilo Educaplay, jugables con datos de ejemplo (se corrigen en el navegador). */
+function ActivityShowcase() {
+  const [type, setType] = useState<ActivityType>('crossword')
+  const [round, setRound] = useState(0)
+  const demo = useMemo(() => demoActivity(type), [type, round]) // eslint-disable-line react-hooks/exhaustive-deps
+  return (
+    <section className="flex flex-col gap-4 rounded-3xl bg-surface-2 p-5 shadow-sm ring-1 ring-line" data-testid="activity-demo">
+      <div>
+        <h2 className="font-display text-2xl font-black">Actividades estilo Educaplay</h2>
+        <p className="text-sm text-ink-soft">Diez juegos con la misma base: PIN, lista oficial, nota 0–100 y corrección en el servidor.</p>
+      </div>
+      <div className="flex flex-wrap gap-2" role="tablist" aria-label="Tipo de actividad">
+        {ACTIVITY_TYPES.map((t) => {
+          const m = ACTIVITY_META[t]
+          return (
+            <button
+              key={t}
+              role="tab"
+              aria-selected={type === t}
+              onClick={() => {
+                setType(t)
+                setRound((r) => r + 1)
+              }}
+              className={cn('flex items-center gap-2 rounded-2xl px-3 py-2 text-sm font-bold transition', type === t ? 'text-white shadow-md' : 'bg-ink/5 hover:bg-ink/10')}
+              style={type === t ? { background: m.color } : undefined}
+            >
+              <m.icon className="size-4" /> {m.short}
+            </button>
+          )
+        })}
+      </div>
+      <Button size="sm" variant="ghost" className="self-start" onClick={() => setRound((r) => r + 1)}>
+        Reiniciar
+      </Button>
+      <ActivityGame key={`${type}-${round}`} board={demo.board} engine={demo.engine} />
     </section>
   )
 }

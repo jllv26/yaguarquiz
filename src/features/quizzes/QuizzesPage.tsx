@@ -30,7 +30,7 @@ export function QuizzesPage() {
 
   const subjects = useMemo(() => {
     const m = new Map<string, string>()
-    quizzes.data?.forEach((z) => z.subjects && m.set(z.subject_id, `${z.subjects.code} (${z.subjects.parallel})`))
+    quizzes.data?.forEach((z) => z.subjects && !z.settings?.activity && m.set(z.subject_id, `${z.subjects.code} (${z.subjects.parallel})`))
     return [...m.entries()]
   }, [quizzes.data])
 
@@ -38,6 +38,7 @@ export function QuizzesPage() {
     const nq = normalizeText(q)
     return (quizzes.data ?? []).filter(
       (z) =>
+        !z.settings?.activity &&
         (status === 'active' ? z.status !== 'archived' : z.status === status) &&
         (!subject || z.subject_id === subject) &&
         (!nq || normalizeText(`${z.title} ${z.subjects?.code ?? ''} ${z.topics?.name ?? ''}`).includes(nq)),

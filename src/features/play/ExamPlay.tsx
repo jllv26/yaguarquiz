@@ -26,7 +26,6 @@ import { useConfirm } from '../../components/ui/Confirm'
 import { useToast } from '../../components/ui/Toast'
 import {
   EXAM_ERRORS,
-  examState,
   reportFocus,
   saveAnswer,
   startAttempt,
@@ -46,6 +45,9 @@ import { celebrate, fmtLeft, useServerNow } from '../live/clock'
 import { QuestionView, type RevealInfo } from './QuestionView'
 import { JaguarFace } from '../../components/jaguar/JaguarFace'
 import { JaguarEye } from '../../components/jaguar/JaguarFx'
+import { activityState, type ActivityExamState, type ActivityReviewItem } from '../../lib/api/activities'
+import { ActivityAttempt, ActivityReview } from '../activities/ActivityAttempt'
+import { ACTIVITY_META } from '../activities/types'
 
 const pendKey = (attempt: string) => `yq-exam-pending-${attempt}`
 function readPending(attempt: string): Record<string, StudentResponse> {
@@ -68,20 +70,20 @@ const fsSupported = () => typeof document !== 'undefined' && !!document.fullscre
 /** Examen de laboratorio o tarea: cada estudiante avanza a su ritmo. */
 export function ExamPlay({ token, onLeave }: { token: string; onLeave: (message?: string) => void }) {
   const toast = useToast()
-  const [st, setSt] = useState<ExamState | null>(null)
+  const [st, setSt] = useState<ActivityExamState | null>(null)
   const [offset, setOffset] = useState(0)
   const [offline, setOffline] = useState(false)
   const busy = useRef(false)
 
   const apply = useCallback(
-    (s: ExamState | PlayError, t0: number) => {
+    (s: ActivityExamState | ExamState | PlayError, t0: number) => {
       if (!s.ok) {
         if (s.error === 'token' || s.error === 'kicked') return onLeave(PLAY_ERRORS[s.error])
         toast.error(EXAM_ERRORS[s.error] ?? PLAY_ERRORS[s.error] ?? 'No se pudo completar')
         return
       }
       setOffset(serverOffset(s.server_now, t0))
-      setSt(s)
+      setSt(s as ActivityExamState)
       setOffline(false)
     },
     [onLeave, toast],
@@ -89,7 +91,7 @@ export function ExamPlay({ token, onLeave }: { token: string; onLeave: (message?
   const refresh = useCallback(async () => {
     const t0 = Date.now()
     try {
-      apply(await examState(token), t0)
+      apply(await activityState(token), t0)
     } catch {
       setOffline(true)
     }
@@ -104,7 +106,7 @@ export function ExamPlay({ token, onLeave }: { token: string; onLeave: (message?
   }, [refresh, inAttempt, notOpen])
   const now = useServerNow(offset, true, 500)
 
-  async function run(fn: () => Promise<ExamState | PlayError>) {
+  async function run(fn: () => Promise<ActivityExamState | ExamState | PlayError>) {
     if (busy.current) return
     busy.current = true
     const t0 = Date.now()
@@ -122,18 +124,24 @@ export function ExamPlay({ token, onLeave }: { token: string; onLeave: (message?
     if (st?.session.focus_mode && fsSupported() && !document.fullscreenElement) {
       await document.documentElement.requestFullscreen().catch(() => null)
     }
-    await run(() => startAttempt(token))
+    await run(async () => {
+      const r = await startAttempt(token)
+      // las actividades necesitan el tablero (activity_state); las evaluaciones normales ya vienen completas
+      return r.ok && st?.activity_type ? activityState(token) : r
+    })
     sfx.go()
   }
 
   if (!st) return <Loader2 className="size-10 animate-spin text-uap-green" aria-label="Cargando" />
-  if (st.current) return <Attempt key={st.current.id} st={st} token={token} now={now} offline={offline} setOffline={setOffline} onState={apply} refresh={refresh} />
+  if (st.activity_type && st.current?.activity) return <ActivityAttempt key={st.current.id} st={st} token={token} now={now} onState={apply} />
+  if (st.current) return <Attempt key={st.current.id} st={st as ExamState} token={token} now={now} offline={offline} setOffline={setOffline} onState={apply} refresh={refresh} />
   return <Home st={st} now={now} onStart={() => void begin()} offline={offline} />
 }
 
 // ================================================================ inicio / resultados
-function Home({ st, now, onStart, offline }: { st: ExamState; now: number; onStart: () => void; offline: boolean }) {
+function Home({ st, now, onStart, offline }: { st: ActivityExamState; now: number; onStart: () => void; offline: boolean }) {
   const s = st.session
+  const act = st.activity_type ? ACTIVITY_META[st.activity_type] : null
   const last = st.attempts[st.attempts.length - 1]
   const justFinished = useRef(false)
   useEffect(() => {
@@ -153,7 +161,7 @@ function Home({ st, now, onStart, offline }: { st: ExamState; now: number; onSta
     <div className="flex w-full flex-col gap-4">
       <Card className="w-full">
         <p className="text-center text-xs font-bold uppercase tracking-wider text-ink-soft">
-          {s.mode === 'exam' ? 'Examen' : 'Tarea / práctica'} · {s.subject}
+          {act ? `${s.mode === 'exam' ? 'Examen' : 'Actividad'}: ${act.label}` : s.mode === 'exam' ? 'Examen' : 'Tarea / práctica'} · {s.subject}
         </p>
         <h1 className="text-center font-display text-3xl font-black leading-tight">{s.quiz_title}</h1>
         <div className="mx-auto mt-2 flex items-center justify-center gap-2 text-ink-soft">
@@ -202,7 +210,7 @@ function Home({ st, now, onStart, offline }: { st: ExamState; now: number; onSta
         ) : null}
 
         <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <Info icon={<Hash className="size-4" />} label="Preguntas" value={String(s.question_count)} />
+          <Info icon={<Hash className="size-4" />} label={act ? 'Palabras' : 'Preguntas'} value={String(s.question_count)} />
           <Info icon={<Clock className="size-4" />} label="Tiempo" value={s.time_limit_sec ? `${Math.round(s.time_limit_sec / 60)} min` : 'Libre'} />
           <Info icon={<Repeat className="size-4" />} label="Intentos" value={`${st.attempts_left} de ${s.max_attempts}`} />
           <Info icon={<CalendarClock className="size-4" />} label="Cierra" value={s.closes_at ? fmtDateTime(s.closes_at) : 'Sin cierre'} />
@@ -216,8 +224,16 @@ function Home({ st, now, onStart, offline }: { st: ExamState; now: number; onSta
                   Tienes <strong>{Math.round(s.time_limit_sec / 60)} {Math.round(s.time_limit_sec / 60) === 1 ? 'minuto' : 'minutos'}</strong> desde que presiones “Comenzar”. Al terminar el tiempo se entrega solo.
                 </Rule>
               )}
-              <Rule icon={<ClipboardCheck className="size-4" />}>Cada respuesta se guarda al instante. Si se corta el internet o recargas, sigues donde te quedaste.</Rule>
-              <Rule icon={<ShieldCheck className="size-4" />}>No se puede copiar ni pegar texto.</Rule>
+              {act ? (
+                <Rule icon={<act.icon className="size-4" />}>
+                  {act.description} Cada jugada se corrige al instante y tu avance queda guardado aunque recargues.
+                </Rule>
+              ) : (
+                <>
+                  <Rule icon={<ClipboardCheck className="size-4" />}>Cada respuesta se guarda al instante. Si se corta el internet o recargas, sigues donde te quedaste.</Rule>
+                  <Rule icon={<ShieldCheck className="size-4" />}>No se puede copiar ni pegar texto.</Rule>
+                </>
+              )}
               {s.focus_mode && (
                 <Rule icon={<JaguarEye icon className="w-7" />}>
                   Se abrirá en <strong>pantalla completa</strong>. Cada vez que salgas de la pestaña o ventana queda registrado
@@ -247,7 +263,7 @@ function Home({ st, now, onStart, offline }: { st: ExamState; now: number; onSta
       </Card>
 
       {st.review ? (
-        <Review items={st.review} />
+        st.activity_type ? <ActivityReview items={st.review as ActivityReviewItem[]} type={st.activity_type} /> : <Review items={st.review as NonNullable<ExamState['review']>} />
       ) : (
         last &&
         s.show_correct !== 'never' && (

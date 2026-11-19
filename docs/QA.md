@@ -85,3 +85,20 @@ sin errores de JavaScript en ningún navegador.
 - **Clásico UAP**: el título quedaba sobre la franja azul (poco legible) → franjas movidas a las esquinas.
 - Contraste insuficiente (dorado “Quiz” del logo, verde de la respuesta ■, textos sobre fondo oscuro, enlace del manual) y
   nombres accesibles que no coincidían con el texto visible → corregidos (axe-core en 0).
+
+
+## Fase 9 — Actividades estilo Educaplay (19/11/2026)
+
+| Prueba | Resultado |
+|---|---|
+| Servidor (`tests/load/activities-test.mjs`): los 10 tipos, nota, intentos 100/60/30 %, revelación, revisión, reporte, copia de actividad, evaluación normal intacta, funciones internas protegidas | ✅ todo correcto |
+| Punta a punta (`tests/e2e/activities_flow.py`): el docente crea un crucigrama, pega desde Excel, genera el tablero, prueba y lanza; el estudiante (celular) juega contra el servidor, recarga a mitad sin perder avance y termina con 93,33 (un acierto al 2.º intento); memoria y clasificar contra el servidor; el tablero nunca trae las palabras | ✅ 15/15 |
+| Interfaz de los 10 juegos jugados de principio a fin (PC 1366 y celular 390 táctil), WebKit (motor de Safari) | ✅ |
+| Accesibilidad axe-core (WCAG 2.1 AA): actividades del docente, editor y los 10 juegos | ✅ 0 fallas en 22 pantallas |
+| Regresión: las 23 verificaciones de la Fase 8 | ✅ 23/23 |
+
+Errores encontrados y corregidos: `activity_state` alteraba las evaluaciones normales (detectado por la regresión);
+copiar una actividad desordenaba el tablero; en el crucigrama, al tocar una pista vertical el cursor saltaba a la
+horizontal y el avance automático podía mover el cursor si el estudiante ya había elegido otra palabra; las claves de
+memoria/relacionar se podían calcular desde el navegador (ahora llevan un secreto por intento); contraste de 5 colores
+de juego; al lanzar una tarea “ahora”, la hora de apertura se redondeaba hacia adelante (quedaba cerrada unos minutos).
