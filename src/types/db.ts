@@ -21,6 +21,8 @@ export interface Subject {
   parallel: string
   theme_color: string | null
   cover_url: string | null
+  /** código fijo del aula del estudiante (ej. ICOM261) */
+  portal_code?: string | null
 }
 
 export interface SubjectWithCounts extends Subject {

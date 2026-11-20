@@ -138,14 +138,25 @@ class H(BaseHTTPRequestHandler):
             r = admin('''select coalesce(json_agg(json_build_object('id', id, 'term', term, 'prompt', prompt, 'image_url', image_url, 'tags', tags) order by sort_order), '[]')
                          from public.questions where quiz_id = %s and type = 'game_item' ''', [eq('quiz_id')])[0][0]
             return self.reply(200, r)
+        if u.path == '/rest/v1/grading_plans' and self.teacher:
+            r = admin('''select json_build_object('id', gp.id, 'subject_id', gp.subject_id, 'pass_mark', gp.pass_mark, 'max_score', gp.max_score,
+                           'grading_items', (select coalesce(json_agg(row_to_json(gi)), '[]') from public.grading_items gi where gi.plan_id = gp.id))
+                         from public.grading_plans gp where gp.subject_id::text = %s''', [eq('subject_id')])
+            row = r[0][0] if r else None
+            return self.reply(200, row if self.single() else ([row] if row else []))
+        if u.path == '/rest/v1/sessions' and self.teacher and eq('subject_id'):
+            r = admin('''select coalesce(json_agg(json_build_object('quiz_id', quiz_id, 'scheduled_end', scheduled_end, 'status', status)), '[]')
+                         from public.sessions where subject_id::text = %s and status <> 'finished' ''', [eq('subject_id')])[0][0]
+            return self.reply(200, r)
         if u.path == '/rest/v1/subjects' and self.teacher:
             r = admin('''select coalesce(json_agg(json_build_object('id', s.id, 'code', s.code, 'name', s.name, 'parallel', s.parallel, 'theme_color', s.theme_color,
-                           'periods', json_build_object('name', p.name, 'academic_years', json_build_object('year', y.year)),
+                           'portal_code', s.portal_code, 'period_id', s.period_id, 'career', s.career, 'semester', s.semester, 'cover_url', s.cover_url,
+                           'periods', json_build_object('id', p.id, 'name', p.name, 'academic_year_id', p.academic_year_id, 'academic_years', json_build_object('year', y.year)),
                            'topics', (select coalesce(json_agg(json_build_object('id', t.id, 'name', t.name, 'unit', t.unit, 'sort_order', t.sort_order)), '[]') from public.topics t where t.subject_id = s.id))
                            order by s.code), '[]')
                          from public.subjects s left join public.periods p on p.id = s.period_id left join public.academic_years y on y.id = p.academic_year_id
-                        where s.teacher_id = %s''', [UID])[0][0]
-            return self.reply(200, r)
+                        where s.teacher_id = %s and (%s::text is null or s.id::text = %s)''', [UID, eq('id'), eq('id')])[0][0]
+            return self.reply(200, (r[0] if r else None) if self.single() else r)
         if u.path == '/rest/v1/teacher_settings' and self.teacher:
             r = admin('select row_to_json(t) from public.teacher_settings t where teacher_id = %s', [UID])
             row = r[0][0] if r else None

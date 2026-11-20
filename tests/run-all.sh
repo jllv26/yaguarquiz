@@ -14,7 +14,7 @@ reset_db() {
 ok=0; fail=0
 run() { echo "▶ $1"; if "${@:2}"; then ok=$((ok+1)); else fail=$((fail+1)); echo "  ✖ $1"; fi; }
 run "Unitarias (Vitest)" npx vitest run
-for t in live-load-test exam-load-test reports-test activities-test presentations-test balanced-draw-test mail-test; do reset_db; run "Servidor: $t" node tests/load/$t.mjs; done
+for t in live-load-test exam-load-test reports-test activities-test presentations-test balanced-draw-test mail-test aula-test; do reset_db; run "Servidor: $t" node tests/load/$t.mjs; done
 reset_db
 echo "RLS activo en todas las tablas:"; $P -d t -Atc "select coalesce(string_agg(tablename, ', '), 'todas ✓') from pg_tables where schemaname='public' and not rowsecurity"
 echo "Listo: $ok bloques OK, $fail con fallas"

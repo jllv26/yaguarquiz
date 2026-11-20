@@ -12,6 +12,7 @@ import { HomePage } from '../features/home/HomePage'
  * nunca devuelva 404 al recargar la página.
  */
 // El inicio carga de inmediato; todo lo demás se descarga solo cuando se necesita.
+const StudentPortalPage = lazy(() => import('../features/aula/StudentPortalPage').then((m) => ({ default: m.StudentPortalPage })))
 const PlayPage = lazy(() => import('../features/play/PlayPage').then((m) => ({ default: m.PlayPage })))
 const LoginPage = lazy(() => import('../features/auth/LoginPage').then((m) => ({ default: m.LoginPage })))
 const HelpPage = lazy(() => import('../features/home/HelpPage').then((m) => ({ default: m.HelpPage })))
@@ -51,6 +52,8 @@ export function App() {
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/play/:pin" element={<PlayPage />} />
+            <Route path="/aula" element={<StudentPortalPage />} />
+            <Route path="/aula/:code" element={<StudentPortalPage />} />
             <Route path="/expo/:pin" element={<PresentationPlayPage />} />
             <Route path="/expo-host/:id" element={<PresentationHostPage />} />
             <Route path="/ayuda" element={<HelpPage />} />

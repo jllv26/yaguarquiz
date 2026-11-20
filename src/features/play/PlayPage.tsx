@@ -3,6 +3,7 @@ import { ArrowLeft, Clock, Flame, Loader2, Pause, RefreshCw, WifiOff } from 'luc
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { presentationInfo } from '../../lib/api/presentations'
+import { readPortalLogin } from '../../lib/api/portal'
 import { AnimatedBackground } from '../../components/AnimatedBackground'
 import { TopBar } from '../../components/TopBar'
 import { SoundControl, useMuteHotkey, useSoundPrefs } from '../../components/SoundControl'
@@ -65,6 +66,7 @@ export function PlayPage() {
   const [screen, setScreen] = useState<Screen>({ kind: 'loading' })
   const navigate = useNavigate()
   const [token, setToken] = useState<{ t: string; m: PlayMode } | null>(() => readToken(pin))
+  const [aula] = useState(() => readPortalLogin())
   const theme = useSessionTheme({ pin: /^\d{6}$/.test(pin) ? pin : undefined })
   useForcedDark(theme)
 
@@ -106,7 +108,18 @@ export function PlayPage() {
   return (
     <div className="relative flex min-h-dvh flex-col">
       <AnimatedBackground theme={theme} />
-      <TopBar right={<SoundControl role="student" />} />
+      <TopBar
+        right={
+          <>
+            {aula && (
+              <Link to={`/aula/${aula.code}`} className="rounded-xl px-2 py-1 text-sm font-bold text-uap-green hover:bg-uap-green/10" aria-label="Volver a mis actividades">
+                ← Mis actividades
+              </Link>
+            )}
+            <SoundControl role="student" />
+          </>
+        }
+      />
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center px-4 pb-6">
         {screen.kind === 'loading' && <Loader2 className="size-10 animate-spin text-uap-green" aria-label="Cargando" />}
         {screen.kind === 'error' && (

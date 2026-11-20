@@ -75,7 +75,7 @@ const msgs = pull.messages
 const m0 = msgs.find((m) => m.to.startsWith('a' + st[0].id))
 check(msgs.length === 3, `un correo por estudiante (${msgs.length})`)
 check(m0 && /Tu nota/.test(m0.subject) && !/Nueva tarea/.test(m0.subject), `quien ya hizo la tarea recibe solo su nota: «${m0?.subject}»`)
-check(msgs.every((m) => /#\/play\/\d{6}|\/ 100/.test(m.html)), 'cada correo trae el enlace con el PIN o la nota')
+check(msgs.every((m) => /#\/aula\/DEMO023/.test(m.html)), 'cada correo lleva al aula (DEMO023), sin PIN por actividad')
 check((await rpc(anon, 'mail_pull', ['tok_mail', 50])).messages.length === 0, 'lo ya entregado al script no se repite')
 for (const m of msgs) await rpc(anon, 'mail_ack', ['tok_mail', m.ids, true])
 const s1 = await rpc(host, 'mail_status', [])

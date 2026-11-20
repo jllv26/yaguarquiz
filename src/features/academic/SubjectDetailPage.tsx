@@ -5,6 +5,7 @@ import { useConfirm } from '../../components/ui/Confirm'
 import { EmptyState, Skeleton } from '../../components/ui/Field'
 import { useToast } from '../../components/ui/Toast'
 import { useDeleteSubject, usePeriods, useSubject } from '../../lib/api/academic'
+import { AulaCard } from '../aula/AulaCard'
 import { cn } from '../../lib/cn'
 import { StudentsTab } from '../students/StudentsTab'
 import { SubjectModal } from './AcademicModals'
@@ -103,6 +104,8 @@ export function SubjectDetailPage() {
           </div>
         </div>
       </header>
+
+      <AulaCard subjectId={s.id} code={s.portal_code} />
 
       <nav className="flex gap-2 overflow-x-auto" role="tablist">
         {TABS.map((t) => (

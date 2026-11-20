@@ -1,11 +1,12 @@
 import { motion } from 'framer-motion'
-import { ArrowRight, GraduationCap, HelpCircle, PawPrint, QrCode } from 'lucide-react'
+import { ArrowRight, BookOpenCheck, GraduationCap, HelpCircle, PawPrint, QrCode } from 'lucide-react'
 import { useEffect, useRef, useState, type ClipboardEvent, type KeyboardEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { AnimatedBackground } from '../../components/AnimatedBackground'
 import { TopBar } from '../../components/TopBar'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
+import { readPortalLogin } from '../../lib/api/portal'
 import { useToast } from '../../components/ui/Toast'
 import { BRAND } from '../../lib/brand'
 import { cn } from '../../lib/cn'
@@ -19,6 +20,7 @@ const YEAR = new Date().getFullYear()
 
 export function HomePage() {
   const [digits, setDigits] = useState<string[]>(Array(PIN_LENGTH).fill(''))
+  const [aula] = useState(() => readPortalLogin())
   const [shake, setShake] = useState(false)
   const refs = useRef<(HTMLInputElement | null)[]>([])
   const navigate = useNavigate()
@@ -202,7 +204,19 @@ export function HomePage() {
               </Button>
             </form>
 
-            <div className="mt-6 flex items-center gap-3 rounded-2xl bg-uap-blue/5 p-3 text-sm text-ink-soft dark:bg-white/5">
+            <Link
+              to={aula ? `/aula/${aula.code}` : '/aula'}
+              className="mt-6 flex items-center gap-3 rounded-2xl border-2 border-uap-green/40 bg-uap-green/10 p-3 text-sm transition-colors hover:border-uap-green"
+            >
+              <BookOpenCheck className="size-8 shrink-0 text-uap-green" />
+              <span className="min-w-0 flex-1">
+                <strong className="block font-display text-base text-ink">Mis actividades y notas</strong>
+                <span className="text-ink-soft">{aula ? `Entra a tu aula ${aula.code}` : 'Tareas y prácticas: entra con el código de tu aula y tu RU'}</span>
+              </span>
+              <ArrowRight className="size-5 text-uap-green" />
+            </Link>
+
+            <div className="mt-3 flex items-center gap-3 rounded-2xl bg-uap-blue/5 p-3 text-sm text-ink-soft dark:bg-white/5">
               <QrCode className="size-8 shrink-0 text-uap-blue dark:text-game-electric" />
               <p>
                 ¿Tienes celular? <strong className="text-ink">Escanea el código QR</strong> del proyector y entrarás

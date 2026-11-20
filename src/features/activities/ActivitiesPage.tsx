@@ -1,6 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { Copy, Gamepad2, KeyRound, Pencil, Printer, Rocket, Trash2 } from 'lucide-react'
+import { Copy, Gamepad2, KeyRound, ListChecks, Pencil, Printer, Rocket, Trash2 } from 'lucide-react'
 import { useMemo, useState, type FormEvent } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
@@ -14,6 +14,7 @@ import { useToast } from '../../components/ui/Toast'
 import { fetchActivityItems, saveActivity } from '../../lib/api/activities'
 import { qkq, useDeleteQuiz, useDuplicateQuiz, useQuizzes, useSaveQuiz, useSubjectsLite, type QuizListRow } from '../../lib/api/quizzes'
 import { LaunchModal, launchHint } from '../sessions/LaunchModal'
+import { BulkAssignModal } from '../aula/BulkAssignModal'
 import { ACTIVITY_META, ACTIVITY_TYPES, type ActivitySettings, type ActivityType } from './types'
 
 export const activityOf = (z: { settings?: Record<string, unknown> | null }) => (z.settings?.activity as ActivitySettings | undefined)?.type ?? null
@@ -22,6 +23,7 @@ export const activityOf = (z: { settings?: Record<string, unknown> | null }) => 
 export function ActivitiesPage() {
   const quizzes = useQuizzes()
   const [creating, setCreating] = useState<ActivityType | null>(null)
+  const [bulk, setBulk] = useState(false)
   const list = useMemo(() => (quizzes.data ?? []).filter((z) => activityOf(z) && z.status !== 'archived'), [quizzes.data])
 
   return (
@@ -58,7 +60,14 @@ export function ActivitiesPage() {
       </section>
 
       <section aria-label="Mis actividades" className="flex flex-col gap-3">
-        <h2 className="font-display text-lg font-bold">Mis actividades</h2>
+        <div className="flex flex-wrap items-center gap-2">
+          <h2 className="flex-1 font-display text-lg font-bold">Mis actividades</h2>
+          {list.length > 0 && (
+            <Button size="sm" onClick={() => setBulk(true)}>
+              <ListChecks className="size-4" /> Asignar varias
+            </Button>
+          )}
+        </div>
         {quizzes.isLoading ? (
           <Skeleton className="h-40" />
         ) : !list.length ? (
@@ -72,6 +81,7 @@ export function ActivitiesPage() {
         )}
       </section>
       <NewActivityModal type={creating} onClose={() => setCreating(null)} />
+      {bulk && <BulkAssignModal open onClose={() => setBulk(false)} />}
     </div>
   )
 }
