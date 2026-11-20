@@ -140,7 +140,7 @@ export function ActivityAttempt({
           <p className="text-xs font-bold uppercase tracking-wider text-ink-soft">
             {st.session.mode === 'exam' ? 'Examen' : 'Actividad'} · {st.session.subject}
           </p>
-          <h1 className="truncate font-display text-2xl font-black">{st.session.quiz_title}</h1>
+          <h1 className="font-display text-xl font-black leading-tight sm:text-2xl">{st.session.quiz_title}</h1>
         </div>
         <div className="flex items-center gap-2">
           {left !== null && (
@@ -154,6 +154,11 @@ export function ActivityAttempt({
         </div>
       </div>
       <ActivityGame board={board} engine={engine} onAllDone={() => void finish('done')} onFatal={(e) => (e === 'locked' ? setLocked(true) : void finish('auto'))} />
+      {board.type === 'research' && (
+        <Button variant="gold" size="lg" className="self-center" onClick={() => void askFinish()}>
+          <Send className="size-5" /> Entregar mi investigación
+        </Button>
+      )}
     </div>
   )
 }

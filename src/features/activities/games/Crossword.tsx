@@ -220,7 +220,10 @@ export default function Crossword() {
             })}
           </div>
         </div>
-        <p className="text-center text-xs text-ink-soft">Escriba con el teclado · Enter comprueba · Tab pasa a la siguiente palabra · toque dos veces un cruce para cambiar de dirección</p>
+        <p className="text-center text-xs text-ink-soft">
+          <span className="sm:hidden">Toca una casilla o una pista, escribe la palabra y pulsa «Comprobar». Toca dos veces un cruce para cambiar de dirección.</span>
+          <span className="hidden sm:inline">Escriba con el teclado · Enter comprueba · Tab pasa a la siguiente palabra · doble clic en un cruce para cambiar de dirección</span>
+        </p>
       </div>
       <div className="grid content-start gap-3 sm:grid-cols-2 lg:grid-cols-1">
         {[

@@ -187,7 +187,7 @@ function Stat({ icon, label, value }: { icon: ReactNode; label: string; value: s
   return (
     <span className="flex items-center gap-1.5 rounded-xl bg-ink/5 px-2.5 py-1.5" title={label}>
       <span className="text-ink-soft">{icon}</span>
-      <span className="sr-only">{label}: </span>
+      <span className="text-xs font-semibold text-ink-soft">{label}</span>
       <span className="font-display font-black tabular-nums">{value}</span>
     </span>
   )

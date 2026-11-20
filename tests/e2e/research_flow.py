@@ -121,7 +121,7 @@ with sync_playwright() as p:
     m.locator('textarea').first.wait_for(timeout=10000)
     check('A4', 'Al recargar, sus respuestas siguen ahí', '2.100 seguidores' in m.locator('textarea').nth(0).input_value())
     m.screenshot(path=OUT + 'research_A_estudiante.png', full_page=True)
-    m.get_by_role('button', name='Entregar').click()
+    m.get_by_role('button', name='Entregar mi investigación').click()
     m.get_by_role('dialog').get_by_role('button', name='Entregar').click()
     m.get_by_text('¡Entregado!').wait_for(timeout=10000)
     check('A5', 'Entrega: «¡Entregado! Tu docente publicará la nota»', m.get_by_text('Tu docente publicará la nota').count() == 1)
