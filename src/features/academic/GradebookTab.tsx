@@ -33,6 +33,14 @@ function Book({ data }: { data: GbData }) {
   const toast = useToast()
   const qc = useQueryClient()
   const { rows, items, terms, maxByTerm } = useMemo(() => computeGradebook(data), [data])
+  // qué parcial se ve: por defecto el último que ya tiene alguna nota (así se ve lo que se está calificando)
+  const lastWithData = useMemo(() => {
+    const withData = terms.filter((t) => items.some((it) => it.term === t && rows.some((r) => r.cells[it.id]?.score != null)))
+    return withData.length ? withData[withData.length - 1] : null
+  }, [terms, items, rows])
+  const [view, setView] = useState<number | 'all' | null>(null)
+  const current = view ?? lastWithData ?? 'all'
+  const shown = current === 'all' ? terms : terms.filter((t) => t === current)
   const pass = Number(data.plan?.pass_mark ?? 51)
   const passed = rows.filter((r) => r.passed).length
   const sessionsOf = (it: GbItem) => data.sessions.filter((s) => s.grading_item_id === it.id)
@@ -99,6 +107,21 @@ function Book({ data }: { data: GbData }) {
         <Mini label="Promedio final" value={rows.length ? Math.round((rows.reduce((a, r) => a + r.final, 0) / rows.length) * 10) / 10 : '—'} />
       </div>
 
+      <div className="flex flex-wrap items-center gap-2" role="radiogroup" aria-label="Parcial que se muestra">
+        <span className="text-sm font-semibold text-ink-soft">Ver:</span>
+        {[...terms, 'all' as const].map((t) => (
+          <button
+            key={String(t)}
+            role="radio"
+            aria-checked={current === t}
+            onClick={() => setView(t)}
+            className={cn('rounded-xl border-2 px-3 py-1 text-sm font-bold', current === t ? 'border-uap-green bg-uap-green/15' : 'border-line bg-surface hover:border-uap-gold')}
+          >
+            {t === 'all' ? 'Todos los parciales' : TERM_LABEL(t)}
+          </button>
+        ))}
+      </div>
+
       <SolidCard className="overflow-hidden">
         <div className="max-h-[70vh] overflow-auto">
           <table className="w-max min-w-full border-separate border-spacing-0 text-sm">
@@ -107,7 +130,7 @@ function Book({ data }: { data: GbData }) {
                 <th rowSpan={2} className="sticky left-0 z-20 bg-uap-blue px-3 py-2 text-left">
                   Estudiante
                 </th>
-                {terms.map((t) => (
+                {shown.map((t) => (
                   <th key={t} colSpan={items.filter((i) => i.term === t).length + 1} className="border-l border-white/20 px-2 py-1.5 text-center font-display">
                     {TERM_LABEL(t)} ({maxByTerm[t]} pts)
                   </th>
@@ -118,7 +141,7 @@ function Book({ data }: { data: GbData }) {
                 </th>
               </tr>
               <tr className="bg-uap-blue/90 text-white">
-                {terms.flatMap((t) => [
+                {shown.flatMap((t) => [
                   ...items
                     .filter((i) => i.term === t)
                     .map((it) => (
@@ -142,7 +165,7 @@ function Book({ data }: { data: GbData }) {
                     <span className="block max-w-56 truncate font-semibold">{r.student.name}</span>
                     <span className="text-xs text-ink-soft">RU {r.student.code}</span>
                   </td>
-                  {terms.flatMap((t) => [
+                  {shown.flatMap((t) => [
                     ...items
                       .filter((i) => i.term === t)
                       .map((it) =>
