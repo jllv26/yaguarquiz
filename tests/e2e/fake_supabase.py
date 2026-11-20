@@ -148,6 +148,11 @@ class H(BaseHTTPRequestHandler):
             r = admin('''select coalesce(json_agg(json_build_object('quiz_id', quiz_id, 'scheduled_end', scheduled_end, 'status', status)), '[]')
                          from public.sessions where subject_id::text = %s and status <> 'finished' ''', [eq('subject_id')])[0][0]
             return self.reply(200, r)
+        if u.path == '/rest/v1/sessions' and self.teacher and 'grading_items' in (u.query or ''):
+            r = admin('''select coalesce(json_agg(json_build_object('quiz_id', s.quiz_id, 'scheduled_end', s.scheduled_end, 'status', s.status,
+                           'grading_items', (select json_build_object('category', gi.category, 'term', gi.term) from public.grading_items gi where gi.id = s.grading_item_id))), '[]')
+                         from public.sessions s where s.teacher_id = %s and s.status <> 'finished' and s.mode <> 'live' ''', [UID])[0][0]
+            return self.reply(200, r)
         if u.path == '/rest/v1/subjects' and self.teacher:
             r = admin('''select coalesce(json_agg(json_build_object('id', s.id, 'code', s.code, 'name', s.name, 'parallel', s.parallel, 'theme_color', s.theme_color,
                            'portal_code', s.portal_code, 'period_id', s.period_id, 'career', s.career, 'semester', s.semester, 'cover_url', s.cover_url,

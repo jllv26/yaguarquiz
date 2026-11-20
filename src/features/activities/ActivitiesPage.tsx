@@ -11,6 +11,8 @@ import { Badge, EmptyState, Select, Skeleton } from '../../components/ui/Field'
 import { Input } from '../../components/ui/Input'
 import { Modal } from '../../components/ui/Modal'
 import { useToast } from '../../components/ui/Toast'
+import { supabase } from '../../lib/supabase'
+import { cn } from '../../lib/cn'
 import { fetchActivityItems, saveActivity } from '../../lib/api/activities'
 import { qkq, useDeleteQuiz, useDuplicateQuiz, useQuizzes, useSaveQuiz, useSubjectsLite, type QuizListRow } from '../../lib/api/quizzes'
 import { LaunchModal, launchHint } from '../sessions/LaunchModal'
@@ -25,6 +27,7 @@ export function ActivitiesPage() {
   const [creating, setCreating] = useState<ActivityType | null>(null)
   const [bulk, setBulk] = useState(false)
   const list = useMemo(() => (quizzes.data ?? []).filter((z) => activityOf(z) && z.status !== 'archived'), [quizzes.data])
+  const open = useOpenAssignments()
 
   return (
     <div className="flex flex-col gap-6">
@@ -73,10 +76,26 @@ export function ActivitiesPage() {
         ) : !list.length ? (
           <EmptyState icon={<Gamepad2 className="size-8" />} title="Aún no tiene actividades" text="Elija un tipo de juego arriba, escriba sus palabras y láncelo como tarea." />
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {list.map((z) => (
-              <ActivityCard key={z.id} z={z} />
-            ))}
+          <div className="flex flex-col gap-6">
+            {RUBROS.map((r) => {
+              const group = list.filter((z) => rubroOf(z) === r.key).sort((a, b) => a.title.localeCompare(b.title, 'es', { numeric: true }))
+              if (!group.length) return null
+              return (
+                <div key={r.key} className="flex flex-col gap-3">
+                  <div className="flex flex-wrap items-baseline gap-x-3 border-b-2 pb-1" style={{ borderColor: r.color }}>
+                    <h3 className="font-display text-xl font-black" style={{ color: r.color }}>
+                      {r.emoji} {r.label} <span className="text-base text-ink-soft">({group.length})</span>
+                    </h3>
+                    <p className="text-sm text-ink-soft">{r.hint}</p>
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    {group.map((z) => (
+                      <ActivityCard key={z.id} z={z} assigned={open.data?.get(z.id) ?? null} />
+                    ))}
+                  </div>
+                </div>
+              )
+            })}
           </div>
         )}
       </section>
@@ -86,7 +105,41 @@ export function ActivitiesPage() {
   )
 }
 
-function ActivityCard({ z }: { z: QuizListRow }) {
+// ------------------------------------------------------------------ rubros (a qué nota va cada actividad)
+type RubroKey = 'clase' | 'casa' | 'inv' | 'otra'
+const RUBROS: { key: RubroKey; emoji: string; label: string; short: string; color: string; hint: string }[] = [
+  { key: 'clase', emoji: '📝', label: 'Ejercicios en clase', short: 'Ejercicio en clase', color: '#1d5fd6', hint: 'Van a «Ejercicios en clase» · 1 intento · 10–12 min · para hacer en la clase' },
+  { key: 'casa', emoji: '🏠', label: 'Prácticas para casa', short: 'Práctica para casa', color: '#1B7339', hint: 'Van a «Prácticas para casa» · 2 intentos (cuenta el mejor) · 15–20 min' },
+  { key: 'inv', emoji: '🔎', label: 'Investigaciones para casa', short: 'Investigación para casa', color: '#8B1A1A', hint: 'Van a «Investigaciones para casa» · un caso distinto por estudiante · las califica usted' },
+  { key: 'otra', emoji: '🎲', label: 'Otras actividades', short: 'Sin rubro sugerido', color: '#4D4D4D', hint: 'Al asignarlas, usted elige a qué nota van' },
+]
+function rubroOf(z: QuizListRow): RubroKey {
+  if (activityOf(z) === 'research') return 'inv'
+  return launchHint(z.settings)?.rubro ?? 'otra'
+}
+/** Actividades asignadas que siguen abiertas: hasta cuándo y a qué nota van */
+function useOpenAssignments() {
+  return useQuery({
+    queryKey: ['open-assignments'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('sessions')
+        .select('quiz_id, scheduled_end, status, grading_items(category, term)')
+        .neq('status', 'finished')
+        .neq('mode', 'live')
+      if (error) throw new Error(error.message)
+      const now = Date.now()
+      const m = new Map<string, { closes: string | null; category: string | null; term: number | null }>()
+      for (const r of (data ?? []) as unknown as { quiz_id: string; scheduled_end: string | null; grading_items: { category: string; term: number } | null }[]) {
+        if (r.scheduled_end && new Date(r.scheduled_end).getTime() <= now) continue
+        m.set(r.quiz_id, { closes: r.scheduled_end, category: r.grading_items?.category ?? null, term: r.grading_items?.term ?? null })
+      }
+      return m
+    },
+  })
+}
+
+function ActivityCard({ z, assigned }: { z: QuizListRow; assigned: { closes: string | null; category: string | null; term: number | null } | null }) {
   const navigate = useNavigate()
   const toast = useToast()
   const confirm = useConfirm()
@@ -117,12 +170,26 @@ function ActivityCard({ z }: { z: QuizListRow }) {
         </div>
       </div>
       <div className="flex flex-wrap gap-1.5">
-        <Badge tone={ready ? 'green' : 'gold'}>{ready ? 'Lista' : `Faltan palabras (mín. ${m.min})`}</Badge>
+        {(() => {
+          const r = RUBROS.find((x) => x.key === rubroOf(z))!
+          return (
+            <span className="rounded-lg px-2 py-0.5 text-xs font-bold text-white" style={{ background: r.color }}>
+              {r.emoji} {r.short}
+            </span>
+          )
+        })()}
+        {variety(z) && <Badge tone="blue">{variety(z)}</Badge>}
+        {!ready && <Badge tone="gold">{`Faltan palabras (mín. ${m.min})`}</Badge>}
         {z.topics && <Badge tone="blue">{z.topics.name}</Badge>}
       </div>
+      <p className={cn('rounded-xl px-3 py-1.5 text-xs font-semibold', assigned ? 'bg-uap-green/10 text-uap-green' : 'bg-ink/5 text-ink-soft')}>
+        {assigned
+          ? `✅ Asignada${assigned.closes ? ` hasta el ${new Date(assigned.closes).toLocaleString('es-BO', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}` : ''} · nota a «${assigned.category ?? 'sin rubro'}${assigned.term ? ` · ${assigned.term}.er parcial` : ''}»`
+          : '⏳ Todavía sin asignar'}
+      </p>
       <div className="mt-auto flex flex-wrap items-center justify-between gap-2 pt-1">
         <span className="font-display text-2xl font-black">
-          {n} <span className="text-sm font-semibold text-ink-soft">{type === 'fill_text' ? 'espacios' : type === 'memory' || type === 'matching' ? 'parejas' : 'palabras'}</span>
+          {n} <span className="text-sm font-semibold text-ink-soft">{type === 'fill_text' ? 'espacios' : type === 'memory' || type === 'matching' ? 'parejas' : type === 'research' ? 'preguntas' : type === 'classify' ? 'tarjetas' : type === 'sentence' ? 'frases' : 'palabras'}</span>
         </span>
         <div className="ml-auto flex flex-wrap justify-end gap-1.5">
           <Button
@@ -341,3 +408,15 @@ function AnswerKeyModal({ quizId, title, type, act, onClose }: { quizId: string;
 }
 
 const esc = (t: string) => t.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] as string)
+
+/** Cuánto cambia para cada estudiante (para que el docente lo vea de un vistazo) */
+function variety(z: QuizListRow): string | null {
+  const act = z.settings?.activity as ActivitySettings | undefined
+  const n = z.questions?.[0]?.count ?? 0
+  const pick = launchHint(z.settings)?.pick_count
+  if (act?.type === 'research') return act.variants?.length ? `${act.variants.length} casos distintos` : null
+  if (act?.variants?.length) return `${act.variants.length} versiones distintas`
+  if (act?.type === 'rosco' && pick) return `${n} pistas · 1 por letra al azar`
+  if (pick && pick < n) return `${pick} al azar de ${n}`
+  return null
+}
