@@ -21,8 +21,10 @@ type Mode = 'live' | 'exam' | 'homework'
 export interface LaunchHint {
   mode?: 'exam' | 'homework'
   pick_count?: number
-  time_limit_min?: number
+  time_limit_min?: number | null
   max_attempts?: number
+  /** rubro sugerido: ejercicio en clase, práctica para casa o investigación */
+  rubro?: 'clase' | 'casa' | 'inv'
 }
 
 interface Props {
@@ -91,7 +93,8 @@ function LaunchModalInner({ open, onClose, quiz }: Props & { quiz: NonNullable<P
   const [rubroTouched, setRubroTouched] = useState(false)
   useEffect(() => {
     if (rubroTouched || !items.length || s.identification !== 'roster') return
-    const it = findItem(curTerm, mode === 'homework' ? 'casa' : 'clase')
+    const want = quiz.activity === 'research' ? 'inv' : (hint?.rubro ?? (mode === 'homework' ? 'casa' : 'clase'))
+    const it = want === 'inv' ? items.find((i) => i.term === curTerm && /investigaci/i.test(i.category)) : findItem(curTerm, want)
     if (it && it.id !== s.grading_item_id) setS((x) => ({ ...x, grading_item_id: it.id }))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items.length, mode, curTerm, rubroTouched, s.identification])

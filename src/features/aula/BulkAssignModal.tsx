@@ -37,7 +37,7 @@ export function BulkAssignModal({ open, onClose, subjectId: initialSubject }: { 
     return toLocal(d)
   })
   const [attempts, setAttempts] = useState(2)
-  const [kind, setKind] = useState<'casa' | 'clase' | 'none'>('casa')
+  const [kind, setKind] = useState<'auto' | 'casa' | 'clase' | 'inv' | 'none'>('auto')
   const [term, setTerm] = useState<number | null>(() => Number(localStorage.getItem('yq-term') ?? '') || null)
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null)
 
@@ -59,7 +59,16 @@ export function BulkAssignModal({ open, onClose, subjectId: initialSubject }: { 
   const items = (plan.data?.grading_items ?? []).filter((i) => i.source === 'yaguarquiz')
   const terms = [...new Set(items.map((i) => i.term))].sort((a, b) => a - b)
   const curTerm = term != null && terms.includes(term) ? term : (terms[terms.length - 1] ?? null)
-  const rubro = kind === 'none' ? null : items.find((i) => i.term === curTerm && (kind === 'clase' ? /ejercicio|clase/i.test(i.category) && !/casa/i.test(i.category) : /pr[aá]ctica/i.test(i.category)))
+  const findRubro = (k: 'casa' | 'clase' | 'inv') =>
+    items.find((i) => i.term === curTerm && (k === 'clase' ? /ejercicio|clase/i.test(i.category) && !/casa/i.test(i.category) : k === 'inv' ? /investigaci/i.test(i.category) : /pr[aá]ctica/i.test(i.category)))
+  const rubro = kind === 'none' || kind === 'auto' ? null : findRubro(kind)
+  /** rubro de cada actividad: en «automático», el que trae la actividad (clase, casa o investigación) */
+  const rubroOf = (z: (typeof acts)[number]) => {
+    if (kind === 'none') return null
+    const k = activityOf(z) === 'research' ? 'inv' : kind === 'auto' ? (launchHint(z.settings)?.rubro ?? 'casa') : kind
+    return findRubro(k) ?? null
+  }
+  const invRubro = findRubro('inv')
 
   const toggle = (id: string) => setPicked((p) => {
     const n = new Set(p)
@@ -86,11 +95,11 @@ export function BulkAssignModal({ open, onClose, subjectId: initialSubject }: { 
         require_ci: false,
         show_ranking: false,
         allow_late_join: true,
-        grading_item_id: rubro?.id ?? null,
+        grading_item_id: rubroOf(z)?.id ?? null,
         opens_at: o.toISOString(),
         closes_at: c.toISOString(),
-        time_limit_min: hint?.time_limit_min ?? 20,
-        max_attempts: attempts,
+        time_limit_min: activityOf(z) === 'research' ? null : (hint?.time_limit_min ?? 20),
+        max_attempts: kind === 'auto' ? (hint?.max_attempts ?? attempts) : attempts,
         pick_count: hint?.pick_count ?? null,
         shuffle_questions: true,
         shuffle_options: true,
@@ -207,11 +216,13 @@ export function BulkAssignModal({ open, onClose, subjectId: initialSubject }: { 
               </button>
             ))}
           </div>
-          <div className="grid gap-2 sm:grid-cols-3" role="radiogroup" aria-label="Rubro">
+          <div className="grid gap-2 sm:grid-cols-2" role="radiogroup" aria-label="Rubro">
             {(
               [
+                ['auto', '✨ Automático (según cada actividad)'],
                 ['casa', '🏠 Práctica para casa'],
                 ['clase', '📝 Ejercicio de clase'],
+                ['inv', '🔎 Investigación para casa'],
                 ['none', 'Sin nota (solo práctica)'],
               ] as const
             ).map(([k, l]) => (
@@ -220,10 +231,18 @@ export function BulkAssignModal({ open, onClose, subjectId: initialSubject }: { 
               </button>
             ))}
           </div>
-          {kind !== 'none' && !rubro && <p className="text-xs font-semibold text-uap-red">Ese rubro no está en el plan de calificación de este parcial.</p>}
+          {kind === 'auto' && (
+            <p className="text-xs text-ink-soft">
+              📝 Clase → «Ejercicios en clase» (1 intento) · 🏠 Casa → «Prácticas para casa» (2 intentos) · 🔎 Investigación → «Investigaciones para casa» (sin límite de tiempo, la califica usted).
+            </p>
+          )}
+          {kind !== 'none' && kind !== 'auto' && !rubro && <p className="text-xs font-semibold text-uap-red">Ese rubro no está en el plan de calificación de este parcial.</p>}
+          {kind !== 'none' && acts.some((z) => picked.has(z.id) && activityOf(z) === 'research') && (
+            <p className="text-xs text-ink-soft">Las investigaciones marcadas van a «{invRubro?.category ?? 'Investigaciones para casa'}» y no tienen límite de tiempo.</p>
+          )}
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 text-sm">
+        <div className={cn('flex flex-wrap items-center gap-3 text-sm', kind === 'auto' && 'hidden')}>
           <span className="font-semibold">Intentos por estudiante</span>
           {[1, 2, 3].map((n) => (
             <button key={n} type="button" onClick={() => setAttempts(n)} className={cn('h-10 w-10 rounded-xl border-2 font-display font-black', attempts === n ? 'border-uap-green bg-uap-green/15' : 'border-line')}>

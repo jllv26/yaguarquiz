@@ -210,7 +210,8 @@ function PortalList({
   onRefresh: () => void
 }) {
   const todo = data.items.filter((x) => x.win === 'open' && x.done === 0)
-  const improve = data.items.filter((x) => x.win === 'open' && x.done > 0)
+  const improve = data.items.filter((x) => x.win === 'open' && x.done > 0 && x.done < x.max_attempts && x.activity !== 'research')
+  const delivered = data.items.filter((x) => x.win === 'open' && x.done > 0 && !improve.includes(x))
   const soon = data.items.filter((x) => x.win === 'not_open')
   const closed = data.items.filter((x) => x.win === 'closed')
   const graded = data.items.filter((x) => x.best != null)
@@ -242,6 +243,7 @@ function PortalList({
       )}
       <Section title="Por hacer" items={todo} empty="No tienes actividades pendientes." busy={busy} onOpen={onOpen} />
       {improve.length > 0 && <Section title="Hechas · puedes mejorar tu nota" items={improve} busy={busy} onOpen={onOpen} />}
+      {delivered.length > 0 && <Section title="Entregadas" items={delivered} busy={busy} onOpen={onOpen} />}
       {soon.length > 0 && <Section title="Próximamente" items={soon} busy={busy} onOpen={onOpen} />}
       {closed.length > 0 && <Section title="Cerradas" items={closed} busy={busy} onOpen={onOpen} />}
     </div>
@@ -268,7 +270,7 @@ function ItemCard({ it, busy, disabled, onOpen }: { it: PortalItem; busy: boolea
   const left = it.max_attempts - it.done
   const canDo = it.win === 'open' && (left > 0 || it.in_progress)
   const tl = timeLeft(it.closes)
-  const label = it.in_progress ? 'Continuar' : it.done === 0 ? 'Hacer' : 'Mejorar mi nota'
+  const label = it.in_progress ? 'Continuar' : it.done === 0 ? (it.activity === 'research' ? 'Investigar' : 'Hacer') : 'Mejorar mi nota'
   return (
     <Card className="flex flex-wrap items-center gap-3 !p-4">
       <span className="grid size-12 shrink-0 place-items-center rounded-2xl text-white" style={{ background: meta?.color ?? '#1F3864' }}>
@@ -284,7 +286,7 @@ function ItemCard({ it, busy, disabled, onOpen }: { it: PortalItem; busy: boolea
         <p className={cn('mt-0.5 flex flex-wrap items-center gap-x-2 text-xs', it.win === 'open' && tl && /min|\b[1-9] h/.test(tl) ? 'font-bold text-uap-red' : 'text-ink-soft')}>
           <span>
             <Clock className="mr-1 inline size-3.5 align-[-2px]" />
-            {it.win === 'not_open' ? `Abre el ${fmt(it.opens)}` : it.win === 'closed' ? `Cerró el ${fmt(it.closes)}` : `Hasta el ${fmt(it.closes)}${tl ? ` · ${tl}` : ''}`}
+            {it.win === 'not_open' ? `Abre el ${fmt(it.opens)}` : it.win === 'closed' ? `Cerró el ${fmt(it.closes)}` : it.closes ? `Hasta el ${fmt(it.closes)}${tl ? ` · ${tl}` : ''}` : 'Sin fecha de cierre'}
           </span>
           {it.win === 'open' && it.max_attempts > 1 && <span>· {Math.max(0, left)} de {it.max_attempts} intentos</span>}
         </p>
@@ -295,11 +297,14 @@ function ItemCard({ it, busy, disabled, onOpen }: { it: PortalItem; busy: boolea
           {Math.round(Number(it.best))}
         </span>
       )}
+      {it.activity === 'research' && it.done > 0 && it.best == null && (
+        <span className="rounded-xl bg-uap-gold/20 px-2 py-1 text-xs font-bold">Entregada · en revisión</span>
+      )}
       {canDo ? (
         <Button onClick={onOpen} disabled={disabled} className="w-full sm:w-auto">
           {busy ? <Loader2 className="size-4 animate-spin" /> : <PlayCircle className="size-4" />} {label}
         </Button>
-      ) : it.win === 'open' && it.done > 0 ? (
+      ) : it.win === 'open' && it.done > 0 && it.activity !== 'research' ? (
         <span className="text-xs font-bold text-ink-soft">Sin intentos</span>
       ) : it.win === 'closed' && it.done === 0 ? (
         <span className="rounded-xl bg-uap-red/10 px-2 py-1 text-xs font-bold text-uap-red">No entregada</span>

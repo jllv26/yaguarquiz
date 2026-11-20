@@ -112,9 +112,12 @@ export function ActivityAttempt({
 
   async function askFinish() {
     const pending = board.total - Object.values(board.progress).filter((p) => p.done).length
+    const research = board.type === 'research'
     const ok = await confirm({
-      title: '¿Entregar la actividad?',
-      message: 'Lo que no resolviste cuenta como 0. Después de entregar ya no podrás seguir jugando este intento.',
+      title: research ? '¿Entregar tu investigación?' : '¿Entregar la actividad?',
+      message: research
+        ? 'Revisa que respondiste todo con tus palabras. Después de entregar ya no podrás cambiarla; tu docente la calificará y te llegará la nota.'
+        : 'Lo que no resolviste cuenta como 0. Después de entregar ya no podrás seguir jugando este intento.',
       confirmText: 'Entregar',
       danger: pending > 0,
     })

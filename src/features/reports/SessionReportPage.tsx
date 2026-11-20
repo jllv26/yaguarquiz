@@ -17,8 +17,9 @@ import {
   Sheet,
   UserX,
   Users,
+  FileSearch,
 } from 'lucide-react'
-import { useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
 import { SolidCard } from '../../components/ui/Card'
@@ -51,8 +52,9 @@ import { syncSession, useSheetsSettings } from '../../lib/sheets'
 import { TERM_LABEL } from '../academic/gradingDefaults'
 import { AvatarBubble } from '../live/LiveBits'
 import { useAutoSync } from './useAutoSync'
+import { ResearchGrader, useResearch } from './ResearchGrader'
 
-type Tab = 'students' | 'questions' | 'absent'
+type Tab = 'students' | 'questions' | 'absent' | 'research'
 const roster0 = (s: SessionReport['session']) => s.identification === 'roster'
 
 export function SessionReportPage() {
@@ -81,6 +83,13 @@ function Report({ rep, tab, setTab, refresh }: { rep: SessionReport; tab: Tab; s
   const [detail, setDetail] = useState<ReportStudent | null>(null)
   const [adjust, setAdjust] = useState<ReportStudent | null>(null)
   const roster = s.identification === 'roster'
+  const research = useResearch(s.id)
+  const isResearch = (research.data?.criteria.length ?? 0) > 0
+  const pendingResearch = research.data?.items.filter((x) => x.grade === null).length ?? 0
+  useEffect(() => {
+    if (isResearch && tab === 'students') setTab('research')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isResearch])
 
   return (
     <div className="flex flex-col gap-5">
@@ -123,7 +132,7 @@ function Report({ rep, tab, setTab, refresh }: { rep: SessionReport; tab: Tab; s
         <SyncCard rep={rep} onDone={refresh} />
       </div>
 
-      {difficult.length > 0 && (
+      {difficult.length > 0 && !isResearch && (
         <SolidCard className="flex items-start gap-3 border-l-8 border-l-game-coral p-4">
           <AlertTriangle className="mt-0.5 size-6 shrink-0 text-game-coral" />
           <div>
@@ -148,6 +157,7 @@ function Report({ rep, tab, setTab, refresh }: { rep: SessionReport; tab: Tab; s
       <nav className="flex flex-wrap gap-2" role="tablist">
         {(
           [
+            ...(isResearch ? [['research', `Calificar investigaciones${pendingResearch ? ` (${pendingResearch} pendientes)` : ''}`, <FileSearch key="r" className="size-4" />]] : []),
             ['students', `Estudiantes (${rep.students.length})`, <Users key="u" className="size-4" />],
             ['questions', `Preguntas (${rep.questions.length})`, <ListChecks key="q" className="size-4" />],
             ...(roster ? [['absent', `Ausentes (${rep.absent.length})`, <UserX key="a" className="size-4" />]] : []),
@@ -165,6 +175,7 @@ function Report({ rep, tab, setTab, refresh }: { rep: SessionReport; tab: Tab; s
         ))}
       </nav>
 
+      {tab === 'research' && <ResearchGrader sessionId={s.id} onGraded={refresh} />}
       {tab === 'students' && <StudentsTable rep={rep} onDetail={setDetail} onAdjust={setAdjust} />}
       {tab === 'questions' && <QuestionsList rep={rep} />}
       {tab === 'absent' && (

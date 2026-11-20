@@ -164,7 +164,7 @@ function ActivityCard({ z }: { z: QuizListRow }) {
           )}
         </div>
       </div>
-      {keyOpen && <AnswerKeyModal quizId={z.id} title={z.title} type={type} onClose={() => setKeyOpen(false)} />}
+      {keyOpen && <AnswerKeyModal quizId={z.id} title={z.title} type={type} act={(z.settings?.activity as ActivitySettings | undefined) ?? null} onClose={() => setKeyOpen(false)} />}
       <LaunchModal open={launch} onClose={() => setLaunch(false)} quiz={launch ? { id: z.id, title: z.title, subject_id: z.subject_id, questionCount: n, activity: type, launch: launchHint(z.settings) } : null} />
     </SolidCard>
   )
@@ -243,14 +243,17 @@ function NewActivityModal({ type, onClose }: { type: ActivityType | null; onClos
 }
 
 /** Hoja de respuestas solo para el docente (los estudiantes nunca la ven mientras la actividad está abierta). */
-function AnswerKeyModal({ quizId, title, type, onClose }: { quizId: string; title: string; type: ActivityType; onClose: () => void }) {
+function AnswerKeyModal({ quizId, title, type, act, onClose }: { quizId: string; title: string; type: ActivityType; act: ActivitySettings | null; onClose: () => void }) {
   const items = useQuery({ queryKey: ['activity-key', quizId], queryFn: () => fetchActivityItems(quizId) })
+  const versions = type !== 'research' ? (act?.variants ?? []) : []
+  // con versiones de texto (cálculos), cada versión tiene sus propias respuestas
+  const versionOf = (i: number) => (type === 'fill_text' ? versions.findIndex((v) => v.pos?.includes(i)) : -1)
   const m = ACTIVITY_META[type]
   const showGroup = type === 'classify' || type === 'rosco'
-  const clueLabel = type === 'classify' ? 'Tarjeta' : type === 'matching' || type === 'memory' ? 'Pareja' : type === 'fill_text' ? 'Espacio' : 'Pista'
+  const clueLabel = type === 'classify' ? 'Tarjeta' : type === 'matching' || type === 'memory' ? 'Pareja' : type === 'fill_text' ? 'Espacio' : type === 'research' ? 'Pregunta' : 'Pista'
   function print() {
     const rows = (items.data ?? [])
-      .map((it, i) => `<tr><td>${i + 1}</td><td>${esc(type === 'classify' ? it.term : it.prompt)}</td><td><b>${esc(type === 'classify' ? (it.group ?? '') : it.term)}</b></td></tr>`)
+      .map((it, i) => `<tr><td>${i + 1}</td><td>${versionOf(i) >= 0 ? `Versión ${versionOf(i) + 1}` : ''}${esc(type === 'classify' || type === 'research' ? it.term : it.prompt)}</td><td><b>${esc(type === 'classify' ? (it.group ?? '') : it.term)}</b></td></tr>`)
       .join('')
     const w = window.open('', '_blank')
     if (!w) return
@@ -279,6 +282,30 @@ function AnswerKeyModal({ quizId, title, type, onClose }: { quizId: string; titl
       <p className="mb-3 rounded-2xl bg-uap-gold/15 px-4 py-2 text-sm">
         🔒 Los estudiantes ven si aciertan o fallan, pero la respuesta correcta recién cuando usted cierra la actividad. Cada estudiante recibe sus propias preguntas al azar; lo que le tocó y lo que respondió cada uno está en <b>Reportes</b> → la sesión.
       </p>
+      {versions.length > 0 && (
+        <p className="mb-3 rounded-2xl bg-uap-blue/10 px-4 py-2 text-sm">
+          🔀 Tiene <b>{versions.length} versiones</b>: a cada estudiante le toca una al azar
+          {type === 'fill_text' ? ' (con otros números). Abajo, las respuestas de cada versión.' : `, con ${versions[0]?.pos?.length ?? '?'} palabras de este banco.`}
+        </p>
+      )}
+      {type === 'research' && act && (
+        <div className="mb-3 flex flex-col gap-2 text-sm">
+          <p className="rounded-2xl bg-uap-red/10 px-4 py-2">
+            🔎 La investigación no tiene respuestas correctas fijas: usted califica cada criterio en <b>Reportes → la sesión → Calificar investigaciones</b>.
+          </p>
+          <p>
+            <b>Criterios:</b> {(act.criteria ?? []).map((c) => c.title).join(' · ')}
+          </p>
+          <details>
+            <summary className="cursor-pointer font-bold">Casos ({act.variants?.length ?? 0}): uno distinto para cada estudiante</summary>
+            <ol className="mt-1 list-decimal pl-6">
+              {(act.variants ?? []).map((v, k) => (
+                <li key={k}>{v.case?.title}</li>
+              ))}
+            </ol>
+          </details>
+        </div>
+      )}
       {items.isLoading ? (
         <Skeleton className="h-40" />
       ) : (
@@ -295,9 +322,12 @@ function AnswerKeyModal({ quizId, title, type, onClose }: { quizId: string; titl
               {(items.data ?? []).map((it, i) => (
                 <tr key={it.id ?? i} className="border-t border-line align-top">
                   <td className="px-2 py-1.5 tabular-nums">{i + 1}</td>
-                  <td className="px-2 py-1.5">{type === 'classify' ? it.term : it.prompt}</td>
+                  <td className="px-2 py-1.5">
+                    {versionOf(i) >= 0 && <span className="mr-1 rounded-md bg-uap-blue/10 px-1.5 text-xs font-bold">Versión {versionOf(i) + 1}</span>}
+                    {type === 'classify' ? it.term : type === 'research' ? it.term : it.prompt}
+                  </td>
                   <td className="px-2 py-1.5 font-display font-black">
-                    {type === 'classify' ? it.group : it.term}
+                    {type === 'classify' ? it.group : type === 'research' ? <span className="font-normal text-ink-soft">{it.prompt || '—'}</span> : it.term}
                     {showGroup && type === 'rosco' && it.group ? <span className="ml-1 text-xs font-normal text-ink-soft">({it.contains ? 'contiene' : 'empieza con'} {it.group})</span> : null}
                   </td>
                 </tr>

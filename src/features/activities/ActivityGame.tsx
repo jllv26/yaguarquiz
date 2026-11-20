@@ -17,6 +17,7 @@ const GAMES: Record<ActivityType, React.LazyExoticComponent<() => ReactNode>> = 
   sentence: lazy(() => import('./games/Tiles').then((m) => ({ default: m.Sentence }))),
   hangman: lazy(() => import('./games/Hangman')),
   classify: lazy(() => import('./games/Classify')),
+  research: lazy(() => import('./games/Research')),
 }
 
 export const PLAY_MESSAGES: Record<string, string> = {
@@ -84,6 +85,11 @@ export function ActivityGame({
           return r
         }
         const item = r.item ?? (data.item as string | undefined)
+        if (action === 'save') {
+          // investigación: solo se guarda el texto (sin puntos ni sonidos)
+          if (item) setProgress((p) => ({ ...p, [item]: { ...p[item], done: !!r.done, value: String(data.value ?? '') } }))
+          return r
+        }
         if (item) {
           setProgress((p) => ({
             ...p,
@@ -120,12 +126,14 @@ export function ActivityGame({
     [engine, toast, onFatal, flash, board.type],
   )
 
+  const research = board.type === 'research'
   useEffect(() => {
+    if (research) return // la investigación se entrega con el botón «Entregar»
     if (!finished.current && board.total > 0 && done >= board.total) {
       finished.current = true
       setTimeout(() => onAllDone?.(), 900)
     }
-  }, [done, board.total, onAllDone])
+  }, [done, board.total, onAllDone, research])
 
   const Game = GAMES[board.type]
   const ctx = useMemo(() => ({ board, progress, play, busy, flash }), [board, progress, play, busy, flash])
@@ -140,8 +148,8 @@ export function ActivityGame({
           </span>
           <span className="font-display font-black">{meta.label}</span>
           <div className="ml-auto flex flex-wrap items-center gap-2 text-sm">
-            <Stat icon={<Target className="size-4" />} label="Resueltas" value={`${done}/${board.total}`} />
-            <Stat icon={<Sparkles className="size-4" />} label="Puntos" value={points.toLocaleString('es-BO')} />
+            <Stat icon={<Target className="size-4" />} label={research ? 'Respondidas' : 'Resueltas'} value={`${done}/${board.total}`} />
+            {!research && <Stat icon={<Sparkles className="size-4" />} label="Puntos" value={points.toLocaleString('es-BO')} />}
             {['wordsearch', 'memory', 'matching', 'classify'].includes(board.type) && <Stat icon={<XCircle className="size-4" />} label="Errores" value={String(errors)} />}
             {aside}
           </div>

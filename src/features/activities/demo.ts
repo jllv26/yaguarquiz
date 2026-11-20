@@ -49,6 +49,13 @@ const DEMO: Record<ActivityType, { items: ActivityItem[]; extra?: Partial<Activi
       { term: 'Mouse', prompt: 'Hardware', group: 'Hardware' },
     ],
   },
+  research: {
+    items: [
+      { term: '¿Qué redes sociales usa el negocio y cada cuánto publica?', prompt: 'Revisa su página y anota fechas reales.' },
+      { term: '¿Qué le recomendarías mejorar primero y por qué?', prompt: '' },
+    ],
+    extra: { min_words: 30, criteria: [{ title: 'Datos reales' }, { title: 'Análisis' }, { title: 'Propuesta' }], variants: [{ case: { title: 'Heladería del centro de Cobija' } }] },
+  },
 }
 
 export function demoActivity(type: ActivityType) {

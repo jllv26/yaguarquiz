@@ -1,5 +1,6 @@
 import {
   ArrowDownUp,
+  FileSearch,
   Blocks,
   Brain,
   Grid3x3,
@@ -23,6 +24,7 @@ export type ActivityType =
   | 'sentence'
   | 'hangman'
   | 'classify'
+  | 'research'
 
 export interface ActivityMeta {
   label: string
@@ -194,9 +196,35 @@ export const ACTIVITY_META: Record<ActivityType, ActivityMeta> = {
     fixedBoard: false,
     tip: 'Use entre 2 y 5 grupos. Escriba el nombre del grupo igual en cada fila.',
   },
+  research: {
+    label: 'Investigación',
+    short: 'Investigación',
+    description: 'Cada estudiante recibe un caso distinto, investiga y responde con sus palabras. La califica el docente.',
+    icon: FileSearch,
+    color: '#8B1A1A',
+    termLabel: 'Pregunta',
+    promptLabel: 'Ayuda',
+    promptRequired: false,
+    min: 1,
+    max: 10,
+    usesTries: false,
+    fixedBoard: true,
+    tip: 'Cada estudiante recibe uno de los casos al azar.',
+  },
 }
 
-export const ACTIVITY_TYPES = Object.keys(ACTIVITY_META) as ActivityType[]
+/** Tipos que se crean desde la galería (la investigación se prepara con sus casos y criterios) */
+export const ACTIVITY_TYPES = (Object.keys(ACTIVITY_META) as ActivityType[]).filter((t) => t !== 'research')
+
+export interface ResearchCase {
+  title: string
+  context?: string
+  tasks?: string[]
+}
+export interface ResearchCriterion {
+  title: string
+  desc?: string
+}
 
 export interface ActivitySettings {
   type: ActivityType
@@ -209,6 +237,11 @@ export interface ActivitySettings {
   text?: string
   layout?: CrosswordLayout
   grid?: { letters: string[]; placements?: { i: number; cells: [number, number][] }[] }
+  /** Versiones: a cada estudiante le toca una (tablero/texto distinto, o un caso de investigación) */
+  variants?: ({ pos?: number[]; case?: ResearchCase } & Partial<Pick<ActivitySettings, 'layout' | 'grid' | 'text'>>)[]
+  /** Investigación: criterios que califica el docente y mínimo de palabras por respuesta */
+  criteria?: ResearchCriterion[]
+  min_words?: number
 }
 
 export interface CrosswordLayout {
@@ -251,6 +284,7 @@ export interface Boards {
   sentence: { items: { key: string; clue: string; image_url: string | null; tiles: string[] }[] }
   hangman: { max_wrong: number; items: { key: string; clue: string; image_url: string | null; mask: string }[] }
   classify: { groups: string[]; cards: { key: string; text: string; image_url: string | null }[] }
+  research: { case: ResearchCase | null; criteria: ResearchCriterion[]; min_words: number; questions: { key: string; text: string; hint: string | null; value: string | null }[] }
 }
 
 export interface ActivityBoard<T extends ActivityType = ActivityType> {
@@ -264,7 +298,7 @@ export interface ActivityBoard<T extends ActivityType = ActivityType> {
   errors: number
 }
 
-export type PlayAction = 'answer' | 'find' | 'pair' | 'letter'
+export type PlayAction = 'answer' | 'find' | 'pair' | 'letter' | 'save'
 export interface PlayResult {
   ok: boolean
   error?: string

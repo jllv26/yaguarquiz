@@ -61,3 +61,27 @@ export async function fetchActivityItems(quizId: string): Promise<ActivityItem[]
     contains: ((r.tags as string[]) ?? []).includes('contiene'),
   }))
 }
+
+// ------------------------------------------------------------------ investigaciones (las califica el docente)
+export interface ResearchSubmission {
+  attempt: string
+  number: number
+  submitted_at: string
+  grade: number | null
+  name: string
+  ru: string | null
+  case: { title: string; context?: string } | null
+  focus_losses: number
+  paste: number
+  scores: number[] | null
+  comment: string | null
+  answers: { question: string; text: string }[]
+}
+export interface ResearchList {
+  criteria: { title: string; desc?: string }[]
+  min_words: number
+  items: ResearchSubmission[]
+}
+export const researchList = (session: string) => rpc<ResearchList>('research_list', { p_session: session })
+export const researchGrade = (attempt: string, scores: number[] | null, comment: string | null) =>
+  rpc<{ ok: true; grade: number | null }>('research_grade', { p_attempt: attempt, p_scores: scores, p_comment: comment })

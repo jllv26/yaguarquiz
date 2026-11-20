@@ -47,6 +47,8 @@ function Editor({
   const saveQuiz = useSaveQuiz()
   const type = initial.type
   const meta = ACTIVITY_META[type]
+  // tableros con versiones (uno distinto por estudiante): sus posiciones no deben moverse desde aquí
+  const lockedVariants = !!initial.variants?.length && type !== 'research'
   const [title, setTitle] = useState(quiz.title)
   const [s, setS] = useState<ActivitySettings>(initial)
   const [items, setItems] = useState<ActivityItem[]>(initialItems.length ? initialItems : type === 'fill_text' ? [] : [blank(), blank(), blank()])
@@ -168,7 +170,7 @@ function Editor({
           <Button variant="secondary" onClick={() => setPreview(Date.now())} disabled={effItems.length < 1}>
             <Eye className="size-5" /> Probar
           </Button>
-          <Button variant="success" onClick={() => void save()} disabled={busy}>
+          <Button variant="success" onClick={() => void save()} disabled={busy || lockedVariants}>
             {busy ? <Loader2 className="size-5 animate-spin" /> : <Save className="size-5" />} Guardar
           </Button>
           <Button
@@ -184,6 +186,12 @@ function Editor({
           </Button>
         </div>
       </header>
+      {lockedVariants && (
+        <p className="rounded-2xl border-2 border-uap-gold/60 bg-uap-gold/10 px-4 py-3 text-sm">
+          🔀 Esta actividad tiene <b>{initial.variants!.length} versiones</b>: a cada estudiante le toca un tablero distinto (así no sirve copiar la foto del compañero).
+          Aquí puede verla, probarla y lanzarla; para cambiar sus palabras pídalo y se generan de nuevo todas las versiones.
+        </p>
+      )}
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="flex flex-col gap-4">

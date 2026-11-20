@@ -89,6 +89,14 @@ export function localActivity(settings: ActivitySettings, items: ActivityItem[])
     case 'hangman':
       board = { max_wrong: 6, items: shuffle(keyed).map((k) => ({ key: k.key, clue: k.prompt, image_url: k.image_url ?? null, mask: mask(k.term, []) })) }
       break
+    case 'research':
+      board = {
+        case: settings.variants?.[0]?.case ?? null,
+        criteria: settings.criteria ?? [],
+        min_words: settings.min_words ?? 40,
+        questions: keyed.map((k) => ({ key: k.key, text: k.term, hint: k.prompt || null, value: null })),
+      }
+      break
     case 'classify':
       board = {
         groups: shuffle([...new Set(keyed.map((k) => k.group?.trim()).filter((g): g is string => !!g))]),
@@ -104,6 +112,7 @@ export function localActivity(settings: ActivitySettings, items: ActivityItem[])
     async play(action: PlayAction, data: Record<string, unknown>): Promise<PlayResult> {
       await new Promise((r) => setTimeout(r, 120))
       const val = String(data.value ?? '').trim()
+      if (action === 'save') return { ok: true, item: String(data.item), done: val !== '' }
       if (action === 'find') {
         const v = gameLetters(val)
         const k = keyed.find((x) => !progress[x.key] && v && (gameLetters(x.term) === v || [...gameLetters(x.term)].reverse().join('') === v))
