@@ -133,6 +133,13 @@ check(n === 2 && ms.some((m) => m.student_id === st[0].id && Math.abs(Number(m.s
   `pasa ${n} notas a la libreta (la del expositor y el ausente = 0)`)
 const gb = await rpc(host, 'gradebook', [subj.id])
 check(gb.manual.some((m) => m.item_id === item.id), 'la libreta las muestra en Exposiciones')
+// vinculada: cuando el docente cambia su nota, la libreta se actualiza sola
+await rpc(host, 'presentation_teacher_score', [ids[0], [0, 0, 0, 0, 0], null, null])
+const f0b = (await rpc(host, 'presentation_host', [pid])).presenters[0]
+const { rows: [ms2] } = await admin.query('select score from public.manual_scores where grading_item_id = $1 and student_id = $2', [item.id, st[0].id])
+check(Math.abs(Number(ms2.score) - f0b.final) < 0.01 && f0b.final < f0.final, `la libreta se actualiza sola al cambiar la nota (${f0.final} → ${f0b.final})`)
+const lk = await rpc(host, 'presentation_link_gradebook', [pid, item.id])
+check(lk.ok && lk.synced >= 2, 'se puede vincular de una vez y sincroniza lo ya calificado')
 // una sesión nueva nunca recibe el mismo PIN que una exposición abierta
 const { rows: [qz] } = await admin.query(`select id from public.quizzes where title like 'Repaso Unidad 1%' limit 1`)
 await admin.query(`alter table public.sessions disable trigger activity_session_guard`)

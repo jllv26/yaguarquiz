@@ -629,6 +629,7 @@ function ScoreModal({ st, presenter, onClose }: { st: HostState; presenter: Host
 function Results({ st, onOpen }: { st: HostState; onOpen: (p: HostPresenter) => void }) {
   const toast = useToast()
   const [item, setItem] = useState(st.presentation.grading_item_id ?? st.items.find((i) => /expos/i.test(i.category))?.id ?? '')
+  const linked = st.items.find((i) => i.id === st.presentation.grading_item_id) ?? null
   const [busy, setBusy] = useState(false)
   const rubric = st.presentation.rubric
   const tw = st.presentation.settings.teacher_weight ?? 50
@@ -724,7 +725,7 @@ function Results({ st, onOpen }: { st: HostState; onOpen: (p: HostPresenter) => 
                     setBusy(true)
                     try {
                       const n = await toGradebook(st.presentation.id, item)
-                      toast.success(`${n} notas pasaron a la libreta`, 'Las ve en Asignaturas → Libreta de notas.')
+                      toast.success(`${n} notas pasaron a la libreta`, 'Desde ahora se actualizan solas cada vez que usted o los compañeros califican.')
                     } catch (e) {
                       toast.error('No se pudo pasar a la libreta', (e as Error).message)
                     } finally {
@@ -733,11 +734,16 @@ function Results({ st, onOpen }: { st: HostState; onOpen: (p: HostPresenter) => 
                   })()
                 }
               >
-                <BookCheck className="size-4" /> Enviar a la libreta
+                <BookCheck className="size-4" /> {linked && linked.id === item ? 'Actualizar ahora' : 'Enviar a la libreta'}
               </Button>
             </div>
           )}
         </div>
+        {linked && (
+          <p className="mx-4 mt-3 rounded-xl bg-uap-green/10 px-3 py-2 text-sm font-semibold text-uap-green">
+            🔗 Vinculada a la libreta: Parcial {linked.term} · {linked.category} ({linked.weight} pts). Cada nota se actualiza sola al calificar.
+          </p>
+        )}
         <p className="px-4 pt-3 text-sm text-ink-soft">
           Nota final = {tw} % su nota + {100 - tw} % promedio de los compañeros (si falta una, cuenta la otra). Ausente: 0. Toque un nombre para ver los comentarios.
         </p>
