@@ -84,7 +84,7 @@ function Book({ data }: { data: GbData }) {
           <Info className="mt-0.5 size-4 shrink-0" />
           <span>
             Cada celda muestra el <strong>aporte</strong> = (nota / 100) × peso. Varias actividades en la misma categoría se promedian; si una actividad ya cerró y el estudiante no
-            participó, cuenta 0. Las categorías manuales se escriben aquí directamente (nota sobre 100).
+            participó, cuenta 0. Las categorías manuales se escriben aquí directamente, en puntos de la categoría (por ejemplo Exposiciones sobre 5, Proyecto final sobre 10).
           </span>
         </p>
         <Button variant="success" onClick={() => void exportExcel()}>
@@ -152,7 +152,6 @@ function Book({ data }: { data: GbData }) {
                               item={it}
                               studentId={r.student.id}
                               value={r.cells[it.id].score}
-                              contribution={r.cells[it.id].contribution}
                               onSaved={() => void refresh()}
                               onError={(m) => toast.error('No se pudo guardar', m)}
                             />
@@ -192,36 +191,38 @@ function ManualInput({
   item,
   studentId,
   value,
-  contribution,
   onSaved,
   onError,
 }: {
   item: GbItem
   studentId: string
   value: number | null
-  contribution: number | null
   onSaved: () => void
   onError: (m: string) => void
 }) {
-  const [v, setV] = useState(value === null ? '' : String(value))
+  // se escribe en PUNTOS de la categoría (ej. Exposiciones sobre 5, Proyecto final sobre 10);
+  // por dentro se guarda sobre 100, igual que las actividades
+  const w = item.weight
+  const toPts = (score: number | null) => (score === null ? '' : String(Math.round((score * w) / 100 * 100) / 100))
+  const [v, setV] = useState(toPts(value))
   const [busy, setBusy] = useState(false)
   const [prev, setPrev] = useState(value)
   if (prev !== value) {
     setPrev(value)
-    setV(value === null ? '' : String(value))
+    setV(toPts(value))
   }
   async function save() {
     const t = v.trim().replace(',', '.')
-    const n = t === '' ? null : Number(t)
-    if (n === value) return
-    if (n !== null && (!Number.isFinite(n) || n < 0 || n > 100)) {
-      onError('La nota debe estar entre 0 y 100')
-      setV(value === null ? '' : String(value))
+    const pts = t === '' ? null : Number(t)
+    if (t === toPts(value)) return
+    if (pts !== null && (!Number.isFinite(pts) || pts < 0 || pts > w)) {
+      onError(`La nota debe estar entre 0 y ${w} puntos`)
+      setV(toPts(value))
       return
     }
     setBusy(true)
     try {
-      await saveManualScore(item.id, studentId, n)
+      await saveManualScore(item.id, studentId, pts === null ? null : (pts * 100) / w)
       onSaved()
     } catch (e) {
       onError((e as Error).message)
@@ -238,10 +239,10 @@ function ManualInput({
         onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
         inputMode="decimal"
         placeholder="—"
-        aria-label={`${item.category}, nota sobre 100`}
+        aria-label={`${item.category}, puntos sobre ${w}`}
         className={cn('h-8 w-14 rounded-lg border border-line bg-surface-2 text-center tabular-nums focus:border-uap-green focus:outline-none', busy && 'opacity-50')}
       />
-      <span className="text-[10px] text-ink-soft">{contribution === null ? '/100' : `aporta ${fmt(contribution)}`}</span>
+      <span className="text-[10px] text-ink-soft">/{w} pts</span>
     </span>
   )
 }
