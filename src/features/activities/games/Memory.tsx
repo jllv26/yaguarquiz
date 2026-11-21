@@ -33,7 +33,19 @@ export default function Memory() {
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="mx-auto grid w-full max-w-4xl grid-cols-[repeat(auto-fill,minmax(5.2rem,1fr))] gap-2 sm:grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))] sm:gap-3">
+      {/* en el celular las cartas son chicas: lo que dicen las cartas abiertas se lee aquí en grande */}
+      <div className="flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-surface-2/90 px-3 py-2 text-center text-sm ring-1 ring-line sm:hidden" aria-live="polite">
+        {open.length ? (
+          open.map((k, i) => (
+            <span key={k} className="font-display font-bold">
+              {i > 0 && <span className="mx-1 text-ink-soft">+</span>}«{cards.find((c) => c.key === k)?.text || 'imagen'}»
+            </span>
+          ))
+        ) : (
+          <span className="text-ink-soft">👆 Toca una carta para voltearla</span>
+        )}
+      </div>
+      <div className="mx-auto grid w-full max-w-4xl grid-cols-4 gap-1.5 sm:grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))] sm:gap-3">
         {cards.map((c, i) => {
           const up = matched.has(c.key) || open.includes(c.key)
           return (
@@ -57,19 +69,19 @@ export default function Memory() {
                 </div>
                 <div
                   className={cn(
-                    'absolute inset-0 flex flex-col items-center justify-center gap-1 overflow-hidden rounded-2xl p-2 text-center shadow-md [backface-visibility:hidden] [transform:rotateY(180deg)]',
+                    'absolute inset-0 flex flex-col items-center justify-center gap-1 overflow-hidden rounded-xl p-1 text-center sm:rounded-2xl sm:p-2 shadow-md [backface-visibility:hidden] [transform:rotateY(180deg)]',
                     matched.has(c.key) ? 'bg-uap-green text-white' : wrong.includes(c.key) ? 'bg-uap-red text-white' : 'bg-surface-2 ring-2 ring-uap-gold',
                   )}
                 >
                   {up && c.image_url && <img src={c.image_url} alt="" className="max-h-[65%] w-full rounded-lg bg-white object-contain" />}
-                  {up && c.text && <span className={cn('font-display font-bold leading-tight', c.text.length > 40 ? 'text-[0.7rem] sm:text-xs' : c.text.length > 18 ? 'text-xs sm:text-sm' : 'text-sm sm:text-lg')}>{c.text}</span>}
+                  {up && c.text && <span className={cn('font-display font-bold leading-tight', c.text.length > 40 ? 'text-[0.6rem] sm:text-xs' : c.text.length > 18 ? 'text-[0.7rem] sm:text-sm' : 'text-xs sm:text-lg')}>{c.text}</span>}
                 </div>
               </motion.div>
             </button>
           )
         })}
       </div>
-      <p className="text-center text-xs text-ink-soft">Voltee dos cartas: si son pareja se quedan descubiertas. Cuantos menos errores, más puntos.</p>
+      <p className="text-center text-sm font-semibold text-ink-soft">👆 Voltea dos cartas: si son pareja se quedan descubiertas. Cuantos menos errores, más puntos.</p>
     </div>
   )
 }

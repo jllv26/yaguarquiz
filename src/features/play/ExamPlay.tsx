@@ -47,6 +47,7 @@ import { JaguarFace } from '../../components/jaguar/JaguarFace'
 import { JaguarEye } from '../../components/jaguar/JaguarFx'
 import { activityState, type ActivityExamState, type ActivityReviewItem } from '../../lib/api/activities'
 import { ActivityAttempt, ActivityReview } from '../activities/ActivityAttempt'
+import { HowToPlay } from '../activities/HowToPlay'
 import { ACTIVITY_META } from '../activities/types'
 
 const pendKey = (attempt: string) => `yq-exam-pending-${attempt}`
@@ -174,6 +175,7 @@ function Home({ st, now, onStart, offline }: { st: ActivityExamState; now: numbe
             {s.show_grade && st.best_grade !== null ? (
               <>
                 <JaguarFace mood={pass ? 'happy' : 'neutral'} className="mx-auto mb-1 w-24" />
+                {act && <ResultStars grade={Number(st.best_grade)} />}
                 <p className="text-sm font-bold uppercase tracking-widest text-ink-soft">{st.attempts.length > 1 ? 'Tu mejor nota' : 'Tu nota'}</p>
                 <p className={cn('font-display text-7xl font-black tabular-nums', pass ? 'text-uap-green dark:text-game-selva' : 'text-uap-red dark:text-game-coral')}>
                   {Math.round(Number(st.best_grade))}
@@ -225,9 +227,7 @@ function Home({ st, now, onStart, offline }: { st: ActivityExamState; now: numbe
                 </Rule>
               )}
               {act ? (
-                <Rule icon={<act.icon className="size-4" />}>
-                  {act.description} Cada jugada se corrige al instante y tu avance queda guardado aunque recargues.
-                </Rule>
+                <Rule icon={<ClipboardCheck className="size-4" />}>Cada jugada se corrige al instante y tu avance queda guardado aunque recargues o se corte el internet.</Rule>
               ) : (
                 <>
                   <Rule icon={<ClipboardCheck className="size-4" />}>Cada respuesta se guarda al instante. Si se corta el internet o recargas, sigues donde te quedaste.</Rule>
@@ -241,6 +241,11 @@ function Home({ st, now, onStart, offline }: { st: ActivityExamState; now: numbe
                 </Rule>
               )}
             </ul>
+            {st.activity_type && (
+              <div className="mt-5 rounded-3xl bg-uap-blue/5 p-3 ring-1 ring-uap-blue/15 sm:p-4">
+                <HowToPlay type={st.activity_type} />
+              </div>
+            )}
             <Button size="xl" variant="success" className="mt-6 w-full" onClick={onStart} disabled={offline}>
               <BookOpenCheck className="size-6" /> {st.attempts.length ? `Comenzar intento ${st.attempts.length + 1}` : 'Comenzar'}
             </Button>
@@ -277,6 +282,24 @@ function Home({ st, now, onStart, offline }: { st: ActivityExamState; now: numbe
           <ArrowLeft className="size-4" /> Volver al inicio
         </Button>
       </Link>
+    </div>
+  )
+}
+
+/** Estrellas del resultado de una actividad: ★ desde 50, ★★ desde 75 y ★★★ desde 90. */
+function ResultStars({ grade }: { grade: number }) {
+  const n = grade >= 90 ? 3 : grade >= 75 ? 2 : grade >= 50 ? 1 : 0
+  const msg = ['¡Sigue practicando! Puedes mejorar tu nota con otro intento.', '¡Bien! Vas por buen camino.', '¡Muy bien! Casi perfecto.', '¡Excelente! Dominas el tema. 🏆'][n]
+  return (
+    <div className="mb-2 flex flex-col items-center gap-1" aria-label={`${n} de 3 estrellas`}>
+      <div className="flex items-end gap-1">
+        {[0, 1, 2].map((i) => (
+          <motion.span key={i} initial={{ scale: 0, rotate: -30 }} animate={{ scale: 1, rotate: 0 }} transition={{ delay: 0.3 + i * 0.25, type: 'spring' }} className={cn('text-5xl leading-none', i === 1 && 'text-6xl', i < n ? 'text-uap-gold drop-shadow' : 'text-ink/15')}>
+            ★
+          </motion.span>
+        ))}
+      </div>
+      <p className="font-display text-sm font-black">{msg}</p>
     </div>
   )
 }

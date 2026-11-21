@@ -1,4 +1,5 @@
 import { CheckCircle2, Clock, Lock, Send, XCircle } from 'lucide-react'
+import { AnimatePresence, motion } from 'framer-motion'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Button } from '../../components/ui/Button'
 import { SolidCard } from '../../components/ui/Card'
@@ -110,6 +111,16 @@ export function ActivityAttempt({
     }
   }, [st.session.focus_mode, token, toast])
 
+  // cuenta regresiva 3-2-1 al empezar un intento nuevo (no al volver a uno empezado)
+  const [count, setCount] = useState<number | null>(() => (board.type !== 'research' && !Object.keys(board.progress ?? {}).length ? 3 : null))
+  useEffect(() => {
+    if (count === null) return
+    if (count > 0) sfx.countdown()
+    else sfx.go()
+    const t = setTimeout(() => setCount((c) => (c && c > 0 ? c - 1 : null)), count > 0 ? 750 : 600)
+    return () => clearTimeout(t)
+  }, [count])
+
   async function askFinish() {
     const pending = board.total - Object.values(board.progress).filter((p) => p.done).length
     const research = board.type === 'research'
@@ -135,25 +146,35 @@ export function ActivityAttempt({
 
   return (
     <div className="flex w-[min(100vw-1.5rem,72rem)] flex-col gap-3 self-center">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="min-w-0">
-          <p className="text-xs font-bold uppercase tracking-wider text-ink-soft">
+      <div className="sticky top-0 z-30 -mx-1.5 flex items-center gap-2 rounded-b-2xl bg-surface/90 px-1.5 py-2 shadow-sm backdrop-blur sm:static sm:mx-0 sm:bg-transparent sm:px-0 sm:shadow-none sm:backdrop-blur-none">
+        <div className="min-w-0 flex-1">
+          <p className="hidden text-xs font-bold uppercase tracking-wider text-ink-soft sm:block">
             {st.session.mode === 'exam' ? 'Examen' : 'Actividad'} · {st.session.subject}
           </p>
-          <h1 className="font-display text-xl font-black leading-tight sm:text-2xl">{st.session.quiz_title}</h1>
+          <h1 className="line-clamp-2 font-display text-sm font-black leading-tight sm:text-2xl">{st.session.quiz_title}</h1>
         </div>
-        <div className="flex items-center gap-2">
-          {left !== null && (
-            <span className={cn('flex items-center gap-1.5 rounded-2xl px-3 py-2 font-display text-lg font-black tabular-nums', left < 60000 ? 'bg-uap-red text-white' : 'bg-surface-2 ring-1 ring-line')} aria-live="off">
-              <Clock className="size-5" /> {fmtLeft(Math.max(0, left))}
-            </span>
-          )}
-          <Button variant="gold" onClick={() => void askFinish()}>
-            <Send className="size-5" /> Entregar
-          </Button>
-        </div>
+        {left !== null && (
+          <span className={cn('flex shrink-0 items-center gap-1 rounded-2xl px-2.5 py-1.5 font-display font-black tabular-nums sm:px-3 sm:py-2 sm:text-lg', left < 60000 ? 'bg-uap-red text-white' : 'bg-surface-2 ring-1 ring-line')} aria-live="off" title="Tiempo que te queda">
+            <Clock className="size-4 sm:size-5" /> {fmtLeft(Math.max(0, left))}
+          </span>
+        )}
+        <Button variant="gold" size="sm" className="shrink-0 px-3 sm:h-12 sm:px-6 sm:text-base" onClick={() => void askFinish()}>
+          <Send className="size-4 sm:size-5" /> Entregar
+        </Button>
       </div>
       <ActivityGame board={board} engine={engine} onAllDone={() => void finish('done')} onFatal={(e) => (e === 'locked' ? setLocked(true) : void finish('auto'))} />
+      <AnimatePresence>
+        {count !== null && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[70] grid place-items-center bg-uap-blue/85 backdrop-blur-sm" onClick={() => setCount(null)} aria-live="assertive">
+            <div className="text-center text-white">
+              <motion.p key={count} initial={{ scale: 2.2, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="font-display text-[9rem] font-black leading-none drop-shadow-xl">
+                {count > 0 ? count : '¡Ya!'}
+              </motion.p>
+              <p className="mt-2 font-display text-lg font-bold opacity-90">{count > 0 ? '¿Listo? Lee bien cada pista' : '¡A jugar! 🐆'}</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       {board.type === 'research' && (
         <Button variant="gold" size="lg" className="self-center" onClick={() => void askFinish()}>
           <Send className="size-5" /> Entregar mi investigación

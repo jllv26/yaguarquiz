@@ -132,10 +132,10 @@ export default function Wordsearch() {
             }),
           )}
         </div>
-        <p className="mt-2 text-center text-xs text-ink-soft">Arrastre de la primera a la última letra (o tóquelas una tras otra). Pueden estar en horizontal, vertical o diagonal.</p>
+        <p className="mt-2 text-center text-xs text-ink-soft">👆 Arrastra el dedo de la primera a la última letra (o tócalas una tras otra). Pueden estar en horizontal, vertical, diagonal o al revés.</p>
       </div>
       <div className="rounded-3xl bg-surface-2 p-3 shadow-sm ring-1 ring-line">
-        <h3 className="mb-2 font-display font-black">{show_words ? 'Palabras a encontrar' : 'Encuentre la palabra que corresponde a…'}</h3>
+        <h3 className="mb-2 font-display font-black">{show_words ? 'Palabras a encontrar' : 'Busca la palabra que corresponde a…'}</h3>
         <ul className="flex flex-wrap gap-2 lg:flex-col">
           {clues.map((c) => {
             const p = progress[c.key]

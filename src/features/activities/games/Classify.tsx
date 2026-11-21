@@ -44,7 +44,16 @@ export default function Classify() {
     <div className={cn('flex flex-col gap-4', picked && 'pb-44 sm:pb-0')}>
       <div className="min-h-20 rounded-3xl border-2 border-dashed border-line bg-surface-2/70 p-3">
         <p className="mb-2 text-center text-sm text-ink-soft">
-          <FolderInput className="mr-1 inline size-4" /> Toque un elemento y luego el grupo al que pertenece.
+          <FolderInput className="mr-1 inline size-4" />
+          {picked ? (
+            <span className="font-semibold text-ink">
+              <span className="text-ink-soft">Paso 2:</span> toca el grupo de «{picked.text}»
+            </span>
+          ) : (
+            <span className="font-semibold text-ink">
+              <span className="text-ink-soft">Paso 1:</span> toca un elemento
+            </span>
+          )}
         </p>
         <div className="flex flex-wrap justify-center gap-2">
           {pool.map((c) => {

@@ -37,16 +37,30 @@ export default function Matching() {
       if (r.done) setPick(left.find((l) => l.key !== pick && !progress[l.key]?.done)?.key ?? null)
     }
   }
+  const pickedText = pick ? left.find((l) => l.key === pick)?.text : null
   const leftColor = (k: string) => {
     const i = left.findIndex((l) => l.key === k)
     return COLORS[i % COLORS.length]
   }
 
   return (
-    <div className="flex flex-col gap-3">
-      <p className="text-center text-sm text-ink-soft">
-        <Link2 className="mr-1 inline size-4" /> Toque un concepto de la izquierda y luego su definición de la derecha.
+    <div className={cn('flex flex-col gap-3', pickedText && 'pb-24 sm:pb-0')}>
+      <p className="text-center text-sm font-semibold">
+        <Link2 className="mr-1 inline size-4" />
+        {pickedText ? (
+          <>
+            <span className="text-ink-soft">Paso 2:</span> toca a la derecha la definición de <b className="text-[#8a6416] dark:text-uap-gold">{quoted(pickedText)}</b>
+          </>
+        ) : (
+          <>
+            <span className="text-ink-soft">Paso 1:</span> toca un concepto de la izquierda
+          </>
+        )}
       </p>
+      <div className="grid grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] gap-x-3 text-center text-[11px] font-black uppercase tracking-wider text-ink-soft sm:gap-x-5">
+        <span>Conceptos</span>
+        <span>Definiciones</span>
+      </div>
       <div className="grid grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] gap-3 sm:gap-5">
         <ul className="flex flex-col gap-2">
           {left.map((l) => {
@@ -95,9 +109,17 @@ export default function Matching() {
           })}
         </ul>
       </div>
+      {pickedText && (
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface-2/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 text-center shadow-[0_-8px_30px_rgba(0,0,0,.15)] backdrop-blur sm:hidden" aria-live="polite">
+          <p className="text-xs font-bold uppercase tracking-wider text-ink-soft">Ahora toca su definición ➜</p>
+          <p className="font-display font-black text-[#8a6416] dark:text-uap-gold">{quoted(pickedText)}</p>
+        </div>
+      )}
     </div>
   )
 }
 
 // clave de la definición elegida por término (para pintar las parejas acertadas en esta pantalla)
 const lastKey = new Map<string, string>()
+
+const quoted = (t: string) => (t.includes('«') ? t : `«${t}»`)

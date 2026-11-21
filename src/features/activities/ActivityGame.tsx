@@ -1,9 +1,10 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { CheckCircle2, Sparkles, Target, XCircle } from 'lucide-react'
+import { CheckCircle2, Flame, Sparkles, Star, Target, XCircle } from 'lucide-react'
 import { createContext, lazy, Suspense, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useToast } from '../../components/ui/Toast'
 import { cn } from '../../lib/cn'
 import { sfx } from '../../lib/sound'
+import { HowToPlayButton } from './HowToPlay'
 import { ACTIVITY_META, type ActivityBoard, type ActivityType, type Engine, type PlayAction, type PlayResult, type Progress } from './types'
 
 const GAMES: Record<ActivityType, React.LazyExoticComponent<() => ReactNode>> = {
@@ -19,6 +20,8 @@ const GAMES: Record<ActivityType, React.LazyExoticComponent<() => ReactNode>> = 
   classify: lazy(() => import('./games/Classify')),
   research: lazy(() => import('./games/Research')),
 }
+
+const PRAISE = ['¡Bien!', '¡Genial!', '¡Excelente!', '¡Así se hace!', '¡Correcto!']
 
 export const PLAY_MESSAGES: Record<string, string> = {
   already: 'Esa palabra ya está resuelta.',
@@ -66,6 +69,25 @@ export function ActivityGame({
   const done = Object.values(progress).filter((p) => p.done).length
   const points = Math.round(Object.values(progress).reduce((s, p) => s + (p.partial ?? 0) * 1000, 0))
   const finished = useRef(false)
+  const [streak, setStreak] = useState(0)
+  const streakRef = useRef(0)
+  const [banner, setBanner] = useState<{ id: number; text: string } | null>(null)
+  const maxPoints = Math.max(1, board.total * 1000)
+  const frac = points / maxPoints
+  const stars = frac >= 0.9 ? 3 : frac >= 0.75 ? 2 : frac >= 0.5 ? 1 : 0
+  const prevStars = useRef(stars)
+  useEffect(() => {
+    if (stars > prevStars.current) {
+      sfx.rankUp()
+      setBanner({ id: Date.now(), text: stars === 3 ? '⭐⭐⭐ ¡Tres estrellas!' : `⭐ ¡Ganaste ${stars === 1 ? 'tu primera estrella' : 'otra estrella'}!` })
+    }
+    prevStars.current = stars
+  }, [stars])
+  useEffect(() => {
+    if (!banner) return
+    const t = setTimeout(() => setBanner(null), 2200)
+    return () => clearTimeout(t)
+  }, [banner])
 
   const flash = useCallback((good: boolean, text: string) => setBubble({ id: Date.now(), good, text }), [])
   useEffect(() => {
@@ -109,11 +131,18 @@ export function ActivityGame({
         }
         if (r.correct) {
           sfx.correct()
-          flash(true, `+${r.points ?? 1000}`)
+          const k = ++streakRef.current
+          setStreak(k)
+          const praise = k >= 10 ? '🔥 ¡Imparable!' : k >= 5 ? `🔥 ¡Racha de ${k}!` : k === 3 ? '🔥 ¡Racha de 3!' : PRAISE[k % PRAISE.length]
+          flash(true, `${praise} +${r.points ?? 1000}`)
         } else if (action !== 'letter' || r.hit === false) {
           if (['find', 'pair'].includes(action) || ['matching', 'classify'].includes(board.type)) setErrors((e) => e + 1)
           sfx.wrong()
-          if (action !== 'letter') flash(false, r.done ? 'Sin intentos' : r.tries_left ? `Te queda${r.tries_left === 1 ? '' : 'n'} ${r.tries_left} intento${r.tries_left === 1 ? '' : 's'}` : 'No')
+          if (action !== 'letter' || (r.done && !r.correct)) {
+            streakRef.current = 0
+            setStreak(0)
+          }
+          if (action !== 'letter') flash(false, r.done ? 'Sin intentos' : r.tries_left ? `Te queda${r.tries_left === 1 ? '' : 'n'} ${r.tries_left} intento${r.tries_left === 1 ? '' : 's'}` : '¡Casi! Intenta otra vez')
         }
         return r
       } catch {
@@ -135,6 +164,8 @@ export function ActivityGame({
     }
   }, [done, board.total, onAllDone, research])
 
+  const withErrors = ['wordsearch', 'memory', 'matching', 'classify'].includes(board.type)
+  const statCount = (research ? 1 : 2) + (withErrors ? 1 : 0) + (aside ? 1 : 0)
   const Game = GAMES[board.type]
   const ctx = useMemo(() => ({ board, progress, play, busy, flash }), [board, progress, play, busy, flash])
   const Icon = meta.icon
@@ -142,21 +173,50 @@ export function ActivityGame({
   return (
     <GameCtx.Provider value={ctx}>
       <div className="relative flex w-full flex-col gap-3">
-        <div className="flex flex-wrap items-center gap-2 rounded-3xl bg-surface-2/90 p-2 pl-3 shadow-sm ring-1 ring-line backdrop-blur">
-          <span className="grid size-9 place-items-center rounded-xl text-white" style={{ background: meta.color }}>
-            <Icon className="size-5" />
-          </span>
-          <span className="font-display font-black">{meta.label}</span>
-          <div className="ml-auto flex flex-wrap items-center gap-2 text-sm">
+        <div className="flex flex-wrap items-center gap-2 rounded-3xl bg-surface-2/90 p-2 pl-2.5 shadow-sm ring-1 ring-line backdrop-blur">
+          <div className="flex min-w-0 flex-1 items-center gap-2">
+            <span className="grid size-9 shrink-0 place-items-center rounded-xl text-white" style={{ background: meta.color }}>
+              <Icon className="size-5" />
+            </span>
+            <span className="truncate font-display font-black">{meta.label}</span>
+            <AnimatePresence>
+              {streak >= 2 && (
+                <motion.span key={streak} initial={{ scale: 0.4 }} animate={{ scale: 1 }} exit={{ scale: 0 }} className="flex shrink-0 items-center gap-0.5 rounded-full bg-[#e8590c] px-2 py-0.5 font-display text-xs font-black text-white" title="Racha de aciertos seguidos">
+                  <Flame className="size-3.5" /> {streak}
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </div>
+          <HowToPlayButton type={board.type} className="order-2 shrink-0 sm:order-3" />
+          <div className="order-3 grid w-full gap-1.5 text-sm sm:order-2 sm:flex sm:w-auto" style={{ gridTemplateColumns: `repeat(${statCount}, minmax(0, 1fr))` }}>
             <Stat icon={<Target className="size-4" />} label={research ? 'Respondidas' : 'Resueltas'} value={`${done}/${board.total}`} />
             {!research && <Stat icon={<Sparkles className="size-4" />} label="Puntos" value={points.toLocaleString('es-BO')} />}
-            {['wordsearch', 'memory', 'matching', 'classify'].includes(board.type) && <Stat icon={<XCircle className="size-4" />} label="Errores" value={String(errors)} />}
+            {withErrors && <Stat icon={<XCircle className="size-4" />} label="Errores" value={String(errors)} />}
             {aside}
           </div>
         </div>
-        <div className="h-2 overflow-hidden rounded-full bg-ink/10" role="progressbar" aria-valuemin={0} aria-valuemax={board.total} aria-valuenow={done} aria-label="Avance">
-          <motion.div className="h-full rounded-full bg-gradient-to-r from-uap-green to-game-selva" animate={{ width: `${board.total ? (100 * done) / board.total : 0}%` }} />
-        </div>
+        {research ? (
+          <div className="h-2 overflow-hidden rounded-full bg-ink/10" role="progressbar" aria-valuemin={0} aria-valuemax={board.total} aria-valuenow={done} aria-label="Avance">
+            <motion.div className="h-full rounded-full bg-gradient-to-r from-uap-green to-game-selva" animate={{ width: `${board.total ? (100 * done) / board.total : 0}%` }} />
+          </div>
+        ) : (
+          <div className="relative mx-1 mb-2 mt-1" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(frac * 100)} aria-label={`Puntaje: ${stars} de 3 estrellas`}>
+            <div className="h-3 overflow-hidden rounded-full bg-ink/10">
+              <motion.div className="h-full rounded-full bg-gradient-to-r from-uap-green via-game-selva to-uap-gold" animate={{ width: `${Math.min(100, frac * 100)}%` }} />
+            </div>
+            {[0.5, 0.75, 0.9].map((t, i) => (
+              <motion.span
+                key={t}
+                animate={stars > i ? { scale: [1, 1.5, 1] } : {}}
+                className="absolute top-1/2 grid size-6 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-surface-2 shadow ring-1 ring-line"
+                style={{ left: `${t * 100}%` }}
+                title={`${i + 1} estrella${i ? 's' : ''}: ${Math.round(t * 100)} % de los puntos`}
+              >
+                <Star className={cn('size-4', stars > i ? 'fill-uap-gold text-uap-gold' : 'text-ink/30')} />
+              </motion.span>
+            ))}
+          </div>
+        )}
         {board.instructions && <p className="rounded-2xl bg-uap-gold/10 px-4 py-2 text-sm font-semibold">{board.instructions}</p>}
         <Suspense fallback={<div className="h-64 animate-pulse rounded-3xl bg-ink/5" />}>
           <Game />
@@ -178,6 +238,20 @@ export function ActivityGame({
             </motion.div>
           )}
         </AnimatePresence>
+        <AnimatePresence>
+          {banner && (
+            <motion.div
+              key={banner.id}
+              role="status"
+              initial={{ opacity: 0, scale: 0.6 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              className="pointer-events-none fixed left-1/2 top-40 z-50 -translate-x-1/2 whitespace-nowrap rounded-3xl bg-uap-gold px-6 py-3 font-display text-xl font-black text-ink shadow-2xl"
+            >
+              {banner.text}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </GameCtx.Provider>
   )
@@ -185,9 +259,9 @@ export function ActivityGame({
 
 function Stat({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
   return (
-    <span className="flex items-center gap-1.5 rounded-xl bg-ink/5 px-2.5 py-1.5" title={label}>
-      <span className="text-ink-soft">{icon}</span>
-      <span className="text-xs font-semibold text-ink-soft">{label}</span>
+    <span className="flex min-w-0 items-center justify-center gap-1 rounded-xl bg-ink/5 px-2 py-1.5" title={label}>
+      <span className="hidden text-ink-soft min-[380px]:inline sm:inline">{icon}</span>
+      <span className="truncate text-[11px] font-semibold text-ink-soft sm:text-xs">{label}</span>
       <span className="font-display font-black tabular-nums">{value}</span>
     </span>
   )

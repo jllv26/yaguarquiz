@@ -91,7 +91,7 @@ export default function Rosco() {
                       ref={input}
                       value={val}
                       onChange={(e) => setVal(e.target.value)}
-                      placeholder="Escriba la respuesta"
+                      placeholder="Escribe la respuesta"
                       aria-label={`Respuesta que ${it.contains ? 'contiene la' : 'empieza por'} ${it.letter}`}
                       autoComplete="off"
                       spellCheck={false}

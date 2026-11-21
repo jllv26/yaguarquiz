@@ -40,7 +40,7 @@ export default function FillText() {
   }
   async function checkAll() {
     const todo = gaps.filter((g) => !progress[g.key]?.done && (vals[g.key] ?? '').trim())
-    if (!todo.length) return flash(false, 'Complete al menos un espacio')
+    if (!todo.length) return flash(false, 'Completa al menos un espacio')
     for (const g of todo) {
       const r = await play('answer', { item: g.key, value: vals[g.key] })
       if (r?.ok && !r.correct && !r.done) setVals((v) => ({ ...v, [g.key]: bank ? '' : v[g.key] }))
