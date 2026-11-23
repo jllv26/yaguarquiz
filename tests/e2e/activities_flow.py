@@ -235,17 +235,18 @@ with sync_playwright() as p:
     m3 = mc.new_page()
     join(m3, s_cl['pin'], 'DEMO-003', '003')
     m3.get_by_role('button', name='Comenzar').click()
-    m3.wait_for_timeout(2500)
+    m3.wait_for_timeout(4000)  # cuenta regresiva 3-2-1
     # el primero, mal a propósito; luego todos bien
     m3.locator('button[aria-pressed]', has_text='Excel').first.click()
-    m3.locator('button', has=m3.locator('span', has_text=re.compile('^Hardware$'))).first.click()
+    # al tocar la tarjeta se abre la ventana con los grupos
+    m3.get_by_role('dialog').get_by_role('button', name='Hardware', exact=True).click()
     m3.wait_for_timeout(1000)
     for it in CL:
         loc = m3.locator('button[aria-pressed]', has_text=it['term'])
         if not loc.count():
             continue
         loc.first.click()
-        m3.locator('button', has=m3.locator('span', has_text=re.compile('^' + it['group'] + '$'))).first.click()
+        m3.get_by_role('dialog').get_by_role('button', name=it['group'], exact=True).click()
         m3.wait_for_timeout(1000)
     m3.screenshot(path=OUT + 'actividades-9-clasificar.png')
     m3.wait_for_timeout(2500)

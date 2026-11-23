@@ -142,6 +142,10 @@ export default function VideoQuiz() {
   }, [ended, failed, ask, pending, progress])
 
   const current = items.find((x) => x.key === ask)
+  const qRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (ask) setTimeout(() => qRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100)
+  }, [ask])
   const resume = () => {
     setAsk(null)
     if (!ended && pending().length) setTimeout(() => player.current?.playVideo(), 150)
@@ -202,7 +206,7 @@ export default function VideoQuiz() {
       )}
 
       {current ? (
-        <div className="flex flex-col gap-2">
+        <div ref={qRef} className="flex scroll-mt-20 flex-col gap-2">
           <McQuestion key={current.key} it={current} n={items.indexOf(current) + 1} onDone={() => setTimeout(resume, 400)} />
           {progress[current.key]?.done && (
             <Button className="self-center" onClick={resume}>

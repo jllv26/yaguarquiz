@@ -3,6 +3,7 @@ import { Fragment, useMemo, useState } from 'react'
 import { Button } from '../../../components/ui/Button'
 import { cn } from '../../../lib/cn'
 import { useGame } from '../ActivityGame'
+import { ChoiceSheet } from './ChoiceSheet'
 
 export default function FillText() {
   const { board, progress, play, busy, flash } = useGame<'fill_text'>()
@@ -31,12 +32,23 @@ export default function FillText() {
     })
   })()
 
+  const [sheet, setSheet] = useState<string | null>(null)
+  const sheetN = sheet ? (gaps.findIndex((g) => g.key === sheet) + 1 || null) : null
+
   function put(word: string) {
     const target = focus && !progress[focus]?.done && !vals[focus] ? focus : gaps.find((g) => !progress[g.key]?.done && !vals[g.key])?.key
     if (!target) return
     const nv = { ...vals, [target]: word }
     setVals(nv)
     setFocus(gaps.find((g) => !progress[g.key]?.done && !nv[g.key])?.key ?? null)
+  }
+  /** la oración donde está el espacio, con «___» en su lugar */
+  function contextOf(key: string) {
+    const g = gaps.find((x) => x.key === key)
+    if (!g) return ''
+    const mark = `{{${g.i}}}`
+    const sentence = text.split(/(?<=[.!?])\s+|\n+/).find((x) => x.includes(mark)) ?? ''
+    return sentence.replace(/\{\{(\d+)\}\}/g, (m) => (m === mark ? '_____' : '…')).trim()
   }
   async function checkAll() {
     const todo = gaps.filter((g) => !progress[g.key]?.done && (vals[g.key] ?? '').trim())
@@ -73,6 +85,7 @@ export default function FillText() {
           onClick={() => {
             if (vals[g.key]) setVals((v) => ({ ...v, [g.key]: '' }))
             setFocus(g.key)
+            setSheet(g.key)
           }}
           aria-label={`Espacio ${n}${shown(g.key) ? `: ${shown(g.key)}` : ', vacío'}`}
         >
@@ -113,6 +126,21 @@ export default function FillText() {
           ))}
           {!available.length && <p className="text-sm text-ink-soft">No quedan palabras en el banco.</p>}
         </div>
+      )}
+      {bank && (
+        <ChoiceSheet
+          open={!!sheet}
+          title={`¿Qué palabra va en el espacio ${sheetN ?? ''}?`}
+          subject={sheet ? <span className="text-sm font-semibold">{contextOf(sheet)}</span> : null}
+          choices={available.map((w, i) => ({ key: `${i}:${w}`, label: w }))}
+          cols={available.length > 4 ? 2 : 1}
+          onChoose={(k) => {
+            put(k.slice(k.indexOf(':') + 1))
+            setSheet(null)
+          }}
+          onClose={() => setSheet(null)}
+          footer={!available.length ? <p className="py-3 text-center text-sm text-ink-soft">No quedan palabras: toca un espacio lleno para vaciarlo.</p> : null}
+        />
       )}
       <Button variant="success" className="self-center" onClick={() => void checkAll()} disabled={busy}>
         <CheckCheck className="size-5" /> Comprobar

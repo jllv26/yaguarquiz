@@ -3,6 +3,7 @@ import { CheckCircle2, Link2, XCircle } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { cn } from '../../../lib/cn'
 import { ClueImage, useGame } from '../ActivityGame'
+import { ChoiceSheet } from './ChoiceSheet'
 
 const COLORS = ['#1DBF73', '#2D7DFF', '#FFB800', '#7C3AED', '#14B8A6', '#FF3355', '#C9A23A', '#1F3864', '#e8590c', '#0ca678', '#ae3ec9', '#1971c2', '#f08c00', '#5c940d', '#8B1A1A']
 
@@ -11,6 +12,7 @@ export default function Matching() {
   const { left, right } = board.board
   const [pick, setPick] = useState<string | null>(() => left.find((l) => !progress[l.key]?.done)?.key ?? null)
   const [shake, setShake] = useState<{ l: string; r: string; n: number } | null>(null)
+  const [sheet, setSheet] = useState(false)
 
   // definición (clave B) que ya quedó unida a cada término
   const linked = useMemo(() => {
@@ -44,16 +46,16 @@ export default function Matching() {
   }
 
   return (
-    <div className={cn('flex flex-col gap-3', pickedText && 'pb-24 sm:pb-0')}>
+    <div className="flex flex-col gap-3">
       <p className="text-center text-sm font-semibold">
         <Link2 className="mr-1 inline size-4" />
         {pickedText ? (
           <>
-            <span className="text-ink-soft">Paso 2:</span> toca a la derecha la definición de <b className="text-[#8a6416] dark:text-uap-gold">{quoted(pickedText)}</b>
+            <span className="text-ink-soft">Paso 2:</span> toca la definición de <b className="text-[#8a6416] dark:text-uap-gold">{quoted(pickedText)}</b> (o toca el concepto para ver la lista)
           </>
         ) : (
           <>
-            <span className="text-ink-soft">Paso 1:</span> toca un concepto de la izquierda
+            <span className="text-ink-soft">Paso 1:</span> toca un concepto: se abrirá la lista de definiciones
           </>
         )}
       </p>
@@ -70,7 +72,10 @@ export default function Matching() {
               <motion.li key={l.key} animate={shake?.l === l.key ? { x: [0, -8, 8, -4, 4, 0] } : {}} transition={{ duration: 0.4 }}>
                 <button
                   disabled={p?.done}
-                  onClick={() => setPick(l.key)}
+                  onClick={() => {
+                    setPick(l.key)
+                    setSheet(true)
+                  }}
                   aria-pressed={sel}
                   className={cn(
                     'flex min-h-14 w-full items-center gap-2 rounded-2xl border-2 px-3 py-2 text-left font-display font-bold transition-all',
@@ -109,12 +114,19 @@ export default function Matching() {
           })}
         </ul>
       </div>
-      {pickedText && (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface-2/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 text-center shadow-[0_-8px_30px_rgba(0,0,0,.15)] backdrop-blur sm:hidden" aria-live="polite">
-          <p className="text-xs font-bold uppercase tracking-wider text-ink-soft">Ahora toca su definición ➜</p>
-          <p className="font-display font-black text-[#8a6416] dark:text-uap-gold">{quoted(pickedText)}</p>
-        </div>
-      )}
+      {/* al tocar un concepto se abre la ventana con las definiciones que quedan */}
+      <ChoiceSheet
+        open={sheet && !!pickedText}
+        title="Elige su definición"
+        subject={pickedText}
+        choices={right.filter((r) => !linked.has(r.key)).map((r) => ({ key: r.key, label: r.text, image_url: r.image_url }))}
+        onChoose={(k) => {
+          setSheet(false)
+          void choose(k)
+        }}
+        onClose={() => setSheet(false)}
+        busy={busy}
+      />
     </div>
   )
 }

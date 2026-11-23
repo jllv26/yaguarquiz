@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { Button } from '../../../components/ui/Button'
 import { cn } from '../../../lib/cn'
 import { useGame } from '../ActivityGame'
+import { ChoiceSheet } from './ChoiceSheet'
 import { triesLeft } from './common'
 
 export default function MapGame() {
@@ -17,6 +18,7 @@ export default function MapGame() {
   const [val, setVal] = useState('')
   const [flash, setFlash] = useState<{ key: string; ok: boolean } | null>(null)
   const [msg, setMsg] = useState<string | null>(null)
+  const [sheet, setSheet] = useState(false)
   useEffect(() => {
     if (target && progress[target]?.done) setTarget(targets.find((t) => !progress[t.key]?.done)?.key ?? null)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -42,7 +44,10 @@ export default function MapGame() {
   async function tapPin(pk: string) {
     if (busy) return
     if (!tap) {
-      if (!progress[pk]?.done) setTarget(pk)
+      if (!progress[pk]?.done) {
+        setTarget(pk)
+        setSheet(true)
+      }
       return
     }
     if (!target || progress[target]?.done || pinInfo(pk)) return
@@ -59,21 +64,58 @@ export default function MapGame() {
     setFlash({ key: target, ok: !!r.correct })
     setTimeout(() => setFlash(null), 800)
     if (!r.correct) setMsg(r.done ? 'No era ese nombre.' : triesLeft(board.tries, r.tries))
+    else setMsg(null)
     setVal('')
+    if (r.done) setSheet(false)
   }
   const tgt = targets.find((t) => t.key === target)
 
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:items-start">
+      {tap ? (
+        <ChoiceSheet
+          open={sheet}
+          title="¿Qué quieres buscar en la imagen?"
+          choices={(names ?? []).filter((nm) => !progress[nm.key]?.done).map((nm) => ({ key: nm.key, label: nm.text }))}
+          cols={2}
+          onChoose={(k) => {
+            setTarget(k)
+            setSheet(false)
+          }}
+          onClose={() => setSheet(false)}
+        />
+      ) : (
+        <ChoiceSheet open={sheet && !!tgt} title={`¿Qué es el ${tgt?.text.toLowerCase() ?? 'punto'}?`} onClose={() => setSheet(false)}>
+          <div className="flex gap-2 pb-2">
+            <input
+              autoFocus
+              value={val}
+              onChange={(e) => setVal(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && void write()}
+              placeholder="Escribe el nombre…"
+              aria-label="Nombre del punto"
+              autoComplete="off"
+              className="h-12 min-w-0 flex-1 rounded-2xl border-2 border-[#0b7285]/40 bg-surface-2 px-4 font-bold outline-none focus:border-[#0b7285]"
+            />
+            <Button variant="success" className="h-12" onClick={() => void write()} disabled={busy || !val.trim()}>
+              <CornerDownLeft className="size-4" /> Comprobar
+            </Button>
+          </div>
+          {msg && <p className="pb-2 text-sm font-bold text-uap-red">{msg}</p>}
+        </ChoiceSheet>
+      )}
       <div className="flex flex-col gap-2">
         {tgt && (
           <p className="sticky top-16 z-20 rounded-2xl bg-[#0b7285] px-4 py-2 text-center font-display font-black text-white shadow sm:static">
             {tap ? (
               <>
                 👆 Toca en la imagen: «{tgt.text}»{tgt.desc && <span className="block text-xs font-semibold opacity-90">{tgt.desc}</span>}
+                <button type="button" onClick={() => setSheet(true)} className="mt-1 rounded-full bg-white/20 px-3 py-0.5 text-xs font-bold hover:bg-white/30">
+                  Buscar otro ▾
+                </button>
               </>
             ) : (
-              <>✏️ ¿Qué es el {tgt.text.toLowerCase()}?</>
+              <>✏️ Toca un punto de la imagen y escribe qué es</>
             )}
           </p>
         )}

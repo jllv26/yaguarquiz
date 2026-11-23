@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { cn } from '../../../lib/cn'
 import { ClueImage, useGame } from '../ActivityGame'
 import { triesLeft, useCursor } from './common'
@@ -19,6 +19,7 @@ export default function PuzzleGame() {
   const cols = Math.ceil(Math.sqrt(n))
   const rows = Math.ceil(n / cols)
   const [ratio, setRatio] = useState(4 / 3)
+  const qRef = useRef<HTMLDivElement>(null)
   const { cur, setCur, next, curRef } = useCursor(
     items.map((x) => x.key),
     progress,
@@ -66,7 +67,11 @@ export default function PuzzleGame() {
                 <motion.button
                   key={i}
                   disabled={!x || q?.done}
-                  onClick={() => x && setCur(i)}
+                  onClick={() => {
+                    if (!x) return
+                    setCur(i)
+                    setTimeout(() => qRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50)
+                  }}
                   aria-label={x ? `Pieza ${i + 1}${q?.done ? (q.correct ? ', descubierta' : ', fallada') : ''}` : 'Pieza'}
                   initial={false}
                   animate={{ rotateY: open ? 0 : 180 }}
@@ -97,7 +102,7 @@ export default function PuzzleGame() {
       </div>
 
       {!allDone && (
-        <div className="flex flex-col gap-3 rounded-3xl bg-surface-2 p-4 shadow-sm ring-1 ring-line">
+        <div ref={qRef} className="flex scroll-mt-20 flex-col gap-3 rounded-3xl bg-surface-2 p-4 shadow-sm ring-1 ring-line">
           <p className="text-xs font-black uppercase tracking-wider text-[#ae3ec9]">
             Pieza {cur + 1} de {n}
           </p>

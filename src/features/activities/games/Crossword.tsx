@@ -155,7 +155,7 @@ export default function Crossword() {
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
       <div className="flex flex-col gap-3">
         {word && (
-          <motion.div key={shake} animate={shake ? { x: [0, -8, 8, -5, 5, 0] } : {}} className="sticky top-2 z-10 flex flex-wrap items-start gap-3 rounded-2xl bg-uap-blue p-3 text-white shadow-lg">
+          <motion.div key={shake} animate={shake ? { x: [0, -8, 8, -5, 5, 0] } : {}} className="sticky top-16 z-10 flex flex-wrap items-start gap-3 rounded-2xl bg-uap-blue p-3 text-white shadow-lg sm:top-2">
             <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-white/15 font-display font-black">{word.n}</span>
             <div className="min-w-[12rem] flex-1">
               <p className="text-xs font-bold uppercase tracking-wider text-white/70">
