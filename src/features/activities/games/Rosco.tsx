@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Button } from '../../../components/ui/Button'
 import { cn } from '../../../lib/cn'
 import { ClueImage, useGame } from '../ActivityGame'
+import { useFit } from '../fit'
 
 export default function Rosco() {
   const { board, progress, play, busy } = useGame<'rosco'>()
@@ -38,9 +39,14 @@ export default function Rosco() {
     else setVal('')
   }
 
+  // PC: el rosco entra completo en la pantalla (diámetro según el alto disponible)
+  const [wrapRef, room] = useFit<HTMLDivElement>(24, 300)
+  const diameter = room ? Math.min(544, room - 28) : null
+  const compact = diameter !== null && diameter < 470
+
   return (
-    <div className="mx-auto w-full max-w-[34rem]">
-      <div className="relative">
+    <div ref={wrapRef} className="mx-auto w-full max-w-[34rem]">
+      <div className="relative mx-auto" style={diameter ? { width: diameter, maxWidth: '100%' } : undefined}>
       <div className="relative mx-auto aspect-square w-[min(100%,22rem)] sm:w-full">
         {items.map((x, i) => {
           const a = (i / items.length) * Math.PI * 2 - Math.PI / 2
@@ -68,15 +74,15 @@ export default function Rosco() {
           </div>
         )}
       </div>
-        <div className="mt-3 flex flex-col items-center justify-center gap-2 rounded-3xl bg-surface-2 p-4 text-center shadow-sm ring-1 ring-line sm:absolute sm:inset-[14%] sm:mt-0 sm:rounded-full sm:p-[8%] sm:shadow-inner">
+        <div className={cn('mt-3 flex flex-col items-center justify-center gap-2 rounded-3xl bg-surface-2 p-4 text-center shadow-sm ring-1 ring-line sm:absolute sm:mt-0 sm:rounded-full sm:shadow-inner', compact ? 'sm:inset-[12%] sm:gap-1 sm:p-[6%]' : 'sm:inset-[14%] sm:p-[8%]')}>
           <AnimatePresence initial={false}>
             {it && (
-              <motion.div key={it.key} initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.2 }} className="flex w-full flex-col items-center gap-2">
+              <motion.div key={it.key} initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.2 }} className={cn('flex w-full flex-col items-center', compact ? 'gap-1.5' : 'gap-2')}>
                 <p className="font-display text-xs font-black uppercase tracking-widest text-ink-soft sm:text-sm">
-                  {it.contains ? 'Contiene la' : 'Empieza por'} <span className="text-2xl text-uap-gold sm:text-3xl">{it.letter}</span>
+                  {it.contains ? 'Contiene la' : 'Empieza por'} <span className={cn('text-2xl text-uap-gold', !compact && 'sm:text-3xl')}>{it.letter}</span>
                 </p>
                 <ClueImage src={it.image_url} className="h-16 w-24 bg-white sm:h-20" />
-                <p className="line-clamp-4 text-sm font-semibold leading-snug sm:text-base">{it.clue}</p>
+                <p className={cn('text-sm font-semibold leading-snug', compact ? 'line-clamp-4 text-[13px]' : 'line-clamp-4 sm:text-base')}>{it.clue}</p>
                 {p?.done ? (
                   <p className={cn('font-display text-lg font-black', p.correct ? 'text-uap-green' : 'text-uap-red')}>{p.correct ? '¡Correcto!' : p.answer ? `Era: ${p.answer}` : 'Fallada'}</p>
                 ) : (
@@ -95,13 +101,13 @@ export default function Rosco() {
                       aria-label={`Respuesta que ${it.contains ? 'contiene la' : 'empieza por'} ${it.letter}`}
                       autoComplete="off"
                       spellCheck={false}
-                      className="h-11 w-full max-w-[14rem] rounded-2xl border-2 border-line bg-white px-3 text-center font-display font-bold outline-none focus:border-uap-gold dark:bg-white/10"
+                      className={cn('w-full max-w-[14rem] rounded-2xl', compact ? 'h-9' : 'h-11', 'border-2 border-line bg-white px-3 text-center font-display font-bold outline-none focus:border-uap-gold dark:bg-white/10')}
                     />
                     <div className="flex gap-2">
-                      <Button size="sm" variant="success" type="submit" disabled={busy || !val.trim()}>
+                      <Button size="sm" variant="success" type="submit" disabled={busy || !val.trim()} className={cn(compact && '!h-8 !gap-1 !px-2.5 !text-xs')}>
                         <Send className="size-4" /> Responder
                       </Button>
-                      <Button size="sm" variant="secondary" type="button" onClick={() => next()} disabled={busy}>
+                      <Button size="sm" variant="secondary" type="button" onClick={() => next()} disabled={busy} className={cn(compact && '!h-8 !gap-1 !px-2.5 !text-xs')}>
                         <SkipForward className="size-4" /> Pasapalabra
                       </Button>
                     </div>

@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react'
 import { JAGUAR } from '../../../components/jaguar/assets'
 import { cn } from '../../../lib/cn'
 import { useGame } from '../ActivityGame'
+import { useFit } from '../fit'
 
 export default function Memory() {
   const { board, progress, play, busy } = useGame<'memory'>()
@@ -31,6 +32,23 @@ export default function Memory() {
     }
   }
 
+  // PC: se elige cuántas columnas usar para que todas las cartas entren en la pantalla
+  const [gridRef, room, width] = useFit<HTMLDivElement>(52, 200)
+  const layout = useMemo(() => {
+    if (!room || !width) return null
+    const gap = 12
+    let best: { cols: number; h: number; score: number } | null = null
+    for (let cols = 3; cols <= 10; cols++) {
+      const w = (width - gap * (cols - 1)) / cols
+      const rows = Math.ceil(cards.length / cols)
+      const h = Math.min(w * 1.25, (room - gap * (rows - 1)) / rows)
+      if (w < 96 || h < 64 || h < w * 0.5) continue
+      const score = w * h - (rows * cols - cards.length) * 50 // menos huecos vacíos
+      if (!best || score > best.score) best = { cols, h: Math.floor(h), score }
+    }
+    return best
+  }, [room, width, cards.length])
+
   return (
     <div className="flex flex-col gap-2">
       {/* en el celular las cartas son chicas: lo que dicen las cartas abiertas se lee aquí en grande */}
@@ -45,7 +63,11 @@ export default function Memory() {
           <span className="text-ink-soft">👆 Toca una carta para voltearla</span>
         )}
       </div>
-      <div className="mx-auto grid w-full max-w-4xl grid-cols-4 gap-1.5 sm:grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))] sm:gap-3">
+      <div
+        ref={gridRef}
+        className={cn('mx-auto grid w-full max-w-4xl', layout ? 'gap-3' : 'grid-cols-4 gap-1.5 sm:grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))] sm:gap-3')}
+        style={layout ? { gridTemplateColumns: `repeat(${layout.cols}, minmax(0, 1fr))` } : undefined}
+      >
         {cards.map((c, i) => {
           const up = matched.has(c.key) || open.includes(c.key)
           return (
@@ -53,7 +75,8 @@ export default function Memory() {
               key={c.key}
               onClick={() => void flip(c.key)}
               aria-label={up ? `Carta ${i + 1}: ${c.text || 'imagen'}` : `Carta ${i + 1}, boca abajo`}
-              className="aspect-[3/4] [perspective:800px]"
+              className={cn('[perspective:800px]', !layout && 'aspect-[3/4]')}
+              style={layout ? { height: layout.h } : undefined}
             >
               <motion.div
                 aria-hidden
@@ -81,7 +104,7 @@ export default function Memory() {
           )
         })}
       </div>
-      <p className="text-center text-sm font-semibold text-ink-soft">👆 Voltea dos cartas: si son pareja se quedan descubiertas. Cuantos menos errores, más puntos.</p>
+      <p className="text-center text-sm font-semibold text-ink-soft short:text-xs">👆 Voltea dos cartas: si son pareja se quedan descubiertas. Cuantos menos errores, más puntos.</p>
     </div>
   )
 }

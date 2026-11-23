@@ -145,20 +145,20 @@ export function ActivityAttempt({
     )
 
   return (
-    <div className="flex w-[min(100vw-1.5rem,72rem)] flex-col gap-3 self-center">
+    <div className="flex w-[min(100vw-1.5rem,72rem)] flex-col gap-3 self-center short:gap-2">
       <div className="sticky top-0 z-30 -mx-1.5 flex items-center gap-2 rounded-b-2xl bg-surface/90 px-1.5 py-2 shadow-sm backdrop-blur sm:static sm:mx-0 sm:bg-transparent sm:px-0 sm:shadow-none sm:backdrop-blur-none">
         <div className="min-w-0 flex-1">
-          <p className="hidden text-xs font-bold uppercase tracking-wider text-ink-soft sm:block">
+          <p className="hidden text-xs font-bold uppercase tracking-wider text-ink-soft sm:block short:text-[11px]">
             {st.session.mode === 'exam' ? 'Examen' : 'Actividad'} · {st.session.subject}
           </p>
-          <h1 className="line-clamp-2 font-display text-sm font-black leading-tight sm:text-2xl">{st.session.quiz_title}</h1>
+          <h1 className="line-clamp-2 font-display text-sm font-black leading-tight sm:text-2xl short:line-clamp-1 short:text-xl">{st.session.quiz_title}</h1>
         </div>
         {left !== null && (
           <span className={cn('flex shrink-0 items-center gap-1 rounded-2xl px-2.5 py-1.5 font-display font-black tabular-nums sm:px-3 sm:py-2 sm:text-lg', left < 60000 ? 'bg-uap-red text-white' : 'bg-surface-2 ring-1 ring-line')} aria-live="off" title="Tiempo que te queda">
             <Clock className="size-4 sm:size-5" /> {fmtLeft(Math.max(0, left))}
           </span>
         )}
-        <Button variant="gold" size="sm" className="shrink-0 px-3 sm:h-12 sm:px-6 sm:text-base" onClick={() => void askFinish()}>
+        <Button variant="gold" size="sm" className="shrink-0 px-3 sm:h-12 sm:px-6 sm:text-base short:h-10" onClick={() => void askFinish()}>
           <Send className="size-4 sm:size-5" /> Entregar
         </Button>
       </div>

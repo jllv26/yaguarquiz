@@ -1,6 +1,8 @@
 @import 'tailwindcss';
 
 @custom-variant dark (&:where(.dark, .dark *));
+/* PC con poca altura (laboratorio: 1366×768, Windows al 125 %): encabezados más compactos */
+@custom-variant short (@media (min-width: 640px) and (max-height: 820px));
 
 /* ============================================================
    SISTEMA DE DISEÑO — YaguarQuiz UAP

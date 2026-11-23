@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { Button } from '../../../components/ui/Button'
 import { cn } from '../../../lib/cn'
 import { ClueImage, useGame } from '../ActivityGame'
+import { useFit } from '../fit'
 import { gameLetters } from '../types'
 
 type Word = ReturnType<typeof useGame<'crossword'>>['board']['board']['words'][number]
@@ -12,7 +13,28 @@ const cellsOf = (w: Word) => Array.from({ length: w.len }, (_, k) => (w.dir === 
 
 export default function Crossword() {
   const { board, progress, play, busy, flash } = useGame<'crossword'>()
-  const { rows, cols, words } = board.board
+  const raw = board.board
+  // PC: el tablero entra completo en la pantalla (sin bajar con la rueda); la pista activa va arriba a la derecha.
+  // Si el crucigrama es más alto que ancho y la pantalla es apaisada, se muestra girado (filas ↔ columnas):
+  // las horizontales pasan a verticales y viceversa; las palabras y sus números no cambian.
+  const short = typeof window !== 'undefined' && window.innerHeight <= 820 // en pantallas bajas no se muestra la ayuda de abajo
+  const [boardRef, room, boardW] = useFit<HTMLDivElement>(short ? 24 : 52)
+  const [cluesRef, cluesRoom] = useFit<HTMLDivElement>(24)
+  const [flip, setFlip] = useState(false)
+  const decided = useRef(false)
+  useEffect(() => {
+    if (decided.current || !room || !boardW) return
+    decided.current = true // se decide una sola vez para no mover las letras ya escritas
+    const cell = (r: number, c: number) => Math.min((boardW - 28 - c * 2) / c, (room - 28 - r * 2) / r)
+    if (raw.rows > raw.cols && cell(raw.cols, raw.rows) > cell(raw.rows, raw.cols) * 1.15) setFlip(true)
+  }, [room, boardW, raw.rows, raw.cols])
+  const { rows, cols, words } = useMemo(
+    () =>
+      flip
+        ? { rows: raw.cols, cols: raw.rows, words: raw.words.map((w) => ({ ...w, row: w.col, col: w.row, dir: w.dir === 'across' ? ('down' as const) : ('across' as const) })) }
+        : raw,
+    [flip, raw],
+  )
   const map = useMemo(() => {
     const m = new Map<string, { words: Word[]; n?: number }>()
     for (const w of words)
@@ -33,6 +55,14 @@ export default function Crossword() {
     lettersRef.current = fn(lettersRef.current)
     setLettersState(lettersRef.current)
   }
+  // al girar el tablero, las letras ya escritas y la casilla activa se giran con él
+  const swap = (c: string) => c.split(',').reverse().join(',')
+  const lettersFlipped = useRef(false)
+  useEffect(() => {
+    if (flip === lettersFlipped.current) return
+    lettersFlipped.current = flip
+    setLetters((l) => Object.fromEntries(Object.entries(l).map(([k, v]) => [swap(k), v])))
+  }, [flip])
   useEffect(() => {
     setLetters((prev) => {
       const next = { ...prev }
@@ -55,6 +85,12 @@ export default function Crossword() {
     activeRef.current = v
     setActiveState(v)
   }
+  const activeFlipped = useRef(false)
+  useEffect(() => {
+    if (flip === activeFlipped.current) return
+    activeFlipped.current = flip
+    setActive({ ...activeRef.current, cell: swap(activeRef.current.cell) })
+  }, [flip])
   const word = words.find((w) => w.key === active.key)
   const refs = useRef(new Map<string, HTMLInputElement>())
   const wasActive = useRef(false)
@@ -151,10 +187,8 @@ export default function Crossword() {
   const across = words.filter((w) => w.dir === 'across')
   const down = words.filter((w) => w.dir === 'down')
 
-  return (
-    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
-      <div className="flex flex-col gap-3">
-        {word && (
+  const fitCell = room ? `, ${Math.max(22, Math.floor((room - 28 - (rows - 1) * 2) / rows))}px` : ''
+  const banner = word ? (
           <motion.div key={shake} animate={shake ? { x: [0, -8, 8, -5, 5, 0] } : {}} className="sticky top-2 z-10 flex flex-wrap items-start gap-3 rounded-2xl bg-uap-blue p-3 text-white shadow-lg">
             <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-white/15 font-display font-black">{word.n}</span>
             <div className="min-w-[12rem] flex-1">
@@ -171,11 +205,16 @@ export default function Crossword() {
               </Button>
             )}
           </motion.div>
-        )}
-        <div className="overflow-x-auto rounded-3xl bg-surface-2 p-2 shadow-sm ring-1 ring-line sm:p-3" style={{ containerType: 'inline-size' }}>
+  ) : null
+
+  return (
+    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
+      <div className="flex flex-col gap-3">
+        <div className="contents lg:hidden">{banner}</div>
+        <div ref={boardRef} className="overflow-x-auto rounded-3xl bg-surface-2 p-2 shadow-sm ring-1 ring-line sm:p-3" style={{ containerType: 'inline-size' }}>
           <div
             className="mx-auto grid w-fit gap-[2px]"
-            style={{ gridTemplateColumns: `repeat(${cols}, var(--cw))`, ['--cw' as string]: `min(2.6rem, calc((100cqi - ${cols * 2}px) / ${cols}))` }}
+            style={{ gridTemplateColumns: `repeat(${cols}, var(--cw))`, ['--cw' as string]: `min(2.6rem, calc((100cqi - ${cols * 2}px) / ${cols})${fitCell})` }}
             role="group" data-board
             aria-label="Crucigrama"
           >
@@ -184,10 +223,10 @@ export default function Crossword() {
               const c = k % cols
               const cid = id(r, c)
               const e = map.get(cid)
-              if (!e) return <div key={cid} className="aspect-square" />
+              if (!e) return <div key={cid} className="aspect-square h-[var(--cw)]" />
               const st = status(cid)
               return (
-                <div key={cid} className="relative aspect-square">
+                <div key={cid} className="relative aspect-square h-[var(--cw)]">
                   {e.n && <span className="pointer-events-none absolute left-0.5 top-0 z-10 text-[0.55rem] font-bold leading-none text-ink-soft sm:text-[0.65rem]">{e.n}</span>}
                   <input
                     ref={(el) => {
@@ -209,7 +248,7 @@ export default function Crossword() {
                     spellCheck={false}
                     aria-label={`${e.words.map((w) => `${w.n} ${w.dir === 'across' ? 'horizontal' : 'vertical'}`).join(', ')}, letra`}
                     className={cn(
-                      'size-full rounded-md border-2 text-center font-display text-[min(1.3rem,calc(var(--cw)*0.55))] font-black uppercase caret-transparent outline-none transition-colors',
+                      'block size-full min-h-0 rounded-md border-2 p-0 text-center leading-none font-display text-[min(1.3rem,calc(var(--cw)*0.55))] font-black uppercase caret-transparent outline-none transition-colors',
                       st === 'ok' ? 'border-uap-green bg-uap-green/15 text-uap-green dark:text-game-selva' : st === 'bad' ? 'border-uap-red bg-uap-red/10 text-uap-red dark:text-game-coral' : 'border-line bg-white text-ink dark:bg-white/10',
                       activeCells.has(cid) && !st && 'border-uap-gold bg-uap-gold/15',
                       active.cell === cid && 'ring-4 ring-uap-gold/60',
@@ -220,12 +259,14 @@ export default function Crossword() {
             })}
           </div>
         </div>
-        <p className="text-center text-xs text-ink-soft">
+        <p className="text-center text-xs text-ink-soft short:hidden">
           <span className="sm:hidden">Toca una casilla o una pista, escribe la palabra y pulsa «Comprobar». Toca dos veces un cruce para cambiar de dirección.</span>
           <span className="hidden sm:inline">Escribe con el teclado · Enter comprueba · Tab pasa a la siguiente palabra · doble clic en un cruce para cambiar de dirección</span>
         </p>
       </div>
-      <div className="grid content-start gap-3 sm:grid-cols-2 lg:grid-cols-1">
+      <div className="flex min-w-0 flex-col gap-3">
+        <div className="hidden lg:contents">{banner}</div>
+        <div ref={cluesRef} className="grid content-start gap-3 sm:grid-cols-2 lg:grid-cols-1 lg:overflow-y-auto lg:pr-1" style={cluesRoom ? { maxHeight: cluesRoom } : undefined}>
         {[
           ['Horizontales', across],
           ['Verticales', down],
@@ -257,6 +298,7 @@ export default function Crossword() {
             </div>
           ) : null,
         )}
+        </div>
       </div>
     </div>
   )

@@ -172,8 +172,8 @@ export function ActivityGame({
 
   return (
     <GameCtx.Provider value={ctx}>
-      <div className="relative flex w-full flex-col gap-3">
-        <div className="flex flex-wrap items-center gap-2 rounded-3xl bg-surface-2/90 p-2 pl-2.5 shadow-sm ring-1 ring-line backdrop-blur">
+      <div className="relative flex w-full flex-col gap-3 short:gap-2">
+        <div className="flex flex-wrap items-center gap-2 rounded-3xl bg-surface-2/90 p-2 pl-2.5 shadow-sm short:py-1.5 ring-1 ring-line backdrop-blur">
           <div className="flex min-w-0 flex-1 items-center gap-2">
             <span className="grid size-9 shrink-0 place-items-center rounded-xl text-white" style={{ background: meta.color }}>
               <Icon className="size-5" />
@@ -200,7 +200,7 @@ export function ActivityGame({
             <motion.div className="h-full rounded-full bg-gradient-to-r from-uap-green to-game-selva" animate={{ width: `${board.total ? (100 * done) / board.total : 0}%` }} />
           </div>
         ) : (
-          <div className="relative mx-1 mb-2 mt-1" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(frac * 100)} aria-label={`Puntaje: ${stars} de 3 estrellas`}>
+          <div className="relative mx-1 mb-2 mt-1 short:mb-1 short:mt-0.5" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(frac * 100)} aria-label={`Puntaje: ${stars} de 3 estrellas`}>
             <div className="h-3 overflow-hidden rounded-full bg-ink/10">
               <motion.div className="h-full rounded-full bg-gradient-to-r from-uap-green via-game-selva to-uap-gold" animate={{ width: `${Math.min(100, frac * 100)}%` }} />
             </div>

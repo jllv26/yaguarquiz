@@ -120,7 +120,7 @@ export function PlayPage() {
           </>
         }
       />
-      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center px-4 pb-6">
+      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center px-4 pb-6 short:pb-2">
         {screen.kind === 'loading' && <Loader2 className="size-10 animate-spin text-uap-green" aria-label="Cargando" />}
         {screen.kind === 'error' && (
           <Card className="w-full max-w-md text-center">

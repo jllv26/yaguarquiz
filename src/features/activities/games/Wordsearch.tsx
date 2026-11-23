@@ -2,6 +2,7 @@ import { CheckCircle2 } from 'lucide-react'
 import { useMemo, useRef, useState, type PointerEvent } from 'react'
 import { cn } from '../../../lib/cn'
 import { ClueImage, useGame } from '../ActivityGame'
+import { useFit } from '../fit'
 
 const COLORS = ['#1DBF73', '#2D7DFF', '#FFB800', '#FF3355', '#7C3AED', '#14B8A6', '#C9A23A', '#8B1A1A', '#1F3864', '#e8590c', '#0ca678', '#ae3ec9', '#1971c2', '#f08c00', '#5c940d']
 type Cell = [number, number]
@@ -55,14 +56,20 @@ export default function Wordsearch() {
     return d ? (d.split(',').map(Number) as Cell) : null
   }
 
+  // PC: la sopa entra completa en la pantalla (sin bajar con la rueda); en pantallas bajas se oculta la ayuda de abajo
+  const short = typeof window !== 'undefined' && window.innerHeight <= 820
+  const [boardRef, room] = useFit<HTMLDivElement>(24)
+  const [listRef, listRoom] = useFit<HTMLDivElement>(24)
+  const fitCell = room ? `, ${Math.max(20, Math.floor((room - (short ? 28 : 60) - (grid.length - 1) * 2) / grid.length))}px` : ''
+
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]">
-      <div className="overflow-x-auto rounded-3xl bg-surface-2 p-2 shadow-sm ring-1 ring-line sm:p-3" style={{ containerType: 'inline-size' }}>
+      <div ref={boardRef} className="overflow-x-auto rounded-3xl bg-surface-2 p-2 shadow-sm ring-1 ring-line sm:p-3" style={{ containerType: 'inline-size' }}>
         <div
           role="group" data-board
           aria-label="Sopa de letras: arrastre desde la primera letra hasta la última, o toque la primera y luego la última"
           className="mx-auto grid w-fit touch-none select-none gap-[2px]"
-          style={{ gridTemplateColumns: `repeat(${cols}, var(--cw))`, ['--cw' as string]: `min(2.5rem, calc((100cqi - ${cols * 2}px) / ${cols}))` }}
+          style={{ gridTemplateColumns: `repeat(${cols}, var(--cw))`, ['--cw' as string]: `min(2.5rem, calc((100cqi - ${cols * 2}px) / ${cols})${fitCell})` }}
           onPointerDown={(e) => {
             const c = cellAt(e)
             if (!c) return
@@ -132,9 +139,12 @@ export default function Wordsearch() {
             }),
           )}
         </div>
-        <p className="mt-2 text-center text-xs text-ink-soft">👆 Arrastra el dedo de la primera a la última letra (o tócalas una tras otra). Pueden estar en horizontal, vertical, diagonal o al revés.</p>
+        <p className="mt-2 text-center text-xs text-ink-soft short:hidden">
+          <span className="sm:hidden">👆 Arrastra el dedo de la primera a la última letra (o tócalas una tras otra). Pueden estar en horizontal, vertical, diagonal o al revés.</span>
+          <span className="hidden sm:inline">🖱️ Arrastra con el mouse de la primera a la última letra (o haz clic en una y luego en la otra) · horizontal, vertical, diagonal o al revés</span>
+        </p>
       </div>
-      <div className="rounded-3xl bg-surface-2 p-3 shadow-sm ring-1 ring-line">
+      <div ref={listRef} className="rounded-3xl bg-surface-2 p-3 shadow-sm ring-1 ring-line lg:overflow-y-auto" style={listRoom ? { maxHeight: listRoom } : undefined}>
         <h3 className="mb-2 font-display font-black">{show_words ? 'Palabras a encontrar' : 'Busca la palabra que corresponde a…'}</h3>
         <ul className="flex flex-wrap gap-2 lg:flex-col">
           {clues.map((c) => {

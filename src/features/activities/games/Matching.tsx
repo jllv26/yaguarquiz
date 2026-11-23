@@ -44,7 +44,7 @@ export default function Matching() {
   }
 
   return (
-    <div className={cn('flex flex-col gap-3', pickedText && 'pb-24 sm:pb-0')}>
+    <div className={cn('flex flex-col gap-3 short:gap-2', pickedText && 'pb-24 sm:pb-0')}>
       <p className="text-center text-sm font-semibold">
         <Link2 className="mr-1 inline size-4" />
         {pickedText ? (
@@ -62,7 +62,7 @@ export default function Matching() {
         <span>Definiciones</span>
       </div>
       <div className="grid grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] gap-3 sm:gap-5">
-        <ul className="flex flex-col gap-2">
+        <ul className="flex flex-col gap-2 short:gap-1.5">
           {left.map((l) => {
             const p = progress[l.key]
             const sel = pick === l.key
@@ -73,7 +73,7 @@ export default function Matching() {
                   onClick={() => setPick(l.key)}
                   aria-pressed={sel}
                   className={cn(
-                    'flex min-h-14 w-full items-center gap-2 rounded-2xl border-2 px-3 py-2 text-left font-display font-bold transition-all',
+                    'flex min-h-14 w-full items-center gap-2 rounded-2xl border-2 px-3 py-2 text-left font-display font-bold transition-all short:min-h-10 short:py-1 short:text-sm',
                     p?.done ? 'text-white' : sel ? 'scale-[1.02] border-uap-gold bg-uap-gold/20 shadow-md' : 'border-line bg-surface-2 hover:border-uap-gold/60',
                   )}
                   style={p?.done ? { background: p.correct ? leftColor(l.key) : '#8B1A1A', borderColor: 'transparent' } : undefined}
@@ -86,7 +86,7 @@ export default function Matching() {
             )
           })}
         </ul>
-        <ul className="flex flex-col gap-2">
+        <ul className="flex flex-col gap-2 short:gap-1.5">
           {right.map((r) => {
             const lk = linked.get(r.key)
             return (
@@ -95,7 +95,7 @@ export default function Matching() {
                   disabled={!!lk || !pick}
                   onClick={() => void choose(r.key)}
                   className={cn(
-                    'flex min-h-14 w-full items-center gap-3 rounded-2xl border-2 px-3 py-2 text-left text-sm transition-all',
+                    'flex min-h-14 w-full items-center gap-3 rounded-2xl border-2 px-3 py-2 text-left text-sm transition-all short:min-h-10 short:py-1 short:text-[13px] short:leading-snug',
                     lk ? 'border-transparent text-white' : 'border-line bg-surface-2 hover:border-uap-blue/50 hover:bg-uap-blue/5 disabled:opacity-100',
                   )}
                   style={lk ? { background: lk.ok ? leftColor(lk.left) : '#8B1A1A' } : undefined}

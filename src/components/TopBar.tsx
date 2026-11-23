@@ -21,9 +21,9 @@ export function ThemeToggle() {
 /** crowded: hay varios botones a la derecha; en celulares angostos se muestra solo el escudo. */
 export function TopBar({ right, crowded = false }: { right?: ReactNode; crowded?: boolean }) {
   return (
-    <header className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 pt-4 sm:px-6 sm:pt-6">
+    <header className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 pt-4 sm:px-6 sm:pt-6 short:pt-2">
       <Link to="/" className={`glass flex shrink-0 items-center gap-3 rounded-2xl p-1.5 ${crowded ? 'min-[420px]:pr-4' : 'pr-4'}`} title="Ir al inicio" aria-label="YaguarQuiz: ir al inicio">
-        <img src={BRAND.logoColor} alt="" className="size-10 rounded-xl bg-white object-contain p-0.5" />
+        <img src={BRAND.logoColor} alt="" className="size-10 rounded-xl bg-white object-contain p-0.5 short:size-8" />
         {/* en celulares angostos solo el escudo, para dejar lugar a los botones */}
         <span className={crowded ? 'hidden leading-tight min-[420px]:block' : 'leading-tight'}>
           <span className="block font-display text-lg font-extrabold text-uap-blue dark:text-white">
