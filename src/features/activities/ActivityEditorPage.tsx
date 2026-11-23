@@ -24,7 +24,7 @@ import { ACTIVITY_META, fillTextSource, gameLetters, MC_TYPES, parseFillText, ty
 /** Quita líneas vacías de las listas (incorrectas, pistas, elementos de la fila) antes de guardar o probar */
 function cleanItem(it: ActivityItem): ActivityItem {
   const list = (a?: string[]) => (a ?? []).map((x) => x.trim()).filter(Boolean)
-  const extra = it.extra ? { ...it.extra, wrong: it.extra.wrong ? list(it.extra.wrong) : undefined, clues: it.extra.clues ? list(it.extra.clues) : undefined } : undefined
+  const extra = it.extra ? { ...it.extra, wrong: it.extra.wrong ? list(it.extra.wrong) : undefined, clues: it.extra.clues ? list(it.extra.clues) : undefined, alt: it.extra.alt ? list(it.extra.alt) : undefined } : undefined
   const term = it.term.includes('|') ? it.term.split('|').map((x) => x.trim()).filter(Boolean).join(' | ') : it.term
   return { ...it, term, extra }
 }
@@ -153,6 +153,8 @@ function Editor({
 
   const showImage = !['fill_text', 'sentence', 'wordsearch', 'classify', 'map', 'video', 'rows'].includes(type)
   const isMc = MC_TYPES.includes(type)
+  // donde el estudiante escribe, se pueden aceptar otras respuestas (sinónimos, plural, sigla)
+  const typed = type === 'riddle' || type === 'rosco' || (type === 'dictation' && (s.listen ?? 'term') === 'prompt') || (type === 'map' && s.map_mode === 'write')
   const setExtra = (i: number, patch: Partial<ItemExtra>) => update(i, { extra: { ...items[i].extra, ...patch } })
   const groups = [...new Set(effItems.map((i) => i.group?.trim()).filter(Boolean))]
 
@@ -252,6 +254,7 @@ function Editor({
                       {type === 'riddle' && <th className="px-2 py-2">Pistas (una por línea, de difícil a fácil)</th>}
                       {type === 'yesno' && <th className="w-28 px-2 py-2">Respuesta</th>}
                       {type === 'map' && <th className="w-32 px-2 py-2">Punto</th>}
+                      {typed && <th className="w-44 px-2 py-2">También vale (una por línea)</th>}
                       {showImage && <th className="w-16 px-2 py-2">Imagen</th>}
                       <th className="w-10" />
                     </tr>
@@ -367,6 +370,18 @@ function Editor({
                             >
                               {it.extra?.x !== undefined ? `✓ ${Math.round(it.extra.x)} %, ${Math.round(it.extra.y ?? 0)} %` : 'Ubicar'}
                             </button>
+                          </td>
+                        )}
+                        {typed && (
+                          <td className="px-2 py-1.5">
+                            <textarea
+                              value={(it.extra?.alt ?? []).join('\n')}
+                              onChange={(e) => setExtra(i, { alt: e.target.value.split('\n') })}
+                              rows={2}
+                              placeholder={'Sinónimo\nPlural'}
+                              className="min-h-10 w-full resize-y rounded-xl border-2 border-uap-green/30 bg-surface-2 px-3 py-2 text-sm outline-none focus:border-uap-green"
+                              aria-label={`Otras respuestas válidas ${i + 1}`}
+                            />
                           </td>
                         )}
                         {type === 'classify' && (

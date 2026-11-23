@@ -40,7 +40,7 @@ export const AD_POINTS: { term: string; prompt: string; x: number; y: number }[]
   { term: 'Copy', prompt: 'El texto persuasivo de arriba', x: 50, y: 20 },
   { term: 'Imagen del anuncio', prompt: 'Lo primero que atrapa la mirada', x: 50, y: 42 },
   { term: 'Título', prompt: 'La frase corta junto al botón', x: 34, y: 77.5 },
-  { term: 'Llamada a la acción', prompt: 'El botón que invita a hacer algo', x: 80, y: 74 },
+  { term: 'Llamado a la acción', prompt: 'El botón que invita a hacer algo', x: 80, y: 74 },
   { term: 'Reacciones', prompt: 'Me gusta y me encanta', x: 12, y: 85.5 },
   { term: 'Comentarios y compartidos', prompt: 'Lo que más mide la interacción', x: 74, y: 85.5 },
 ]

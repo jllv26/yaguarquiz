@@ -453,6 +453,8 @@ export interface DialogueLine {
 
 /** Datos propios de cada tipo: respuestas incorrectas, pistas, punto sobre la imagen, segundo del video */
 export interface ItemExtra {
+  /** otras respuestas válidas (sinónimos, plural, sigla) en las actividades donde se escribe */
+  alt?: string[]
   wrong?: string[]
   clues?: string[]
   x?: number
@@ -634,4 +636,21 @@ export function dictDecode(say: string, listen: 'term' | 'prompt'): string {
 export function dictEncode(t: string): string {
   const rev = Array.from(t).reverse().join('')
   return btoa(String.fromCharCode(...new TextEncoder().encode(rev)))
+}
+
+/** Número escrito por el estudiante: acepta «4,0», «Bs 15», «15 %», «1.800» (igual que _num_of). */
+export function numOf(t: string): number | null {
+  let s = (t ?? '').trim().toLowerCase()
+  s = s.replace(/^(bs\.?)\s*/, '').replace(/\s*(bs\.?|%|bolivianos?|veces)$/, '').replace(/ /g, '')
+  if (/^-?\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, '')
+  if (/^-?\d{1,3}(,\d{3})+$/.test(s) && !/,\d{1,2}$/.test(s)) s = s.replace(/,/g, '')
+  s = s.replace(',', '.')
+  return /^-?\d+(\.\d+)?$/.test(s) ? Number(s) : null
+}
+/** Respuesta escrita: igual a la correcta, a una alternativa válida o al mismo número (igual que _typed_match). */
+export function typedMatch(val: string, term: string, alt?: string[]): boolean {
+  if (looseNorm(val) === looseNorm(term)) return true
+  if ((alt ?? []).some((x) => x.trim() && looseNorm(val) === looseNorm(x))) return true
+  const n = numOf(term)
+  return n !== null && numOf(val) === n
 }

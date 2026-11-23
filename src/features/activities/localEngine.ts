@@ -6,6 +6,7 @@ import {
   gameLetters,
   gameNorm,
   MC_TYPES,
+  typedMatch,
   looseNorm,
   triesFor,
   tryPartial,
@@ -250,15 +251,15 @@ export function localActivity(settings: ActivitySettings, items: ActivityItem[])
       let ok = false
       if (!val) ok = false
       else if (type === 'crossword' || type === 'anagram') ok = gameLetters(val) === gameLetters(k.term)
-      else if (type === 'rosco' || type === 'fill_text') ok = looseNorm(val) === looseNorm(k.term)
+      else if (type === 'rosco' || type === 'fill_text' || type === 'riddle') ok = typedMatch(val, k.term, k.extra?.alt)
       else if (type === 'sentence') ok = gameNorm(val) === gameNorm(k.term)
       else if (type === 'classify') ok = looseNorm(val) === looseNorm(k.group ?? '')
       else if (type === 'matching') ok = val === k.dKey
-      else if (MC_TYPES.includes(type) || type === 'riddle') ok = looseNorm(val) === looseNorm(k.term)
+      else if (MC_TYPES.includes(type)) ok = looseNorm(val) === looseNorm(k.term)
       else if (type === 'yesno') ok = looseNorm(val) === looseNorm(k.group ?? '')
       else if (type === 'rows') ok = looseNorm(val.split(/\s*\|\s*/).join(' | ')) === looseNorm(k.term.split(/\s*\|\s*/).join(' | '))
-      else if (type === 'map') ok = (settings.map_mode ?? 'tap') === 'tap' ? val === k.dKey : looseNorm(val) === looseNorm(k.term)
-      else if (type === 'dictation') ok = (settings.accents ?? (settings.listen ?? 'term') !== 'prompt') ? dictNorm(val) === dictNorm(k.term) : looseNorm(val) === looseNorm(k.term)
+      else if (type === 'map') ok = (settings.map_mode ?? 'tap') === 'tap' ? val === k.dKey : typedMatch(val, k.term, k.extra?.alt)
+      else if (type === 'dictation') ok = (settings.accents ?? (settings.listen ?? 'term') !== 'prompt') ? dictNorm(val) === dictNorm(k.term) : typedMatch(val, k.term, k.extra?.alt)
       const near = type === 'dictation' && !ok && looseNorm(val) === looseNorm(k.term)
       const n = (prev?.tries ?? 0) + 1
       const done = ok || n >= tries

@@ -333,7 +333,7 @@ function AnswerKeyModal({ quizId, title, type, act, onClose }: { quizId: string;
   const clueLabel = type === 'yesno' ? 'Tarjeta' : type === 'riddle' ? 'Pistas' : type === 'rows' ? 'Fila' : type === 'slides' ? 'Diapositiva' : type === 'map' ? 'Descripción' : type === 'classify' ? 'Tarjeta' : type === 'matching' || type === 'memory' ? 'Pareja' : type === 'fill_text' ? 'Espacio' : type === 'research' ? 'Pregunta' : 'Pista'
   function print() {
     const rows = (items.data ?? [])
-      .map((it, i) => `<tr><td>${i + 1}</td><td>${versionOf(i) >= 0 ? `Versión ${versionOf(i) + 1}` : ''}${esc(keyClue(it))}</td><td><b>${esc(keyAnswer(it))}</b>${it.extra?.wrong?.length ? `<br><small>Incorrectas: ${esc(it.extra.wrong.join(' · '))}</small>` : ''}</td></tr>`)
+      .map((it, i) => `<tr><td>${i + 1}</td><td>${versionOf(i) >= 0 ? `Versión ${versionOf(i) + 1}` : ''}${esc(keyClue(it))}</td><td><b>${esc(keyAnswer(it))}</b>${it.extra?.wrong?.length ? `<br><small>Incorrectas: ${esc(it.extra.wrong.join(' · '))}</small>` : ''}${it.extra?.alt?.length ? `<br><small>También vale: ${esc(it.extra.alt.join(' · '))}</small>` : ''}</td></tr>`)
       .join('')
     const w = window.open('', '_blank')
     if (!w) return
@@ -409,6 +409,7 @@ function AnswerKeyModal({ quizId, title, type, act, onClose }: { quizId: string;
                   <td className="px-2 py-1.5 font-display font-black">
                     {type === 'research' ? <span className="font-normal text-ink-soft">{it.prompt || '—'}</span> : keyAnswer(it)}
                     {it.extra?.wrong?.length ? <span className="block text-xs font-normal text-ink-soft">Incorrectas: {it.extra.wrong.join(' · ')}</span> : null}
+                    {it.extra?.alt?.length ? <span className="block text-xs font-normal text-uap-green">También vale: {it.extra.alt.join(' · ')}</span> : null}
                     {showGroup && type === 'rosco' && it.group ? <span className="ml-1 text-xs font-normal text-ink-soft">({it.contains ? 'contiene' : 'empieza con'} {it.group})</span> : null}
                   </td>
                 </tr>
