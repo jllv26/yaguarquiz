@@ -425,7 +425,7 @@ export interface ActivitySettings {
   layout?: CrosswordLayout
   grid?: { letters: string[]; placements?: { i: number; cells: [number, number][] }[] }
   /** Versiones: a cada estudiante le toca una (tablero/texto distinto, o un caso de investigación) */
-  variants?: ({ pos?: number[]; case?: ResearchCase } & Partial<Pick<ActivitySettings, 'layout' | 'grid' | 'text'>>)[]
+  variants?: ({ pos?: number[]; case?: ResearchCase } & Partial<Pick<ActivitySettings, 'layout' | 'grid' | 'text' | 'image_url' | 'dialogue'>>)[]
   /** Investigación: criterios que califica el docente y mínimo de palabras por respuesta */
   criteria?: ResearchCriterion[]
   min_words?: number

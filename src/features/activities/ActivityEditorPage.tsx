@@ -454,7 +454,7 @@ function Editor({
             </SolidCard>
           )}
 
-          {type === 'map' && (
+          {type === 'map' && !lockedVariants && (
             <SolidCard className="flex flex-col gap-3 p-4">
               <h2 className="font-display text-lg font-black">Ubicar los puntos</h2>
               {s.image_url ? (

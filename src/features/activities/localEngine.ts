@@ -32,7 +32,17 @@ const shuffle = <T,>(a: T[]) => {
 const mask = (term: string, letters: string[]) =>
   [...gameNorm(term)].map((c) => (c === ' ' ? ' ' : letters.includes(c) || !/[A-ZÑ]/.test(c) ? c : '_')).join('')
 
-export function localActivity(settings: ActivitySettings, items: ActivityItem[]): { board: ActivityBoard; engine: Engine } {
+export function localActivity(settings0: ActivitySettings, items0: ActivityItem[]): { board: ActivityBoard; engine: Engine } {
+  // mapa y diálogo con versiones: la vista previa muestra una versión al azar (como le tocaría a un estudiante)
+  let settings = settings0
+  let items = items0
+  const vs = settings0.variants
+  if (vs?.length && (settings0.type === 'map' || settings0.type === 'dialogue')) {
+    const v = vs[Math.floor(Math.random() * vs.length)]
+    const { pos, ...rest } = v as typeof v & Partial<ActivitySettings>
+    settings = { ...settings0, ...rest }
+    if (pos?.length) items = pos.map((p) => items0[p]).filter(Boolean)
+  }
   const type = settings.type
   const keyed = items.map((it, i) => ({ ...it, key: it.id ?? `item-${i}-${rand()}`, pos: i, dKey: rand(), tKey: rand() }))
   const byKey = new Map(keyed.map((k) => [k.key, k]))

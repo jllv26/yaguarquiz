@@ -314,7 +314,7 @@ function AnswerKeyModal({ quizId, title, type, act, onClose }: { quizId: string;
   const items = useQuery({ queryKey: ['activity-key', quizId], queryFn: () => fetchActivityItems(quizId) })
   const versions = type !== 'research' ? (act?.variants ?? []) : []
   // con versiones de texto (cálculos), cada versión tiene sus propias respuestas
-  const versionOf = (i: number) => (type === 'fill_text' ? versions.findIndex((v) => v.pos?.includes(i)) : -1)
+  const versionOf = (i: number) => (['fill_text', 'map', 'dialogue'].includes(type) ? versions.findIndex((v) => v.pos?.includes(i)) : -1)
   const m = ACTIVITY_META[type]
   const showGroup = type === 'classify' || type === 'rosco'
   // qué se muestra en cada columna según el tipo
@@ -365,7 +365,13 @@ function AnswerKeyModal({ quizId, title, type, act, onClose }: { quizId: string;
       {versions.length > 0 && (
         <p className="mb-3 rounded-2xl bg-uap-blue/10 px-4 py-2 text-sm">
           🔀 Tiene <b>{versions.length} versiones</b>: a cada estudiante le toca una al azar
-          {type === 'fill_text' ? ' (con otros números). Abajo, las respuestas de cada versión.' : `, con ${versions[0]?.pos?.length ?? '?'} palabras de este banco.`}
+          {type === 'fill_text'
+            ? ' (con otros números). Abajo, las respuestas de cada versión.'
+            : type === 'map'
+              ? ' (otra imagen, con sus propios puntos). Abajo, los puntos de cada versión.'
+              : type === 'dialogue'
+                ? ' (otra conversación, con sus propias preguntas). Abajo, las preguntas de cada versión.'
+                : `, con ${versions[0]?.pos?.length ?? '?'} palabras de este banco.`}
         </p>
       )}
       {type === 'research' && act && (
