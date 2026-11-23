@@ -1,6 +1,8 @@
 // Vista previa del docente: arma el mismo tablero que entrega el servidor y corrige en el navegador
 // con las mismas reglas (intentos, porcentajes, ahorcado, memoria). Solo se usa en el editor y en la vitrina.
 import {
+  dictEncode,
+  dictNorm,
   gameLetters,
   gameNorm,
   looseNorm,
@@ -97,6 +99,21 @@ export function localActivity(settings: ActivitySettings, items: ActivityItem[])
         questions: keyed.map((k) => ({ key: k.key, text: k.term, hint: k.prompt || null, value: null })),
       }
       break
+    case 'dictation': {
+      const listen = settings.listen ?? 'term'
+      board = {
+        listen,
+        accents: settings.accents ?? listen !== 'prompt',
+        items: shuffle(keyed).map((k) => ({
+          key: k.key,
+          image_url: k.image_url ?? null,
+          say: listen === 'prompt' ? k.prompt : dictEncode(k.term),
+          hint: listen === 'prompt' ? null : k.prompt || null,
+          words: k.term.trim().split(/\s+/).length,
+        })),
+      }
+      break
+    }
     case 'classify':
       board = {
         groups: shuffle([...new Set(keyed.map((k) => k.group?.trim()).filter((g): g is string => !!g))]),
@@ -165,12 +182,14 @@ export function localActivity(settings: ActivitySettings, items: ActivityItem[])
       else if (type === 'sentence') ok = gameNorm(val) === gameNorm(k.term)
       else if (type === 'classify') ok = looseNorm(val) === looseNorm(k.group ?? '')
       else if (type === 'matching') ok = val === k.dKey
+      else if (type === 'dictation') ok = (settings.accents ?? (settings.listen ?? 'term') !== 'prompt') ? dictNorm(val) === dictNorm(k.term) : looseNorm(val) === looseNorm(k.term)
+      const near = type === 'dictation' && !ok && looseNorm(val) === looseNorm(k.term)
       const n = (prev?.tries ?? 0) + 1
       const done = ok || n >= tries
       const partial = ok ? tryPartial(n) : 0
       const answer = type === 'classify' ? k.group : type === 'matching' ? k.dKey : ['crossword', 'anagram', 'rosco'].includes(type) ? gameNorm(k.term) : k.term
       progress[k.key] = { done, correct: ok, tries: n, partial, value: ok ? val : undefined, answer: done ? answer : undefined }
-      return { ok: true, item: k.key, correct: ok, done, tries: n, tries_left: Math.max(0, tries - n), points: Math.round(1000 * partial), answer: done && !ok ? answer : undefined }
+      return { ok: true, item: k.key, correct: ok, done, tries: n, tries_left: Math.max(0, tries - n), points: Math.round(1000 * partial), answer: done && !ok ? answer : undefined, near: near || undefined }
     },
   }
 

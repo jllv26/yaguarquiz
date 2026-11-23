@@ -1,3 +1,4 @@
+import { speak } from './games/Dictation'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { AlertTriangle, ArrowLeft, ClipboardPaste, Eye, FileDown, Loader2, Plus, RefreshCw, Rocket, Save, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
@@ -250,6 +251,15 @@ function Editor({
                             aria-label={`${meta.termLabel} ${i + 1}`}
                             placeholder={type === 'sentence' ? 'El jaguar es el felino más grande de América' : ''}
                           />
+                          {type === 'dictation' && (it.term || it.prompt) && (
+                            <button
+                              type="button"
+                              onClick={() => speak((s.listen ?? 'term') === 'prompt' ? it.prompt : it.term)}
+                              className="ml-1 mt-1 text-xs font-bold text-uap-blue hover:underline"
+                            >
+                              🔊 Escuchar cómo suena
+                            </button>
+                          )}
                           {(type === 'crossword' || type === 'wordsearch') && it.term && (
                             <span className="ml-1 text-xs text-ink-soft">
                               {gameLetters(it.term).length} letras{unplaced.includes(i) && type === 'crossword' ? ' · no se cruzó' : ''}
@@ -415,6 +425,33 @@ function Editor({
                 </Select>
               </>
             )}
+            {type === 'dictation' && (
+              <>
+                <Select
+                  label="¿Qué escucha el estudiante?"
+                  value={s.listen ?? 'term'}
+                  onChange={(e) => {
+                    const listen = e.target.value as 'term' | 'prompt'
+                    setS({ ...s, listen, accents: listen === 'term' })
+                    setDirty(true)
+                  }}
+                >
+                  <option value="term">La palabra o frase, y la escribe igual (ortografía)</option>
+                  <option value="prompt">La definición, y escribe el término</option>
+                </Select>
+                <Select
+                  label="Tildes"
+                  value={(s.accents ?? (s.listen ?? 'term') === 'term') ? 'yes' : 'no'}
+                  onChange={(e) => {
+                    setS({ ...s, accents: e.target.value === 'yes' })
+                    setDirty(true)
+                  }}
+                >
+                  <option value="yes">Cuentan: sin la tilde correcta es error</option>
+                  <option value="no">No cuentan</option>
+                </Select>
+              </>
+            )}
             {type === 'fill_text' && (
               <>
                 <Select
@@ -511,6 +548,7 @@ function validate(type: ActivityType, items: ActivityItem[], s: ActivitySettings
   }
   const dup = items.map((i) => gameLetters(i.term)).filter((t, i, a) => t && a.indexOf(t) !== i)
   if (dup.length && type !== 'classify') errors.push(`Palabras repetidas: ${[...new Set(dup)].join(', ')}.`)
+  if (type === 'dictation' && (s.listen ?? 'term') === 'prompt') items.forEach((it, i) => !it.prompt.trim() && errors.push(`Fila ${i + 1}: escriba la definición que se va a dictar.`))
   if (type === 'fill_text' && !s.text?.trim()) errors.push('Escriba el texto.')
   return { errors: [...new Set(errors)].slice(0, 6), warnings: [...new Set(warnings)].slice(0, 4) }
 }

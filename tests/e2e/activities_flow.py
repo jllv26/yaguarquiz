@@ -193,7 +193,7 @@ with sync_playwright() as p:
     m2 = mc.new_page()
     join(m2, s_mem['pin'], 'DEMO-002', '002')
     m2.get_by_role('button', name='Comenzar').click()
-    m2.wait_for_timeout(2500)
+    m2.wait_for_timeout(4000)  # cuenta regresiva 3-2-1
     cards = m2.locator('button[aria-label^="Carta"]')
     pairs = {x['term']: x['prompt'] for x in MEM}
     pairs.update({v: k for k, v in list(pairs.items())})

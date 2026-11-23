@@ -19,6 +19,7 @@ const GAMES: Record<ActivityType, React.LazyExoticComponent<() => ReactNode>> = 
   hangman: lazy(() => import('./games/Hangman')),
   classify: lazy(() => import('./games/Classify')),
   research: lazy(() => import('./games/Research')),
+  dictation: lazy(() => import('./games/Dictation').then((m) => ({ default: m.Dictation }))),
 }
 
 const PRAISE = ['¡Bien!', '¡Genial!', '¡Excelente!', '¡Así se hace!', '¡Correcto!']
@@ -142,7 +143,7 @@ export function ActivityGame({
             streakRef.current = 0
             setStreak(0)
           }
-          if (action !== 'letter') flash(false, r.done ? 'Sin intentos' : r.tries_left ? `Te queda${r.tries_left === 1 ? '' : 'n'} ${r.tries_left} intento${r.tries_left === 1 ? '' : 's'}` : '¡Casi! Intenta otra vez')
+          if (action !== 'letter') flash(false, r.near && !r.done ? '¡Casi! Revisa las tildes' : r.done ? 'Sin intentos' : r.tries_left ? `Te queda${r.tries_left === 1 ? '' : 'n'} ${r.tries_left} intento${r.tries_left === 1 ? '' : 's'}` : '¡Casi! Intenta otra vez')
         }
         return r
       } catch {

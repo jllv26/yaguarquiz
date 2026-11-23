@@ -1,6 +1,7 @@
 import {
   ArrowDownUp,
   FileSearch,
+  Headphones,
   Blocks,
   Brain,
   Grid3x3,
@@ -25,6 +26,7 @@ export type ActivityType =
   | 'hangman'
   | 'classify'
   | 'research'
+  | 'dictation'
 
 export interface ActivityMeta {
   label: string
@@ -196,6 +198,21 @@ export const ACTIVITY_META: Record<ActivityType, ActivityMeta> = {
     fixedBoard: false,
     tip: 'Use entre 2 y 5 grupos. Escriba el nombre del grupo igual en cada fila.',
   },
+  dictation: {
+    label: 'Dictado',
+    short: 'Dictado',
+    description: 'Escuchar una palabra, frase o definición y escribirla bien.',
+    icon: Headphones,
+    color: '#0e7490',
+    termLabel: 'Lo que debe escribir',
+    promptLabel: 'Pista (o la definición que se dicta)',
+    promptRequired: false,
+    min: 1,
+    max: 30,
+    usesTries: true,
+    fixedBoard: false,
+    tip: 'Se escucha con la voz del celular o la PC. Elija si se dicta la palabra (cuentan las tildes) o la definición (el estudiante escribe el término).',
+  },
   research: {
     label: 'Investigación',
     short: 'Investigación',
@@ -242,6 +259,9 @@ export interface ActivitySettings {
   /** Investigación: criterios que califica el docente y mínimo de palabras por respuesta */
   criteria?: ResearchCriterion[]
   min_words?: number
+  /** Dictado: qué se escucha (la palabra/frase o la definición) y si las tildes cuentan */
+  listen?: 'term' | 'prompt'
+  accents?: boolean
 }
 
 export interface CrosswordLayout {
@@ -284,6 +304,7 @@ export interface Boards {
   sentence: { items: { key: string; clue: string; image_url: string | null; tiles: string[] }[] }
   hangman: { max_wrong: number; items: { key: string; clue: string; image_url: string | null; mask: string }[] }
   classify: { groups: string[]; cards: { key: string; text: string; image_url: string | null }[] }
+  dictation: { listen: 'term' | 'prompt'; accents: boolean; items: { key: string; say: string; hint: string | null; words: number; image_url: string | null }[] }
   research: { case: ResearchCase | null; criteria: ResearchCriterion[]; min_words: number; questions: { key: string; text: string; hint: string | null; value: string | null }[] }
 }
 
@@ -313,6 +334,8 @@ export interface PlayResult {
   mask?: string
   hit?: boolean
   wrong?: number
+  /** Dictado: solo faltan/sobran tildes o mayúsculas */
+  near?: boolean
 }
 
 /** Quien corrige las jugadas: el servidor (estudiante) o el navegador (vista previa del docente). */
@@ -362,3 +385,29 @@ export function fillTextSource(text: string, words: string[]): string {
 export const triesFor = (s: Pick<ActivitySettings, 'type' | 'tries'>) =>
   Math.max(1, Math.min(5, s.tries ?? (s.type === 'rosco' ? 1 : s.type === 'crossword' ? 3 : 2)))
 export const tryPartial = (n: number) => (n <= 1 ? 1 : n === 2 ? 0.6 : 0.3)
+
+/** Dictado con tildes: minúsculas, sin signos de puntuación ni espacios de más (igual que _dict_norm). */
+export function dictNorm(t: string): string {
+  return (t ?? '')
+    .normalize('NFC')
+    .toLowerCase()
+    .replace(/[.,;:!?¿¡"“”«»()]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+/** El texto del dictado viaja codificado (al revés y en base64) para que no se lea a simple vista. */
+export function dictDecode(say: string, listen: 'term' | 'prompt'): string {
+  if (listen === 'prompt') return say
+  try {
+    const bin = atob(say)
+    const txt = new TextDecoder().decode(Uint8Array.from(bin, (c) => c.charCodeAt(0)))
+    return Array.from(txt).reverse().join('')
+  } catch {
+    return ''
+  }
+}
+export function dictEncode(t: string): string {
+  const rev = Array.from(t).reverse().join('')
+  return btoa(String.fromCharCode(...new TextEncoder().encode(rev)))
+}

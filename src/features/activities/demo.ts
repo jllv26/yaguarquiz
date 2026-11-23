@@ -49,6 +49,14 @@ const DEMO: Record<ActivityType, { items: ActivityItem[]; extra?: Partial<Activi
       { term: 'Mouse', prompt: 'Hardware', group: 'Hardware' },
     ],
   },
+  dictation: {
+    items: [
+      { term: 'Castaña', prompt: 'Fruto amazónico' },
+      { term: 'Jaguar', prompt: 'Felino de la selva' },
+      { term: 'El río Acre separa Cobija de Brasil.', prompt: 'Una frase' },
+    ],
+    extra: { listen: 'term', accents: true },
+  },
   research: {
     items: [
       { term: '¿Qué redes sociales usa el negocio y cada cuánto publica?', prompt: 'Revisa su página y anota fechas reales.' },

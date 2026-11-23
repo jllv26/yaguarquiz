@@ -312,6 +312,36 @@ function ResearchDemo({ s }: { s: number }) {
   )
 }
 
+function DictationDemo({ s }: { s: number }) {
+  const typed = ['', '', 'Castana', 'Castana', 'Castaña', 'Castaña'][s]
+  return (
+    <div className="relative flex w-full flex-col items-center gap-2">
+      <Plus on={s >= 5} />
+      <div className="flex items-center gap-2">
+        <motion.span
+          animate={s === 1 ? { scale: [1, 1.12, 1] } : {}}
+          transition={{ repeat: s === 1 ? Infinity : 0, duration: 0.6 }}
+          className="relative grid size-14 place-items-center rounded-full bg-[#0e7490] text-2xl text-white"
+        >
+          🔊
+          <Tap on={s === 0} />
+        </motion.span>
+        <span className="text-xs font-bold text-[#0e7490]">{s === 1 ? '«Castaña»…' : s >= 2 ? '🐢 puedes repetir' : 'Escuchar'}</span>
+      </div>
+      <span className={cn('min-w-36 rounded-xl border-2 px-3 py-1.5 text-center font-display text-base font-bold', s >= 5 ? 'border-uap-green bg-uap-green/15 text-uap-green' : s === 3 ? 'border-uap-red bg-uap-red/10' : 'border-uap-gold/60 bg-surface')}>
+        {typed || ' '}
+      </span>
+      {s === 3 ? (
+        <span className="rounded-lg bg-uap-gold/25 px-2 py-0.5 text-[11px] font-bold text-[#8a6416]">¡Casi! Revisa las tildes y la ñ</span>
+      ) : (
+        <span className={cn(chip, s >= 5 ? ok : 'border-uap-green/50 bg-surface-2')}>
+          ✓ Comprobar <Tap on={s === 2 || s === 4} />
+        </span>
+      )}
+    </div>
+  )
+}
+
 const tilesSentence = ({ s }: { s: number }) => <TilesDemo s={s} words={['La', 'estrategia', 'es el qué']} />
 const tilesAnagram = ({ s }: { s: number }) => <TilesDemo s={s} words={['C', 'T', 'R']} />
 
@@ -367,6 +397,11 @@ export const GUIDES: Record<ActivityType, Guide> = {
     steps: ['Lee la pista de la letra marcada («empieza por» o «contiene»).', 'Escribe la palabra y toca «Responder».', 'Si no sabes, toca «Pasapalabra»: vuelve al final de la vuelta.'],
     captions: ['Letra A', '1. Escribe la respuesta', '2. Toca Responder', '¡Correcta! Pasa a la B', 'Si no sabes: Pasapalabra'],
     Demo: RoscoDemo,
+  },
+  dictation: {
+    steps: ['Toca 🔊 «Escuchar». Puedes repetir las veces que quieras o usar 🐢 «Lento».', 'Escribe lo que oyes (o el término de la definición que escuchas). Las tildes y la ñ cuentan.', 'Toca «Comprobar». Si dice «¡Casi!», las letras están bien pero falta una tilde.'],
+    captions: ['1. Toca Escuchar', 'Escucha con atención', '2. Escribe y comprueba', '¡Casi! Falta la ñ', '3. Corrige y comprueba', '¡Correcto!'],
+    Demo: DictationDemo,
   },
   research: {
     steps: ['Lee tu caso: a cada compañero le tocó uno distinto.', 'Investiga un negocio real y responde cada pregunta con tus palabras (no se puede pegar texto).', 'Tus respuestas se guardan solas. Cuando termines, toca «Entregar mi investigación».'],
