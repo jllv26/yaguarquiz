@@ -20,6 +20,16 @@ const GAMES: Record<ActivityType, React.LazyExoticComponent<() => ReactNode>> = 
   classify: lazy(() => import('./games/Classify')),
   research: lazy(() => import('./games/Research')),
   dictation: lazy(() => import('./games/Dictation').then((m) => ({ default: m.Dictation }))),
+  froggy: lazy(() => import('./games/Froggy')),
+  asterquiz: lazy(() => import('./games/AsterQuiz')),
+  puzzle: lazy(() => import('./games/PuzzleGame')),
+  video: lazy(() => import('./games/VideoQuiz')),
+  dialogue: lazy(() => import('./games/Dialogue')),
+  yesno: lazy(() => import('./games/YesNo')),
+  rows: lazy(() => import('./games/Rows')),
+  riddle: lazy(() => import('./games/Riddle')),
+  map: lazy(() => import('./games/MapGame')),
+  slides: lazy(() => import('./games/Slides')),
 }
 
 const PRAISE = ['¡Bien!', '¡Genial!', '¡Excelente!', '¡Así se hace!', '¡Correcto!']
@@ -108,6 +118,12 @@ export function ActivityGame({
           return r
         }
         const item = r.item ?? (data.item as string | undefined)
+        if (action === 'clue') return r // adivinanza: la pista la muestra el juego
+        if (action === 'seen') {
+          // presentación: la diapositiva cuenta como vista (sin puntos ni sonidos)
+          if (item) setProgress((p) => ({ ...p, [item]: { done: true, correct: true, partial: 1 } }))
+          return r
+        }
         if (action === 'save') {
           // investigación: solo se guarda el texto (sin puntos ni sonidos)
           if (item) setProgress((p) => ({ ...p, [item]: { ...p[item], done: !!r.done, value: String(data.value ?? '') } }))
@@ -156,9 +172,10 @@ export function ActivityGame({
     [engine, toast, onFatal, flash, board.type],
   )
 
-  const research = board.type === 'research'
+  // investigación y presentación no tienen puntos: se entregan con su botón
+  const research = board.type === 'research' || board.type === 'slides'
   useEffect(() => {
-    if (research) return // la investigación se entrega con el botón «Entregar»
+    if (research) return // la investigación y la presentación se entregan con su botón
     if (!finished.current && board.total > 0 && done >= board.total) {
       finished.current = true
       setTimeout(() => onAllDone?.(), 900)
@@ -190,7 +207,7 @@ export function ActivityGame({
           </div>
           <HowToPlayButton type={board.type} className="order-2 shrink-0 sm:order-3" />
           <div className="order-3 grid w-full gap-1.5 text-sm sm:order-2 sm:flex sm:w-auto" style={{ gridTemplateColumns: `repeat(${statCount}, minmax(0, 1fr))` }}>
-            <Stat icon={<Target className="size-4" />} label={research ? 'Respondidas' : 'Resueltas'} value={`${done}/${board.total}`} />
+            <Stat icon={<Target className="size-4" />} label={board.type === 'slides' ? 'Vistas' : research ? 'Respondidas' : 'Resueltas'} value={`${done}/${board.total}`} />
             {!research && <Stat icon={<Sparkles className="size-4" />} label="Puntos" value={points.toLocaleString('es-BO')} />}
             {withErrors && <Stat icon={<XCircle className="size-4" />} label="Errores" value={String(errors)} />}
             {aside}

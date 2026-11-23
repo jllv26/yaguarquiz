@@ -17,7 +17,7 @@ import { fetchActivityItems, saveActivity } from '../../lib/api/activities'
 import { qkq, useDeleteQuiz, useDuplicateQuiz, useQuizzes, useSaveQuiz, useSubjectsLite, type QuizListRow } from '../../lib/api/quizzes'
 import { LaunchModal, launchHint } from '../sessions/LaunchModal'
 import { BulkAssignModal } from '../aula/BulkAssignModal'
-import { ACTIVITY_META, ACTIVITY_TYPES, type ActivitySettings, type ActivityType } from './types'
+import { ACTIVITY_META, ACTIVITY_TYPES, type ActivityItem, type ActivitySettings, type ActivityType } from './types'
 
 export const activityOf = (z: { settings?: Record<string, unknown> | null }) => (z.settings?.activity as ActivitySettings | undefined)?.type ?? null
 
@@ -317,10 +317,23 @@ function AnswerKeyModal({ quizId, title, type, act, onClose }: { quizId: string;
   const versionOf = (i: number) => (type === 'fill_text' ? versions.findIndex((v) => v.pos?.includes(i)) : -1)
   const m = ACTIVITY_META[type]
   const showGroup = type === 'classify' || type === 'rosco'
-  const clueLabel = type === 'classify' ? 'Tarjeta' : type === 'matching' || type === 'memory' ? 'Pareja' : type === 'fill_text' ? 'Espacio' : type === 'research' ? 'Pregunta' : 'Pista'
+  // qué se muestra en cada columna según el tipo
+  const keyClue = (it: ActivityItem) =>
+    type === 'classify' || type === 'research' || type === 'yesno'
+      ? it.term
+      : type === 'riddle'
+        ? (it.extra?.clues ?? []).join(' · ')
+        : type === 'slides'
+          ? it.term
+          : type === 'video'
+            ? `[${Math.floor((it.extra?.t ?? 0) / 60)}:${String(Math.floor((it.extra?.t ?? 0) % 60)).padStart(2, '0')}] ${it.prompt}`
+            : it.prompt
+  const keyAnswer = (it: ActivityItem) =>
+    type === 'classify' || type === 'yesno' ? (it.group ?? '') : type === 'rows' ? it.term.split(/\s*\|\s*/).join(' → ') : type === 'slides' ? '(se lee)' : it.term
+  const clueLabel = type === 'yesno' ? 'Tarjeta' : type === 'riddle' ? 'Pistas' : type === 'rows' ? 'Fila' : type === 'slides' ? 'Diapositiva' : type === 'map' ? 'Descripción' : type === 'classify' ? 'Tarjeta' : type === 'matching' || type === 'memory' ? 'Pareja' : type === 'fill_text' ? 'Espacio' : type === 'research' ? 'Pregunta' : 'Pista'
   function print() {
     const rows = (items.data ?? [])
-      .map((it, i) => `<tr><td>${i + 1}</td><td>${versionOf(i) >= 0 ? `Versión ${versionOf(i) + 1}` : ''}${esc(type === 'classify' || type === 'research' ? it.term : it.prompt)}</td><td><b>${esc(type === 'classify' ? (it.group ?? '') : it.term)}</b></td></tr>`)
+      .map((it, i) => `<tr><td>${i + 1}</td><td>${versionOf(i) >= 0 ? `Versión ${versionOf(i) + 1}` : ''}${esc(keyClue(it))}</td><td><b>${esc(keyAnswer(it))}</b>${it.extra?.wrong?.length ? `<br><small>Incorrectas: ${esc(it.extra.wrong.join(' · '))}</small>` : ''}</td></tr>`)
       .join('')
     const w = window.open('', '_blank')
     if (!w) return
@@ -391,10 +404,11 @@ function AnswerKeyModal({ quizId, title, type, act, onClose }: { quizId: string;
                   <td className="px-2 py-1.5 tabular-nums">{i + 1}</td>
                   <td className="px-2 py-1.5">
                     {versionOf(i) >= 0 && <span className="mr-1 rounded-md bg-uap-blue/10 px-1.5 text-xs font-bold">Versión {versionOf(i) + 1}</span>}
-                    {type === 'classify' ? it.term : type === 'research' ? it.term : it.prompt}
+                    {keyClue(it)}
                   </td>
                   <td className="px-2 py-1.5 font-display font-black">
-                    {type === 'classify' ? it.group : type === 'research' ? <span className="font-normal text-ink-soft">{it.prompt || '—'}</span> : it.term}
+                    {type === 'research' ? <span className="font-normal text-ink-soft">{it.prompt || '—'}</span> : keyAnswer(it)}
+                    {it.extra?.wrong?.length ? <span className="block text-xs font-normal text-ink-soft">Incorrectas: {it.extra.wrong.join(' · ')}</span> : null}
                     {showGroup && type === 'rosco' && it.group ? <span className="ml-1 text-xs font-normal text-ink-soft">({it.contains ? 'contiene' : 'empieza con'} {it.group})</span> : null}
                   </td>
                 </tr>

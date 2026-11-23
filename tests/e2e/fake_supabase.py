@@ -135,7 +135,7 @@ class H(BaseHTTPRequestHandler):
                 from public.quizzes q where q.teacher_id = %s and (%s::uuid is null or q.id = %s::uuid)) x''', [UID, qid, qid])[0][0]
             return self.reply(200, (r[0] if r else None) if self.single() else r)
         if u.path == '/rest/v1/questions' and self.teacher and eq('type') == 'game_item':
-            r = admin('''select coalesce(json_agg(json_build_object('id', id, 'term', term, 'prompt', prompt, 'image_url', image_url, 'tags', tags) order by sort_order), '[]')
+            r = admin('''select coalesce(json_agg(json_build_object('id', id, 'term', term, 'prompt', prompt, 'image_url', image_url, 'tags', tags, 'extra', extra) order by sort_order), '[]')
                          from public.questions where quiz_id = %s and type = 'game_item' ''', [eq('quiz_id')])[0][0]
             return self.reply(200, r)
         if u.path == '/rest/v1/grading_plans' and self.teacher:

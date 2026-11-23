@@ -112,7 +112,7 @@ export function ActivityAttempt({
   }, [st.session.focus_mode, token, toast])
 
   // cuenta regresiva 3-2-1 al empezar un intento nuevo (no al volver a uno empezado)
-  const [count, setCount] = useState<number | null>(() => (board.type !== 'research' && !Object.keys(board.progress ?? {}).length ? 3 : null))
+  const [count, setCount] = useState<number | null>(() => (!['research', 'slides'].includes(board.type) && !Object.keys(board.progress ?? {}).length ? 3 : null))
   useEffect(() => {
     if (count === null) return
     if (count > 0) sfx.countdown()
@@ -125,10 +125,12 @@ export function ActivityAttempt({
     const pending = board.total - Object.values(board.progress).filter((p) => p.done).length
     const research = board.type === 'research'
     const ok = await confirm({
-      title: research ? '¿Entregar tu investigación?' : '¿Entregar la actividad?',
+      title: research ? '¿Entregar tu investigación?' : board.type === 'slides' ? '¿Terminaste de leer?' : '¿Entregar la actividad?',
       message: research
         ? 'Revisa que respondiste todo con tus palabras. Después de entregar ya no podrás cambiarla; tu docente la calificará y te llegará la nota.'
-        : 'Lo que no resolviste cuenta como 0. Después de entregar ya no podrás seguir jugando este intento.',
+        : board.type === 'slides'
+          ? 'Tu nota es el porcentaje de diapositivas que viste. Después de entregar ya no se suman más.'
+          : 'Lo que no resolviste cuenta como 0. Después de entregar ya no podrás seguir jugando este intento.',
       confirmText: 'Entregar',
       danger: pending > 0,
     })
@@ -175,9 +177,9 @@ export function ActivityAttempt({
           </motion.div>
         )}
       </AnimatePresence>
-      {board.type === 'research' && (
+      {(board.type === 'research' || board.type === 'slides') && (
         <Button variant="gold" size="lg" className="self-center" onClick={() => void askFinish()}>
-          <Send className="size-5" /> Entregar mi investigación
+          <Send className="size-5" /> {board.type === 'slides' ? 'Terminé la presentación' : 'Entregar mi investigación'}
         </Button>
       )}
     </div>

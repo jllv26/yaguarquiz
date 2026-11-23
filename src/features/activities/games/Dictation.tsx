@@ -4,57 +4,8 @@ import { useEffect, useRef, useState } from 'react'
 import { Button } from '../../../components/ui/Button'
 import { cn } from '../../../lib/cn'
 import { ClueImage, useGame } from '../ActivityGame'
+import { canSpeak, speak, useVoicesReady } from '../tts'
 import { dictDecode } from '../types'
-
-/* ───────────── Voz del navegador (sin servidor ni archivos de audio) ───────────── */
-
-const canSpeak = () => typeof window !== 'undefined' && 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window
-
-/** Mejor voz en español disponible en este celular/PC. */
-function spanishVoice(): SpeechSynthesisVoice | null {
-  if (!canSpeak()) return null
-  const vs = window.speechSynthesis.getVoices().filter((v) => v.lang?.toLowerCase().startsWith('es'))
-  const pref = ['es-bo', 'es-419', 'es-us', 'es-mx', 'es-pe', 'es-ar', 'es-co', 'es-cl', 'es-es']
-  for (const l of pref) {
-    const local = vs.filter((v) => v.lang.toLowerCase().replace('_', '-') === l)
-    const v = local.find((x) => /google|natural|neural|paulina|sabina|monica|mónica|helena/i.test(x.name)) ?? local[0]
-    if (v) return v
-  }
-  return vs[0] ?? null
-}
-
-/** Lee el texto en voz alta. Devuelve false si este navegador no puede hablar. */
-export function speak(text: string, opts: { slow?: boolean; onEnd?: () => void } = {}): boolean {
-  if (!canSpeak() || !text.trim()) return false
-  const synth = window.speechSynthesis
-  synth.cancel()
-  const u = new SpeechSynthesisUtterance(text)
-  const v = spanishVoice()
-  if (v) u.voice = v
-  u.lang = v?.lang ?? 'es-419'
-  u.rate = opts.slow ? 0.6 : 0.9
-  u.onend = () => opts.onEnd?.()
-  u.onerror = () => opts.onEnd?.()
-  synth.speak(u)
-  return true
-}
-
-/** Algunas voces cargan tarde (Chrome): espera a que estén listas. */
-function useVoicesReady() {
-  const [ready, setReady] = useState(() => canSpeak() && window.speechSynthesis.getVoices().length > 0)
-  useEffect(() => {
-    if (!canSpeak() || ready) return
-    const on = () => setReady(true)
-    window.speechSynthesis.addEventListener?.('voiceschanged', on)
-    const t = setTimeout(on, 1500)
-    return () => {
-      window.speechSynthesis.removeEventListener?.('voiceschanged', on)
-      clearTimeout(t)
-    }
-  }, [ready])
-  useEffect(() => () => (canSpeak() ? window.speechSynthesis.cancel() : undefined), [])
-  return ready
-}
 
 /* ───────────── Juego ───────────── */
 

@@ -46,11 +46,11 @@ export const saveActivity = (quizId: string, settings: ActivitySettings, items: 
   rpc<number>('save_activity', {
     p_quiz: quizId,
     p_activity: settings,
-    p_items: items.map((it) => ({ id: it.id ?? null, term: it.term, prompt: it.prompt, image_url: it.image_url ?? null, group: it.group ?? null, contains: !!it.contains })),
+    p_items: items.map((it) => ({ id: it.id ?? null, term: it.term, prompt: it.prompt, image_url: it.image_url ?? null, group: it.group ?? null, contains: !!it.contains, extra: it.extra ?? {} })),
   })
 
 export async function fetchActivityItems(quizId: string): Promise<ActivityItem[]> {
-  const { data, error } = await supabase.from('questions').select('id, term, prompt, image_url, tags').eq('quiz_id', quizId).eq('type', 'game_item').order('sort_order')
+  const { data, error } = await supabase.from('questions').select('id, term, prompt, image_url, tags, extra').eq('quiz_id', quizId).eq('type', 'game_item').order('sort_order')
   if (error) throw new Error(friendlyError(error.message))
   return (data ?? []).map((r) => ({
     id: r.id as string,
@@ -59,6 +59,7 @@ export async function fetchActivityItems(quizId: string): Promise<ActivityItem[]
     image_url: (r.image_url as string | null) ?? null,
     group: ((r.tags as string[]) ?? []).find((t) => t !== 'contiene') ?? '',
     contains: ((r.tags as string[]) ?? []).includes('contiene'),
+    extra: (r.extra as ActivityItem['extra']) ?? {},
   }))
 }
 

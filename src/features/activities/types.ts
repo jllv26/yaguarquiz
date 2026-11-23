@@ -1,5 +1,15 @@
 import {
   ArrowDownUp,
+  Clapperboard,
+  Leaf,
+  Lightbulb,
+  ListOrdered,
+  MapPin,
+  MessagesSquare,
+  Presentation,
+  Puzzle,
+  Rocket,
+  ThumbsUp,
   FileSearch,
   Headphones,
   Blocks,
@@ -27,6 +37,16 @@ export type ActivityType =
   | 'classify'
   | 'research'
   | 'dictation'
+  | 'froggy'
+  | 'yesno'
+  | 'rows'
+  | 'riddle'
+  | 'map'
+  | 'video'
+  | 'asterquiz'
+  | 'puzzle'
+  | 'slides'
+  | 'dialogue'
 
 export interface ActivityMeta {
   label: string
@@ -213,6 +233,156 @@ export const ACTIVITY_META: Record<ActivityType, ActivityMeta> = {
     fixedBoard: false,
     tip: 'Se escucha con la voz del celular o la PC. Elija si se dicta la palabra (cuentan las tildes) o la definición (el estudiante escribe el término).',
   },
+  froggy: {
+    label: 'Froggy Jumps',
+    short: 'Froggy',
+    description: 'La rana cruza el estanque saltando a la hoja con la respuesta correcta.',
+    icon: Leaf,
+    color: '#2f9e44',
+    termLabel: 'Respuesta correcta',
+    promptLabel: 'Pregunta',
+    promptRequired: true,
+    min: 3,
+    max: 30,
+    usesTries: true,
+    fixedBoard: false,
+    tip: 'Escriba 2 o 3 respuestas incorrectas creíbles: la rana elige entre todas.',
+  },
+  yesno: {
+    label: 'Sí o No',
+    short: 'Sí o No',
+    description: 'Tarjetas rápidas: decidir si cada una cumple o no (desliza o toca).',
+    icon: ThumbsUp,
+    color: '#e8590c',
+    termLabel: 'Tarjeta (afirmación o ejemplo)',
+    promptLabel: '',
+    promptRequired: false,
+    min: 4,
+    max: 40,
+    usesTries: true,
+    fixedBoard: false,
+    tip: 'Escriba una pregunta general (por ejemplo «¿Es un objetivo SMART?») y marque Sí o No en cada tarjeta.',
+  },
+  rows: {
+    label: 'Filas (ordenar)',
+    short: 'Filas',
+    description: 'Poner en el orden correcto los pasos, etapas o elementos de cada fila.',
+    icon: ListOrdered,
+    color: '#5c7cfa',
+    termLabel: 'Elementos en el orden correcto (uno por línea)',
+    promptLabel: 'Título de la fila',
+    promptRequired: true,
+    min: 1,
+    max: 15,
+    usesTries: true,
+    fixedBoard: false,
+    tip: 'Ideal para procesos: etapas del embudo, método AIDA, pasos de una campaña.',
+  },
+  riddle: {
+    label: 'Adivinanza',
+    short: 'Adivinanza',
+    description: 'Adivinar el término con pistas que se piden de a una: menos pistas, más puntos.',
+    icon: Lightbulb,
+    color: '#f08c00',
+    termLabel: 'Respuesta',
+    promptLabel: '',
+    promptRequired: false,
+    min: 1,
+    max: 20,
+    usesTries: true,
+    fixedBoard: false,
+    tip: 'Ordene las pistas de la más difícil a la más fácil. Cada pista extra resta 20 %.',
+  },
+  map: {
+    label: 'Mapa interactivo',
+    short: 'Mapa',
+    description: 'Ubicar o nombrar puntos sobre una imagen: un anuncio, una web, un mapa.',
+    icon: MapPin,
+    color: '#0b7285',
+    termLabel: 'Nombre del punto',
+    promptLabel: 'Descripción (opcional)',
+    promptRequired: false,
+    min: 2,
+    max: 20,
+    usesTries: true,
+    fixedBoard: false,
+    tip: 'Suba una imagen, elija una fila y toque la imagen para ubicar su punto.',
+  },
+  video: {
+    label: 'Video Quiz',
+    short: 'Video',
+    description: 'El video de YouTube se detiene y hace preguntas en los minutos que usted elige.',
+    icon: Clapperboard,
+    color: '#c92a2a',
+    termLabel: 'Respuesta correcta',
+    promptLabel: 'Pregunta',
+    promptRequired: true,
+    min: 1,
+    max: 20,
+    usesTries: true,
+    fixedBoard: false,
+    tip: 'Pegue el enlace de YouTube y escriba en qué minuto aparece cada pregunta.',
+  },
+  asterquiz: {
+    label: 'AsterQuiz',
+    short: 'AsterQuiz',
+    description: 'Una nave dispara al asteroide con la respuesta correcta antes de que se acabe el tiempo.',
+    icon: Rocket,
+    color: '#3b5bdb',
+    termLabel: 'Respuesta correcta',
+    promptLabel: 'Pregunta',
+    promptRequired: true,
+    min: 3,
+    max: 30,
+    usesTries: true,
+    fixedBoard: false,
+    tip: 'Respuestas cortas funcionan mejor en los asteroides.',
+  },
+  puzzle: {
+    label: 'Puzzle',
+    short: 'Puzzle',
+    description: 'Cada respuesta correcta revela una pieza de la imagen escondida.',
+    icon: Puzzle,
+    color: '#ae3ec9',
+    termLabel: 'Respuesta correcta',
+    promptLabel: 'Pregunta',
+    promptRequired: true,
+    min: 4,
+    max: 16,
+    usesTries: true,
+    fixedBoard: false,
+    tip: 'Suba una imagen: se divide en tantas piezas como preguntas.',
+  },
+  slides: {
+    label: 'Presentación',
+    short: 'Presentación',
+    description: 'Diapositivas para leer antes de practicar; cuenta como hecha al verlas todas.',
+    icon: Presentation,
+    color: '#495057',
+    termLabel: 'Título de la diapositiva',
+    promptLabel: 'Contenido (líneas con «- » se ven como viñetas)',
+    promptRequired: true,
+    min: 1,
+    max: 30,
+    usesTries: false,
+    fixedBoard: true,
+    tip: 'Úsela como lectura previa. La nota es 100 al ver todas las diapositivas.',
+  },
+  dialogue: {
+    label: 'Diálogo',
+    short: 'Diálogo',
+    description: 'Una conversación que se escucha (y se lee) y luego preguntas de comprensión.',
+    icon: MessagesSquare,
+    color: '#1971c2',
+    termLabel: 'Respuesta correcta',
+    promptLabel: 'Pregunta sobre el diálogo',
+    promptRequired: true,
+    min: 1,
+    max: 15,
+    usesTries: true,
+    fixedBoard: false,
+    tip: 'Escriba el diálogo en Opciones (Nombre: lo que dice) y aquí las preguntas.',
+  },
   research: {
     label: 'Investigación',
     short: 'Investigación',
@@ -262,7 +432,36 @@ export interface ActivitySettings {
   /** Dictado: qué se escucha (la palabra/frase o la definición) y si las tildes cuentan */
   listen?: 'term' | 'prompt'
   accents?: boolean
+  /** Imagen del mapa interactivo o del puzzle */
+  image_url?: string | null
+  map_mode?: 'tap' | 'write'
+  /** Video Quiz: enlace de YouTube */
+  video_url?: string
+  /** Diálogo: intervenciones y si el texto se ve o solo se escucha */
+  dialogue?: DialogueLine[]
+  dialogue_text?: 'show' | 'hide'
+  /** Sí o No: la pregunta que se hace para todas las tarjetas */
+  question?: string
+  /** AsterQuiz: segundos por pregunta */
+  seconds?: number
 }
+
+export interface DialogueLine {
+  who: string
+  text: string
+}
+
+/** Datos propios de cada tipo: respuestas incorrectas, pistas, punto sobre la imagen, segundo del video */
+export interface ItemExtra {
+  wrong?: string[]
+  clues?: string[]
+  x?: number
+  y?: number
+  t?: number
+}
+
+/** Tipos de opción múltiple (misma corrección, distinta «piel») */
+export const MC_TYPES: ActivityType[] = ['froggy', 'asterquiz', 'puzzle', 'video', 'dialogue']
 
 export interface CrosswordLayout {
   rows: number
@@ -278,6 +477,7 @@ export interface ActivityItem {
   image_url?: string | null
   group?: string
   contains?: boolean
+  extra?: ItemExtra
 }
 
 // ------------------------------------------------------------------ tablero del estudiante
@@ -305,7 +505,26 @@ export interface Boards {
   hangman: { max_wrong: number; items: { key: string; clue: string; image_url: string | null; mask: string }[] }
   classify: { groups: string[]; cards: { key: string; text: string; image_url: string | null }[] }
   dictation: { listen: 'term' | 'prompt'; accents: boolean; items: { key: string; say: string; hint: string | null; words: number; image_url: string | null }[] }
+  froggy: McBoard
+  asterquiz: McBoard
+  puzzle: McBoard
+  video: McBoard
+  dialogue: McBoard
+  yesno: { question: string; items: { key: string; text: string; image_url: string | null }[] }
+  rows: { items: { key: string; title: string; image_url: string | null; tiles: string[] }[] }
+  riddle: { items: { key: string; image_url: string | null; words: number[]; total: number; clues: string[] | null }[] }
+  map: { image_url: string | null; mode: 'tap' | 'write'; points: { key: string; x: number; y: number }[]; names: { key: string; text: string; desc: string | null }[] | null }
+  slides: { items: { key: string; title: string; text: string; image_url: string | null }[] }
   research: { case: ResearchCase | null; criteria: ResearchCriterion[]; min_words: number; questions: { key: string; text: string; hint: string | null; value: string | null }[] }
+}
+
+export interface McBoard {
+  image_url: string | null
+  video_url: string | null
+  dialogue: DialogueLine[] | null
+  dialogue_text: 'show' | 'hide' | null
+  seconds: number | null
+  items: { key: string; q: string; image_url: string | null; t: number | null; options: string[] }[]
 }
 
 export interface ActivityBoard<T extends ActivityType = ActivityType> {
@@ -319,7 +538,7 @@ export interface ActivityBoard<T extends ActivityType = ActivityType> {
   errors: number
 }
 
-export type PlayAction = 'answer' | 'find' | 'pair' | 'letter' | 'save'
+export type PlayAction = 'answer' | 'find' | 'pair' | 'letter' | 'save' | 'clue' | 'seen'
 export interface PlayResult {
   ok: boolean
   error?: string
@@ -336,6 +555,9 @@ export interface PlayResult {
   wrong?: number
   /** Dictado: solo faltan/sobran tildes o mayúsculas */
   near?: boolean
+  /** Adivinanza: pista nueva y cuántas pistas lleva */
+  clue?: string
+  clues?: number
 }
 
 /** Quien corrige las jugadas: el servidor (estudiante) o el navegador (vista previa del docente). */
@@ -383,7 +605,9 @@ export function fillTextSource(text: string, words: string[]): string {
 }
 
 export const triesFor = (s: Pick<ActivitySettings, 'type' | 'tries'>) =>
-  Math.max(1, Math.min(5, s.tries ?? (s.type === 'rosco' ? 1 : s.type === 'crossword' ? 3 : 2)))
+  Math.max(1, Math.min(5, s.tries ?? (['rosco', ...ONE_TRY].includes(s.type) ? 1 : s.type === 'crossword' || s.type === 'riddle' ? 3 : 2)))
+/** Tipos con un solo intento por defecto (opción múltiple y Sí o No) */
+const ONE_TRY: ActivityType[] = ['froggy', 'asterquiz', 'yesno', 'puzzle', 'video', 'dialogue']
 export const tryPartial = (n: number) => (n <= 1 ? 1 : n === 2 ? 0.6 : 0.3)
 
 /** Dictado con tildes: minúsculas, sin signos de puntuación ni espacios de más (igual que _dict_norm). */

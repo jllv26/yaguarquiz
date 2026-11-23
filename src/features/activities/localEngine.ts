@@ -5,6 +5,7 @@ import {
   dictNorm,
   gameLetters,
   gameNorm,
+  MC_TYPES,
   looseNorm,
   triesFor,
   tryPartial,
@@ -114,6 +115,66 @@ export function localActivity(settings: ActivitySettings, items: ActivityItem[])
       }
       break
     }
+    case 'froggy':
+    case 'asterquiz':
+    case 'puzzle':
+    case 'video':
+    case 'dialogue': {
+      const its = keyed.map((k) => ({
+        key: k.key,
+        q: k.prompt,
+        image_url: k.image_url ?? null,
+        t: type === 'video' ? (k.extra?.t ?? 0) : null,
+        options: shuffle([...new Set([k.term, ...(k.extra?.wrong ?? []).map((w) => w.trim()).filter(Boolean)])]),
+      }))
+      if (type === 'video') its.sort((a, b) => (a.t ?? 0) - (b.t ?? 0))
+      board = {
+        image_url: settings.image_url ?? null,
+        video_url: settings.video_url ?? null,
+        dialogue: type === 'dialogue' ? (settings.dialogue ?? []) : null,
+        dialogue_text: type === 'dialogue' ? (settings.dialogue_text ?? 'show') : null,
+        seconds: type === 'asterquiz' ? Math.max(10, Math.min(120, settings.seconds ?? 30)) : null,
+        items: type === 'video' ? its : shuffle(its),
+      }
+      break
+    }
+    case 'yesno':
+      board = { question: settings.question?.trim() || '¿Es correcto?', items: shuffle(keyed).map((k) => ({ key: k.key, text: k.term, image_url: k.image_url ?? null })) }
+      break
+    case 'rows':
+      board = {
+        items: shuffle(keyed).map((k) => {
+          const parts = k.term.split(/\s*\|\s*/).filter(Boolean)
+          let tiles = shuffle(parts)
+          if (parts.length > 1 && tiles.join('|') === parts.join('|')) tiles = [...parts].reverse()
+          return { key: k.key, title: k.prompt, image_url: k.image_url ?? null, tiles }
+        }),
+      }
+      break
+    case 'riddle':
+      board = {
+        items: shuffle(keyed).map((k) => ({
+          key: k.key,
+          image_url: k.image_url ?? null,
+          words: gameNorm(k.term).split(' ').map((w) => w.length),
+          total: Math.max(1, k.extra?.clues?.length ?? 0),
+          clues: (k.extra?.clues ?? []).slice(0, 1),
+        })),
+      }
+      break
+    case 'map': {
+      const mode = settings.map_mode ?? 'tap'
+      board = {
+        image_url: settings.image_url ?? null,
+        mode,
+        points: shuffle(keyed.map((k) => ({ key: mode === 'tap' ? k.dKey : k.key, x: k.extra?.x ?? 50, y: k.extra?.y ?? 50 }))),
+        names: mode === 'tap' ? keyed.map((k) => ({ key: k.key, text: k.term, desc: k.prompt || null })) : null,
+      }
+      break
+    }
+    case 'slides':
+      board = { items: keyed.map((k) => ({ key: k.key, title: k.term, text: k.prompt, image_url: k.image_url ?? null })) }
+      break
     case 'classify':
       board = {
         groups: shuffle([...new Set(keyed.map((k) => k.group?.trim()).filter((g): g is string => !!g))]),
@@ -124,6 +185,7 @@ export function localActivity(settings: ActivitySettings, items: ActivityItem[])
 
   const progress: Record<string, Progress & { letters?: string[] }> = {}
   const miss: Record<string, number> = {}
+  const clues: Record<string, number> = {}
 
   const engine: Engine = {
     async play(action: PlayAction, data: Record<string, unknown>): Promise<PlayResult> {
@@ -158,6 +220,16 @@ export function localActivity(settings: ActivitySettings, items: ActivityItem[])
       if (!k) return { ok: false, error: 'item' }
       const prev = progress[k.key]
       if (prev?.done) return { ok: false, error: 'already' }
+      if (action === 'seen') {
+        progress[k.key] = { done: true, correct: true, partial: 1 }
+        return { ok: true, item: k.key, correct: true, done: true, points: 1000 }
+      }
+      if (action === 'clue') {
+        const all = k.extra?.clues ?? []
+        const c = Math.min(Math.max(1, all.length), (clues[k.key] ?? 1) + 1)
+        clues[k.key] = c
+        return { ok: true, item: k.key, clues: c, clue: all[c - 1] }
+      }
       if (action === 'letter') {
         const letter = gameNorm(String(data.letter ?? ''))[0]
         if (!letter) return { ok: false, error: 'letter' }
@@ -182,12 +254,17 @@ export function localActivity(settings: ActivitySettings, items: ActivityItem[])
       else if (type === 'sentence') ok = gameNorm(val) === gameNorm(k.term)
       else if (type === 'classify') ok = looseNorm(val) === looseNorm(k.group ?? '')
       else if (type === 'matching') ok = val === k.dKey
+      else if (MC_TYPES.includes(type) || type === 'riddle') ok = looseNorm(val) === looseNorm(k.term)
+      else if (type === 'yesno') ok = looseNorm(val) === looseNorm(k.group ?? '')
+      else if (type === 'rows') ok = looseNorm(val.split(/\s*\|\s*/).join(' | ')) === looseNorm(k.term.split(/\s*\|\s*/).join(' | '))
+      else if (type === 'map') ok = (settings.map_mode ?? 'tap') === 'tap' ? val === k.dKey : looseNorm(val) === looseNorm(k.term)
       else if (type === 'dictation') ok = (settings.accents ?? (settings.listen ?? 'term') !== 'prompt') ? dictNorm(val) === dictNorm(k.term) : looseNorm(val) === looseNorm(k.term)
       const near = type === 'dictation' && !ok && looseNorm(val) === looseNorm(k.term)
       const n = (prev?.tries ?? 0) + 1
       const done = ok || n >= tries
-      const partial = ok ? tryPartial(n) : 0
-      const answer = type === 'classify' ? k.group : type === 'matching' ? k.dKey : ['crossword', 'anagram', 'rosco'].includes(type) ? gameNorm(k.term) : k.term
+      const used = clues[k.key] ?? 1
+      const partial = ok ? (type === 'riddle' ? Math.max(0.2, 1 - 0.2 * (used - 1) - 0.2 * (n - 1)) : tryPartial(n)) : 0
+      const answer = type === 'classify' || type === 'yesno' ? k.group : type === 'map' && (settings.map_mode ?? 'tap') === 'tap' ? k.dKey : type === 'matching' ? k.dKey : ['crossword', 'anagram', 'rosco'].includes(type) ? gameNorm(k.term) : k.term
       progress[k.key] = { done, correct: ok, tries: n, partial, value: ok ? val : undefined, answer: done ? answer : undefined }
       return { ok: true, item: k.key, correct: ok, done, tries: n, tries_left: Math.max(0, tries - n), points: Math.round(1000 * partial), answer: done && !ok ? answer : undefined, near: near || undefined }
     },

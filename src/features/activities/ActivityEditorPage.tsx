@@ -1,4 +1,3 @@
-import { speak } from './games/Dictation'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { AlertTriangle, ArrowLeft, ClipboardPaste, Eye, FileDown, Loader2, Plus, RefreshCw, Rocket, Save, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
@@ -18,7 +17,17 @@ import { ActivityGame } from './ActivityGame'
 import { activityOf } from './ActivitiesPage'
 import { buildCrossword, buildWordsearch } from './generators'
 import { localActivity } from './localEngine'
-import { ACTIVITY_META, fillTextSource, gameLetters, parseFillText, type ActivityItem, type ActivitySettings, type ActivityType } from './types'
+import { speak } from './tts'
+import { fmtTime, parseTime, youtubeId } from './games/VideoQuiz'
+import { ACTIVITY_META, fillTextSource, gameLetters, MC_TYPES, parseFillText, type ActivityItem, type ActivitySettings, type ActivityType, type ItemExtra } from './types'
+
+/** Quita líneas vacías de las listas (incorrectas, pistas, elementos de la fila) antes de guardar o probar */
+function cleanItem(it: ActivityItem): ActivityItem {
+  const list = (a?: string[]) => (a ?? []).map((x) => x.trim()).filter(Boolean)
+  const extra = it.extra ? { ...it.extra, wrong: it.extra.wrong ? list(it.extra.wrong) : undefined, clues: it.extra.clues ? list(it.extra.clues) : undefined } : undefined
+  const term = it.term.includes('|') ? it.term.split('|').map((x) => x.trim()).filter(Boolean).join(' | ') : it.term
+  return { ...it, term, extra }
+}
 
 const blank = (): ActivityItem => ({ term: '', prompt: '', image_url: null, group: '', contains: false })
 const sig = (s: ActivitySettings, items: ActivityItem[]) => JSON.stringify([s.type, s.difficulty, items.map((i) => gameLetters(i.term))])
@@ -62,6 +71,7 @@ function Editor({
   const [paste, setPaste] = useState(false)
   const [bank, setBank] = useState(false)
   const [launch, setLaunch] = useState(false)
+  const [mapPick, setMapPick] = useState(0)
 
   // aviso al cerrar o recargar la pestaña con cambios sin guardar
   useEffect(() => {
@@ -73,7 +83,7 @@ function Editor({
 
   // completar texto: las palabras salen de los [corchetes]
   const effItems = useMemo<ActivityItem[]>(() => {
-    if (type !== 'fill_text') return items.filter((i) => i.term.trim() || i.prompt.trim() || i.image_url)
+    if (type !== 'fill_text') return items.filter((i) => i.term.trim() || i.prompt.trim() || i.image_url).map(cleanItem)
     return parseFillText(fillSrc).words.map((w, k) => ({ id: initialItems[k]?.id, term: w, prompt: '' }))
   }, [type, items, fillSrc, initialItems])
   const effSettings = useMemo<ActivitySettings>(() => (type === 'fill_text' ? { ...s, text: parseFillText(fillSrc).text } : s), [type, s, fillSrc])
@@ -141,7 +151,9 @@ function Editor({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [preview])
 
-  const showImage = !['fill_text', 'sentence', 'wordsearch', 'classify'].includes(type)
+  const showImage = !['fill_text', 'sentence', 'wordsearch', 'classify', 'map', 'video', 'rows'].includes(type)
+  const isMc = MC_TYPES.includes(type)
+  const setExtra = (i: number, patch: Partial<ItemExtra>) => update(i, { extra: { ...items[i].extra, ...patch } })
   const groups = [...new Set(effItems.map((i) => i.group?.trim()).filter(Boolean))]
 
   return (
@@ -235,6 +247,11 @@ function Editor({
                       {type !== 'classify' && meta.promptLabel && <th className="px-2 py-2">{meta.promptLabel}</th>}
                       {type === 'classify' && <th className="w-48 px-2 py-2">Grupo</th>}
                       {type === 'rosco' && <th className="w-28 px-2 py-2">Letra</th>}
+                      {isMc && <th className="w-48 px-2 py-2">Incorrectas (una por línea)</th>}
+                      {type === 'video' && <th className="w-24 px-2 py-2">Minuto</th>}
+                      {type === 'riddle' && <th className="px-2 py-2">Pistas (una por línea, de difícil a fácil)</th>}
+                      {type === 'yesno' && <th className="w-28 px-2 py-2">Respuesta</th>}
+                      {type === 'map' && <th className="w-32 px-2 py-2">Punto</th>}
                       {showImage && <th className="w-16 px-2 py-2">Imagen</th>}
                       <th className="w-10" />
                     </tr>
@@ -244,13 +261,24 @@ function Editor({
                       <tr key={it.id ?? `n${i}`} className="border-t border-line align-top">
                         <td className="px-3 py-2.5 font-display font-black text-ink-soft">{i + 1}</td>
                         <td className="px-2 py-1.5">
-                          <input
-                            value={it.term}
-                            onChange={(e) => update(i, { term: e.target.value })}
-                            className="h-10 w-full rounded-xl border-2 border-line bg-surface-2 px-3 font-semibold outline-none focus:border-uap-blue"
-                            aria-label={`${meta.termLabel} ${i + 1}`}
-                            placeholder={type === 'sentence' ? 'El jaguar es el felino más grande de América' : ''}
-                          />
+                          {type === 'rows' ? (
+                            <textarea
+                              value={it.term.split(/\s*\|\s*/).join('\n')}
+                              onChange={(e) => update(i, { term: e.target.value.split('\n').map((x) => x.replace(/\|/g, '/')).join(' | ').replace(/( \| )+$/, ' | ') })}
+                              rows={4}
+                              className="min-h-24 w-full resize-y rounded-xl border-2 border-line bg-surface-2 px-3 py-2 font-semibold outline-none focus:border-uap-blue"
+                              aria-label={`${meta.termLabel} ${i + 1}`}
+                              placeholder={'Atención\nInterés\nDeseo\nAcción'}
+                            />
+                          ) : (
+                            <input
+                              value={it.term}
+                              onChange={(e) => update(i, { term: e.target.value })}
+                              className="h-10 w-full rounded-xl border-2 border-line bg-surface-2 px-3 font-semibold outline-none focus:border-uap-blue"
+                              aria-label={`${meta.termLabel} ${i + 1}`}
+                              placeholder={type === 'sentence' ? 'El jaguar es el felino más grande de América' : ''}
+                            />
+                          )}
                           {type === 'dictation' && (it.term || it.prompt) && (
                             <button
                               type="button"
@@ -275,6 +303,70 @@ function Editor({
                               className="min-h-10 w-full resize-y rounded-xl border-2 border-line bg-surface-2 px-3 py-2 outline-none focus:border-uap-blue"
                               aria-label={`${meta.promptLabel} ${i + 1}`}
                             />
+                          </td>
+                        )}
+                        {isMc && (
+                          <td className="px-2 py-1.5">
+                            <textarea
+                              value={(it.extra?.wrong ?? []).join('\n')}
+                              onChange={(e) => setExtra(i, { wrong: e.target.value.split('\n') })}
+                              rows={3}
+                              placeholder={'Incorrecta 1\nIncorrecta 2'}
+                              className="min-h-16 w-full resize-y rounded-xl border-2 border-uap-red/30 bg-surface-2 px-3 py-2 outline-none focus:border-uap-red"
+                              aria-label={`Respuestas incorrectas ${i + 1}`}
+                            />
+                          </td>
+                        )}
+                        {type === 'video' && (
+                          <td className="px-2 py-1.5">
+                            <input
+                              defaultValue={it.extra?.t !== undefined ? fmtTime(it.extra.t) : ''}
+                              onBlur={(e) => {
+                                const t = parseTime(e.target.value)
+                                setExtra(i, { t: t ?? undefined })
+                                if (t !== null) e.target.value = fmtTime(t)
+                              }}
+                              placeholder="1:30"
+                              className="h-10 w-full rounded-xl border-2 border-line bg-surface-2 px-2 text-center font-display font-bold outline-none focus:border-uap-blue"
+                              aria-label={`Minuto de la pregunta ${i + 1}`}
+                            />
+                          </td>
+                        )}
+                        {type === 'riddle' && (
+                          <td className="px-2 py-1.5">
+                            <textarea
+                              value={(it.extra?.clues ?? []).join('\n')}
+                              onChange={(e) => setExtra(i, { clues: e.target.value.split('\n') })}
+                              rows={3}
+                              placeholder={'Pista difícil\nPista media\nPista fácil'}
+                              className="min-h-16 w-full resize-y rounded-xl border-2 border-[#f08c00]/40 bg-surface-2 px-3 py-2 outline-none focus:border-[#f08c00]"
+                              aria-label={`Pistas ${i + 1}`}
+                            />
+                          </td>
+                        )}
+                        {type === 'yesno' && (
+                          <td className="px-2 py-1.5">
+                            <select
+                              value={it.group === 'No' ? 'No' : it.group === 'Sí' ? 'Sí' : ''}
+                              onChange={(e) => update(i, { group: e.target.value })}
+                              className="h-10 w-full rounded-xl border-2 border-line bg-surface-2 px-2 font-bold outline-none focus:border-uap-blue"
+                              aria-label={`Respuesta ${i + 1}`}
+                            >
+                              <option value="">—</option>
+                              <option value="Sí">✓ Sí</option>
+                              <option value="No">✗ No</option>
+                            </select>
+                          </td>
+                        )}
+                        {type === 'map' && (
+                          <td className="px-2 py-1.5">
+                            <button
+                              type="button"
+                              onClick={() => setMapPick(i)}
+                              className={cn('h-10 w-full rounded-xl border-2 px-2 text-xs font-bold', mapPick === i ? 'border-[#0b7285] bg-[#0b7285] text-white' : it.extra?.x !== undefined ? 'border-uap-green/50 text-uap-green' : 'border-dashed border-uap-red/50 text-uap-red')}
+                            >
+                              {it.extra?.x !== undefined ? `✓ ${Math.round(it.extra.x)} %, ${Math.round(it.extra.y ?? 0)} %` : 'Ubicar'}
+                            </button>
                           </td>
                         )}
                         {type === 'classify' && (
@@ -344,6 +436,47 @@ function Editor({
                   <Plus className="size-4" /> Agregar fila
                 </Button>
               </div>
+            </SolidCard>
+          )}
+
+          {type === 'map' && (
+            <SolidCard className="flex flex-col gap-3 p-4">
+              <h2 className="font-display text-lg font-black">Ubicar los puntos</h2>
+              {s.image_url ? (
+                <>
+                  <p className="text-sm text-ink-soft">
+                    Fila <b>{mapPick + 1}</b>
+                    {items[mapPick]?.term ? ` · «${items[mapPick].term}»` : ''}: toque la imagen donde va su punto.
+                  </p>
+                  <div
+                    className="relative cursor-crosshair overflow-hidden rounded-2xl ring-1 ring-line"
+                    onClick={(e) => {
+                      const r = e.currentTarget.getBoundingClientRect()
+                      const x = Math.round(((e.clientX - r.left) / r.width) * 1000) / 10
+                      const y = Math.round(((e.clientY - r.top) / r.height) * 1000) / 10
+                      if (!items[mapPick]) return
+                      setExtra(mapPick, { x, y })
+                      const nxt = items.findIndex((it, k) => k > mapPick && it.extra?.x === undefined)
+                      if (nxt >= 0) setMapPick(nxt)
+                    }}
+                  >
+                    <img src={s.image_url} alt="" className="block w-full select-none" draggable={false} />
+                    {items.map((it, k) =>
+                      it.extra?.x !== undefined ? (
+                        <span
+                          key={k}
+                          className={cn('pointer-events-none absolute grid size-7 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border-2 border-white text-xs font-black text-white shadow', k === mapPick ? 'bg-uap-gold text-ink' : 'bg-[#0b7285]')}
+                          style={{ left: `${it.extra.x}%`, top: `${it.extra.y}%` }}
+                        >
+                          {k + 1}
+                        </span>
+                      ) : null,
+                    )}
+                  </div>
+                </>
+              ) : (
+                <p className="text-sm text-ink-soft">Primero suba la imagen en «Opciones».</p>
+              )}
             </SolidCard>
           )}
 
@@ -425,6 +558,114 @@ function Editor({
                 </Select>
               </>
             )}
+            {type === 'yesno' && (
+              <Input
+                label="Pregunta para todas las tarjetas"
+                value={s.question ?? ''}
+                onChange={(e) => {
+                  setS({ ...s, question: e.target.value })
+                  setDirty(true)
+                }}
+                placeholder="¿Es un objetivo SMART?"
+              />
+            )}
+            {(type === 'map' || type === 'puzzle') && (
+              <div className="flex flex-col gap-1">
+                <span className="text-sm font-bold">{type === 'map' ? 'Imagen del mapa' : 'Imagen escondida'}</span>
+                <ImageField
+                  value={s.image_url ?? null}
+                  onChange={(url) => {
+                    setS({ ...s, image_url: url })
+                    setDirty(true)
+                  }}
+                  label={type === 'map' ? 'Imagen del mapa' : 'Imagen del puzzle'}
+                />
+              </div>
+            )}
+            {type === 'map' && (
+              <Select
+                label="El estudiante…"
+                value={s.map_mode ?? 'tap'}
+                onChange={(e) => {
+                  setS({ ...s, map_mode: e.target.value as 'tap' | 'write' })
+                  setDirty(true)
+                }}
+              >
+                <option value="tap">Lee el nombre y toca el punto</option>
+                <option value="write">Ve el punto y escribe su nombre (más difícil)</option>
+              </Select>
+            )}
+            {type === 'video' && (
+              <>
+                <Input
+                  label="Enlace del video de YouTube"
+                  value={s.video_url ?? ''}
+                  onChange={(e) => {
+                    setS({ ...s, video_url: e.target.value.trim() })
+                    setDirty(true)
+                  }}
+                  placeholder="https://www.youtube.com/watch?v=…"
+                />
+                {youtubeId(s.video_url) && (
+                  <iframe
+                    title="Vista previa del video"
+                    src={`https://www.youtube.com/embed/${youtubeId(s.video_url)}`}
+                    className="aspect-video w-full rounded-xl"
+                    allow="encrypted-media; picture-in-picture"
+                    allowFullScreen
+                  />
+                )}
+              </>
+            )}
+            {type === 'asterquiz' && (
+              <Select
+                label="Segundos por pregunta"
+                value={String(s.seconds ?? 30)}
+                onChange={(e) => {
+                  setS({ ...s, seconds: Number(e.target.value) })
+                  setDirty(true)
+                }}
+              >
+                {[15, 20, 30, 45, 60].map((n) => (
+                  <option key={n} value={n}>
+                    {n} segundos
+                  </option>
+                ))}
+              </Select>
+            )}
+            {type === 'dialogue' && (
+              <>
+                <Textarea
+                  label="Diálogo (una línea por intervención: Nombre: lo que dice)"
+                  rows={8}
+                  defaultValue={(s.dialogue ?? []).map((l) => `${l.who}: ${l.text}`).join('\n')}
+                  onChange={(e) => {
+                    const dialogue = e.target.value
+                      .split('\n')
+                      .map((l) => l.trim())
+                      .filter(Boolean)
+                      .map((l) => {
+                        const m = l.match(/^([^:]{1,30}):\s*(.+)$/)
+                        return m ? { who: m[1].trim(), text: m[2].trim() } : { who: '—', text: l }
+                      })
+                    setS({ ...s, dialogue })
+                    setDirty(true)
+                  }}
+                  placeholder={'Cliente: Hola, ¿hacen envíos a Porvenir?\nTienda: Sí, los martes.'}
+                />
+                <Select
+                  label="El texto del diálogo…"
+                  value={s.dialogue_text ?? 'show'}
+                  onChange={(e) => {
+                    setS({ ...s, dialogue_text: e.target.value as 'show' | 'hide' })
+                    setDirty(true)
+                  }}
+                >
+                  <option value="show">Se ve y se escucha</option>
+                  <option value="hide">Solo se escucha (se puede ver al terminar de oírlo)</option>
+                </Select>
+              </>
+            )}
             {type === 'dictation' && (
               <>
                 <Select
@@ -481,7 +722,11 @@ function Editor({
           </SolidCard>
           <SolidCard className="flex flex-col gap-2 p-4 text-sm">
             <p className="font-display font-black">Cómo se califica</p>
-            <p className="text-ink-soft">Nota = palabras resueltas ÷ total × 100. {meta.usesTries ? 'Si acierta en el 2.º intento vale 60 %; en el 3.º, 30 %.' : type === 'memory' ? 'Las parejas encontradas con muchos errores valen menos (mínimo 50 %).' : type === 'hangman' ? 'Cada letra equivocada resta 10 % a esa palabra (mínimo 40 %).' : 'Cada palabra encontrada vale lo mismo.'}</p>
+            <p className="text-ink-soft">
+              {type === 'slides'
+                ? 'Nota = diapositivas vistas ÷ total × 100.'
+                : `Nota = puntos obtenidos ÷ puntos posibles × 100. ${type === 'riddle' ? 'Cada pista extra y cada intento fallido restan 20 % (mínimo 20 %).' : meta.usesTries ? 'Si acierta en el 2.º intento vale 60 %; en el 3.º, 30 %.' : type === 'memory' ? 'Las parejas encontradas con muchos errores valen menos (mínimo 50 %).' : type === 'hangman' ? 'Cada letra equivocada resta 10 % a esa palabra (mínimo 40 %).' : 'Cada palabra encontrada vale lo mismo.'}`}
+            </p>
             <p className="text-ink-soft">La respuesta nunca llega al navegador del estudiante: cada jugada se corrige en el servidor.</p>
             <p className="rounded-xl bg-uap-gold/10 p-2">💡 {meta.tip}</p>
           </SolidCard>
@@ -515,6 +760,7 @@ function Editor({
         }}
       />
       <BankModal
+        mc={isMc}
         open={bank}
         onClose={() => setBank(false)}
         subjectId={quiz.subject_id}
@@ -548,6 +794,20 @@ function validate(type: ActivityType, items: ActivityItem[], s: ActivitySettings
   }
   const dup = items.map((i) => gameLetters(i.term)).filter((t, i, a) => t && a.indexOf(t) !== i)
   if (dup.length && type !== 'classify') errors.push(`Palabras repetidas: ${[...new Set(dup)].join(', ')}.`)
+  if (MC_TYPES.includes(type)) items.forEach((it, i) => !(it.extra?.wrong ?? []).some((w) => w.trim() && w.trim() !== it.term.trim()) && errors.push(`Fila ${i + 1}: escriba al menos una respuesta incorrecta.`))
+  if (type === 'video') {
+    if (!youtubeId(s.video_url)) errors.push('Pegue el enlace de YouTube del video.')
+    items.forEach((it, i) => it.extra?.t === undefined && errors.push(`Fila ${i + 1}: escriba en qué minuto aparece (por ejemplo 1:30).`))
+  }
+  if (type === 'riddle') items.forEach((it, i) => !(it.extra?.clues ?? []).some((c) => c.trim()) && errors.push(`Fila ${i + 1}: escriba al menos una pista.`))
+  if (type === 'yesno') items.forEach((it, i) => !['Sí', 'No'].includes(it.group ?? '') && errors.push(`Fila ${i + 1}: elija si la respuesta es Sí o No.`))
+  if (type === 'rows') items.forEach((it, i) => it.term.split('|').filter((x) => x.trim()).length < 2 && errors.push(`Fila ${i + 1}: escriba al menos 2 elementos (uno por línea).`))
+  if (type === 'map') {
+    if (!s.image_url) errors.push('Suba la imagen del mapa.')
+    items.forEach((it, i) => it.extra?.x === undefined && errors.push(`Fila ${i + 1}: ubique su punto en la imagen.`))
+  }
+  if (type === 'puzzle' && !s.image_url) errors.push('Suba la imagen que se descubre en el puzzle.')
+  if (type === 'dialogue' && (s.dialogue ?? []).length < 2) errors.push('Escriba el diálogo (al menos 2 líneas) en Opciones.')
   if (type === 'dictation' && (s.listen ?? 'term') === 'prompt') items.forEach((it, i) => !it.prompt.trim() && errors.push(`Fila ${i + 1}: escriba la definición que se va a dictar.`))
   if (type === 'fill_text' && !s.text?.trim()) errors.push('Escriba el texto.')
   return { errors: [...new Set(errors)].slice(0, 6), warnings: [...new Set(warnings)].slice(0, 4) }
@@ -613,8 +873,15 @@ function PasteModal({ open, onClose, type, onAdd }: { open: boolean; onClose: ()
     .filter(Boolean)
     .map((l) => {
       const parts = (l.includes('\t') ? l.split('\t') : l.includes(';') ? l.split(';') : l.split(/\s+[-–:]\s+/)).map((x) => x.trim())
-      const [term, prompt = '', third = ''] = parts
-      return type === 'classify' ? { term, prompt: prompt, group: prompt } : { term, prompt, group: third }
+      const [term, prompt = '', third = '', ...rest] = parts
+      if (type === 'classify') return { term, prompt: prompt, group: prompt }
+      // opción múltiple: respuesta correcta · pregunta · incorrectas…
+      if (MC_TYPES.includes(type)) return { term, prompt, extra: { wrong: [third, ...rest].filter(Boolean) } }
+      if (type === 'riddle') return { term, prompt: '', extra: { clues: [prompt, third, ...rest].filter(Boolean) } }
+      if (type === 'yesno') return { term, prompt: '', group: /^n/i.test(prompt) ? 'No' : 'Sí' }
+      // filas: título · elementos en orden…
+      if (type === 'rows') return { term: [prompt, third, ...rest].filter(Boolean).join(' | '), prompt: term }
+      return { term, prompt, group: third }
     })
   const m = ACTIVITY_META[type]
   return (
@@ -649,6 +916,15 @@ function PasteModal({ open, onClose, type, onAdd }: { open: boolean; onClose: ()
             y <strong>{type === 'classify' ? 'Grupo' : m.promptLabel}</strong>
           </>
         )}
+        {MC_TYPES.includes(type) && (
+          <>
+            {' '}
+            y luego las <strong>respuestas incorrectas</strong> (cada una en su columna)
+          </>
+        )}
+        {type === 'riddle' && <> y luego las <strong>pistas</strong> (cada una en su columna)</>}
+        {type === 'yesno' && <> y <strong>Sí</strong> o <strong>No</strong></>}
+        {type === 'rows' && <> (primero el <strong>título</strong> y luego los elementos en orden, cada uno en su columna)</>}
         , separados por tabulador (copiado de Excel), punto y coma o guion.
       </p>
       <Textarea rows={10} value={txt} onChange={(e) => setTxt(e.target.value)} placeholder={'Cobija\tCapital del departamento de Pando\nRiberalta\tCiudad amazónica del Beni'} aria-label="Filas a pegar" />
@@ -657,7 +933,7 @@ function PasteModal({ open, onClose, type, onAdd }: { open: boolean; onClose: ()
 }
 
 /** Trae preguntas de una evaluación existente: respuesta corta y opción correcta → palabra + pista. */
-function BankModal({ open, onClose, subjectId, onAdd }: { open: boolean; onClose: () => void; subjectId: string; onAdd: (rows: ActivityItem[]) => void }) {
+function BankModal({ open, onClose, subjectId, onAdd, mc }: { open: boolean; onClose: () => void; subjectId: string; onAdd: (rows: ActivityItem[]) => void; mc?: boolean }) {
   const quizzes = useQuizzes()
   const toast = useToast()
   const [sel, setSel] = useState('')
@@ -670,7 +946,9 @@ function BankModal({ open, onClose, subjectId, onAdd }: { open: boolean; onClose
       const rows: ActivityItem[] = []
       for (const q of qs) {
         const term = q.type === 'short_text' ? q.accepted_answers[0] : ['single', 'image_choice'].includes(q.type) ? q.options.find((o) => o.is_correct)?.text : undefined
-        if (term?.trim()) rows.push({ term: term.trim(), prompt: q.prompt, image_url: q.image_url })
+        // en los juegos de opción múltiple se traen también las opciones incorrectas
+        const wrong = mc ? q.options.filter((o) => !o.is_correct && o.text?.trim()).map((o) => o.text.trim()) : []
+        if (term?.trim() && (!mc || wrong.length)) rows.push({ term: term.trim(), prompt: q.prompt, image_url: q.image_url, extra: mc ? { wrong } : undefined })
       }
       if (!rows.length) toast.info('No se encontró nada para traer', 'Se usan las preguntas de respuesta corta y de opción única (con texto).')
       else {

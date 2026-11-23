@@ -342,6 +342,200 @@ function DictationDemo({ s }: { s: number }) {
   )
 }
 
+function McDemoOpts({ s, opts, good, at }: { s: number; opts: string[]; good: number; at: number }) {
+  return (
+    <div className="grid w-full grid-cols-3 gap-1.5">
+      {opts.map((o, i) => (
+        <span key={o} className={cn(chip, 'text-center', i === good && s >= at + 1 ? ok : idle)}>
+          {o}
+          <Tap on={i === good && s === at} />
+        </span>
+      ))}
+    </div>
+  )
+}
+
+function FroggyDemo({ s }: { s: number }) {
+  return (
+    <div className="relative flex w-full flex-col items-center gap-2">
+      <Plus on={s >= 2} />
+      <p className="text-center text-xs font-bold">¿Qué mide los clics ÷ impresiones?</p>
+      <div className="w-full rounded-2xl bg-[#339af0] p-2">
+        <McDemoOpts s={s} opts={['CPA', 'CTR', 'ROAS']} good={1} at={1} />
+        <motion.p animate={{ y: s >= 2 ? -36 : 0, x: s >= 2 ? 0 : 0 }} className="mt-2 text-center text-2xl" aria-hidden>
+          🐸
+        </motion.p>
+      </div>
+    </div>
+  )
+}
+
+function AsterDemo({ s }: { s: number }) {
+  return (
+    <div className="relative flex w-full flex-col items-center gap-2 rounded-2xl bg-[#1c1f4a] p-2 text-white">
+      <Plus on={s >= 2} />
+      <p className="text-center text-xs font-bold">Personas distintas que vieron la publicación</p>
+      <div className="flex gap-2">
+        {['Alcance', 'Impresiones', 'Lead'].map((o, i) => (
+          <span key={o} className={cn('relative rounded-[42%_58%_63%_37%/41%_44%_56%_59%] px-2 py-2 text-[11px] font-black', i === 0 && s >= 2 ? 'bg-uap-green' : 'bg-[#6b5a4a]')}>
+            {i === 0 && s >= 2 ? '💥' : o}
+            <Tap on={i === 0 && s === 1} />
+          </span>
+        ))}
+      </div>
+      <span className="-rotate-45 text-2xl" aria-hidden>
+        🚀
+      </span>
+    </div>
+  )
+}
+
+function PuzzleDemo({ s }: { s: number }) {
+  return (
+    <div className="relative flex w-full items-center gap-3">
+      <Plus on={s >= 2} />
+      <div className="grid size-20 shrink-0 grid-cols-2 gap-0.5 overflow-hidden rounded-xl">
+        {[0, 1, 2, 3].map((i) => (
+          <span key={i} className={cn('grid place-items-center text-xs font-black text-white', i === 0 && s >= 2 ? 'bg-[linear-gradient(135deg,#1B7339,#C9A23A)]' : 'bg-[#ae3ec9]')}>
+            {i === 0 && s >= 2 ? '🐆' : i + 1}
+          </span>
+        ))}
+      </div>
+      <div className="flex flex-1 flex-col gap-1 text-[11px]">
+        <b>Pieza 1: ¿Qué es un lead?</b>
+        <span className={cn(chip, idle)}>Un anuncio</span>
+        <span className={cn(chip, s >= 2 ? ok : idle)}>
+          Persona que deja sus datos <Tap on={s === 1} />
+        </span>
+      </div>
+    </div>
+  )
+}
+
+function VideoDemo({ s }: { s: number }) {
+  return (
+    <div className="relative flex w-full flex-col gap-2">
+      <Plus on={s >= 3} />
+      <div className="relative grid h-16 place-items-center rounded-xl bg-black text-white">
+        <span className="text-2xl">{s === 0 ? '▶️' : s >= 3 ? '▶️' : '⏸'}</span>
+        {s >= 1 && s < 3 && <span className="absolute bottom-1 rounded-full bg-uap-gold px-2 text-[10px] font-black text-ink">¡Pregunta!</span>}
+        <Tap on={s === 0} />
+      </div>
+      <div className="h-1.5 rounded-full bg-ink/10">
+        <motion.div className="h-full rounded-full bg-[#c92a2a]" animate={{ width: ['10%', '45%', '45%', '45%', '80%'][s] }} />
+      </div>
+      {s >= 1 && <McDemoOpts s={s} opts={['A', 'B', 'C']} good={2} at={2} />}
+    </div>
+  )
+}
+
+function DialogueDemo({ s }: { s: number }) {
+  return (
+    <div className="relative flex w-full flex-col gap-1.5 text-[11px]">
+      <Plus on={s >= 3} />
+      <span className={cn('max-w-[80%] rounded-xl bg-surface px-2 py-1 shadow', s === 0 && 'ring-2 ring-uap-gold')}>
+        <b className="text-[#1971c2]">Cliente:</b> ¿Hacen envíos a Porvenir?
+      </span>
+      <span className={cn('max-w-[80%] self-end rounded-xl bg-[#d3f9d8] px-2 py-1 shadow', s === 1 && 'ring-2 ring-uap-gold')}>
+        <b className="text-[#c2255c]">Tienda:</b> Sí, los martes, gratis desde Bs 100.
+      </span>
+      {s >= 2 && (
+        <div className="flex gap-1">
+          <span className={cn(chip, idle)}>Lunes</span>
+          <span className={cn(chip, s >= 3 ? ok : idle)}>
+            Martes <Tap on={s === 2} />
+          </span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function YesNoDemo({ s }: { s: number }) {
+  return (
+    <div className="relative flex w-full flex-col items-center gap-2">
+      <Plus on={s >= 3} />
+      <span className="rounded-lg bg-[#e8590c] px-2 py-0.5 text-[11px] font-black text-white">¿Es un objetivo SMART?</span>
+      <motion.span animate={{ x: s >= 2 ? 120 : 0, rotate: s >= 2 ? 15 : 0, opacity: s >= 2 ? 0 : 1 }} className="rounded-2xl bg-surface px-3 py-3 text-center text-xs font-black shadow-lg ring-1 ring-line">
+        Lograr 200 seguidores nuevos en marzo
+      </motion.span>
+      <div className="flex gap-2">
+        <span className="rounded-xl bg-uap-red px-3 py-1 text-xs font-black text-white">✗ No</span>
+        <span className="relative rounded-xl bg-uap-green px-3 py-1 text-xs font-black text-white">
+          ✓ Sí <Tap on={s === 1} />
+        </span>
+      </div>
+    </div>
+  )
+}
+
+function RowsDemo({ s }: { s: number }) {
+  const order = s >= 2 ? ['Atención', 'Interés', 'Deseo', 'Acción'] : ['Interés', 'Atención', 'Deseo', 'Acción']
+  return (
+    <div className="relative flex w-full flex-col gap-1">
+      <Plus on={s >= 3} />
+      <b className="text-center text-[11px]">Método AIDA</b>
+      {order.map((o, i) => (
+        <motion.span layout key={o} className={cn('relative flex items-center gap-1 rounded-lg border-2 px-2 py-0.5 text-[11px] font-bold', s >= 3 ? 'border-uap-green bg-uap-green/10' : 'border-[#5c7cfa]/40 bg-surface')}>
+          ⠿ {i + 1}. {o}
+          <Tap on={s === 1 && o === 'Atención'} />
+        </motion.span>
+      ))}
+    </div>
+  )
+}
+
+function RiddleDemo({ s }: { s: number }) {
+  return (
+    <div className="relative flex w-full flex-col gap-1.5 text-[11px]">
+      <Plus on={s >= 3} />
+      <span className="rounded-lg bg-[#fff4e6] px-2 py-1 font-semibold text-ink">1. Tiene tres letras</span>
+      {s >= 1 && <span className="rounded-lg bg-[#fff4e6] px-2 py-1 font-semibold text-ink">2. Aparecer en Google sin pagar</span>}
+      <span className="relative self-center rounded-lg border-2 border-[#f08c00]/50 bg-surface px-2 py-1 text-[10px] font-bold">
+        💡 Otra pista (−20 %) <Tap on={s === 0} />
+      </span>
+      <span className={cn('self-center rounded-lg border-2 px-3 py-1 font-display text-sm font-black', s >= 3 ? 'border-uap-green bg-uap-green/15 text-uap-green' : 'border-line')}>{s >= 2 ? 'SEO' : ' '}</span>
+    </div>
+  )
+}
+
+function MapDemo({ s }: { s: number }) {
+  return (
+    <div className="relative flex w-full flex-col gap-1.5">
+      <Plus on={s >= 2} />
+      <span className="rounded-lg bg-[#0b7285] px-2 py-0.5 text-center text-[11px] font-black text-white">Toca: «Botón de compra»</span>
+      <div className="relative h-20 rounded-xl bg-[linear-gradient(#f1f3f5,#dee2e6)] ring-1 ring-line">
+        <span className="absolute left-[18%] top-[25%] grid size-6 place-items-center rounded-full border-2 border-white bg-[#0b7285] text-[10px] font-black text-white">?</span>
+        <span className={cn('absolute left-[65%] top-[60%] grid size-6 place-items-center rounded-full border-2 border-white text-[10px] font-black text-white', s >= 2 ? 'bg-uap-green' : 'bg-[#0b7285]')}>
+          {s >= 2 ? '✓' : '?'}
+          <Tap on={s === 1} />
+        </span>
+      </div>
+    </div>
+  )
+}
+
+function SlidesDemo({ s }: { s: number }) {
+  return (
+    <div className="relative flex w-full flex-col gap-2">
+      <motion.div key={s} initial={{ x: 30, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="rounded-xl bg-surface p-2 shadow ring-1 ring-line">
+        <b className="text-xs text-uap-blue">{['¿Qué es el embudo?', 'Etapa 1: atraer', 'Etapa 2: convertir'][s % 3]}</b>
+        <p className="text-[10px] text-ink-soft">• Lee con calma cada diapositiva…</p>
+      </motion.div>
+      <div className="flex items-center justify-between">
+        <span className="flex gap-1">
+          {[0, 1, 2].map((i) => (
+            <span key={i} className={cn('h-1.5 rounded-full', i === s % 3 ? 'w-4 bg-uap-gold' : i < s % 3 ? 'w-1.5 bg-uap-green' : 'w-1.5 bg-ink/20')} />
+          ))}
+        </span>
+        <span className="relative rounded-lg bg-uap-blue px-2 py-0.5 text-[10px] font-bold text-white">
+          Siguiente ▸ <Tap on />
+        </span>
+      </div>
+    </div>
+  )
+}
+
 const tilesSentence = ({ s }: { s: number }) => <TilesDemo s={s} words={['La', 'estrategia', 'es el qué']} />
 const tilesAnagram = ({ s }: { s: number }) => <TilesDemo s={s} words={['C', 'T', 'R']} />
 
@@ -403,6 +597,57 @@ export const GUIDES: Record<ActivityType, Guide> = {
     captions: ['1. Toca Escuchar', 'Escucha con atención', '2. Escribe y comprueba', '¡Casi! Falta la ñ', '3. Corrige y comprueba', '¡Correcto!'],
     Demo: DictationDemo,
   },
+  froggy: {
+    steps: ['Lee la pregunta de arriba.', 'Toca la hoja del estanque que tiene la respuesta correcta: la rana salta.', 'Si aciertas, la rana avanza hacia la orilla; si fallas, cae al agua 💦.'],
+    captions: ['Lee la pregunta', '1. Toca la hoja correcta', '¡Saltó y cruzó!'],
+    Demo: FroggyDemo,
+  },
+  asterquiz: {
+    steps: ['Lee la pregunta antes de que se acabe el tiempo.', 'Toca el asteroide con la respuesta correcta: tu nave le dispara.', 'Si se acaba el tiempo, esa pregunta cuenta como no respondida.'],
+    captions: ['Lee la pregunta', '1. Toca el asteroide', '¡Destruido! +puntos'],
+    Demo: AsterDemo,
+  },
+  puzzle: {
+    steps: ['Cada pieza tapada esconde una pregunta: toca una pieza (o sigue en orden).', 'Elige la respuesta correcta.', 'Si aciertas, la pieza se descubre; al final verás la imagen completa.'],
+    captions: ['Piezas tapadas', '1. Elige la respuesta', '¡Pieza descubierta!'],
+    Demo: PuzzleDemo,
+  },
+  video: {
+    steps: ['Dale play al video.', 'El video se detiene solo cuando llega una pregunta: respóndela abajo.', 'Toca «Seguir viendo» y espera la siguiente. Arriba ves dónde están las preguntas.'],
+    captions: ['1. Dale play', 'Se detiene: ¡pregunta!', '2. Responde', '¡Correcto! Sigue el video'],
+    Demo: VideoDemo,
+  },
+  dialogue: {
+    steps: ['Toca «Escuchar»: los personajes hablan con voces distintas (puedes repetir cada línea con 🔊).', 'Lee o escucha con atención los datos (días, precios, nombres).', 'Responde las preguntas sobre lo que dijeron.'],
+    captions: ['Escucha al cliente', 'Escucha a la tienda', '1. Responde', '¡Correcto!'],
+    Demo: DialogueDemo,
+  },
+  yesno: {
+    steps: ['Lee la pregunta naranja: vale para todas las tarjetas.', 'Decide si la tarjeta cumple: desliza a la derecha (Sí) o a la izquierda (No), o toca los botones.', 'Sigue con la próxima tarjeta: ¡rápido pero pensando!'],
+    captions: ['Lee la tarjeta', '1. Toca Sí o No', 'Sale volando…', '¡Correcto!'],
+    Demo: YesNoDemo,
+  },
+  rows: {
+    steps: ['Lee el título de la fila.', 'Ordena los elementos: arrastra desde ⠿ o usa las flechas ▲▼. El 1 va primero.', 'Toca «Comprobar».'],
+    captions: ['Están desordenados', '1. Mueve el que va primero', '2. Revisa el orden', '¡Orden correcto!'],
+    Demo: RowsDemo,
+  },
+  riddle: {
+    steps: ['Lee la primera pista y mira cuántas letras tiene la respuesta.', 'Si no sabes, pide otra pista: cada pista extra resta 20 %.', 'Escribe tu respuesta y toca «Comprobar».'],
+    captions: ['Primera pista', '1. Pide otra pista', '2. Escribe la respuesta', '¡Adivinaste!'],
+    Demo: RiddleDemo,
+  },
+  map: {
+    steps: ['Arriba dice qué tienes que buscar (o elígelo en la lista).', 'Toca el punto correcto sobre la imagen.', 'Los puntos acertados quedan en verde con su nombre.'],
+    captions: ['Lee qué buscar', '1. Toca el punto', '¡Correcto!'],
+    Demo: MapDemo,
+  },
+  slides: {
+    steps: ['Lee cada diapositiva con calma.', 'Pasa con «Siguiente», con las flechas o deslizando.', 'Cuando veas todas, toca «Terminé la presentación».'],
+    tips: ['Tu nota es el porcentaje de diapositivas que viste.'],
+    captions: ['Diapositiva 1', 'Diapositiva 2', 'Diapositiva 3'],
+    Demo: SlidesDemo,
+  },
   research: {
     steps: ['Lee tu caso: a cada compañero le tocó uno distinto.', 'Investiga un negocio real y responde cada pregunta con tus palabras (no se puede pegar texto).', 'Tus respuestas se guardan solas. Cuando termines, toca «Entregar mi investigación».'],
     tips: ['Tu docente te califica con los criterios que ves arriba de las preguntas: Cumple · A medias · No cumple.'],
@@ -442,7 +687,7 @@ export function GuideDemo({ type }: { type: ActivityType }) {
 export function HowToPlay({ type, compact }: { type: ActivityType; compact?: boolean }) {
   const g = GUIDES[type]
   const meta = ACTIVITY_META[type]
-  const research = type === 'research'
+  const research = type === 'research' || type === 'slides'
   return (
     <div className="flex flex-col gap-3 text-left">
       {!compact && (
@@ -450,7 +695,7 @@ export function HowToPlay({ type, compact }: { type: ActivityType; compact?: boo
           <span className="grid size-8 place-items-center rounded-xl text-white" style={{ background: meta.color }}>
             <meta.icon className="size-5" />
           </span>
-          ¿Cómo se juega {meta.label.toLowerCase()}?
+          ¿Cómo se juega {['froggy', 'asterquiz', 'video', 'puzzle', 'yesno'].includes(type) ? meta.label : meta.label.toLowerCase()}?
         </p>
       )}
       <div className="grid gap-3 sm:grid-cols-2 sm:items-center">
