@@ -341,7 +341,7 @@ function Editor({ id, initial }: { id: string | null; initial: HostState | null 
 
 function Toggle({ on, onChange, title }: { on: boolean; onChange: (v: boolean) => void; title: string }) {
   return (
-    <label className="flex cursor-pointer items-center gap-3 text-sm font-semibold">
+    <label className="relative flex cursor-pointer items-center gap-3 text-sm font-semibold">
       <input type="checkbox" checked={on} onChange={(e) => onChange(e.target.checked)} className="peer sr-only" />
       <span className="relative h-7 w-12 shrink-0 rounded-full bg-ink/20 transition-colors after:absolute after:left-1 after:top-1 after:size-5 after:rounded-full after:bg-white after:shadow after:transition-transform peer-checked:bg-uap-green peer-checked:after:translate-x-5 peer-focus-visible:ring-2 peer-focus-visible:ring-uap-blue" />
       {title}

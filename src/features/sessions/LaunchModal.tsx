@@ -427,7 +427,7 @@ function Choice({ on, onClick, icon, title, text }: { on: boolean; onClick: () =
 function Toggle({ on, onChange, icon, title, text, children }: { on: boolean; onChange: (v: boolean) => void; icon?: ReactNode; title: string; text: string; children?: ReactNode }) {
   return (
     <div className="flex items-center gap-4 rounded-2xl border border-line p-3">
-      <label className="flex flex-1 cursor-pointer items-center gap-4">
+      <label className="relative flex flex-1 cursor-pointer items-center gap-4">
         <span className="flex-1">
           <span className="flex items-center gap-2 font-semibold">
             {icon} {title}

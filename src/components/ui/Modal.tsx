@@ -49,7 +49,7 @@ export function Modal({ open, onClose, title, subtitle, children, footer, size =
             exit={{ y: 30, opacity: 0, scale: 0.98 }}
             transition={{ type: 'spring', stiffness: 380, damping: 32 }}
             className={cn(
-              'relative flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-3xl border border-line bg-surface-2 shadow-2xl sm:rounded-3xl',
+              'relative flex max-h-[92dvh] w-full flex-col overflow-clip rounded-t-3xl border border-line bg-surface-2 shadow-2xl sm:rounded-3xl',
               SIZES[size],
             )}
           >

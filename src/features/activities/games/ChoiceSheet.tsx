@@ -84,7 +84,7 @@ export function ChoiceSheet({
             exit={{ y: 60, opacity: 0 }}
             transition={{ type: 'spring', stiffness: 380, damping: 32 }}
             onClick={(e) => e.stopPropagation()}
-            className="flex max-h-[85dvh] w-full max-w-xl flex-col overflow-hidden rounded-t-3xl bg-surface shadow-2xl sm:rounded-3xl"
+            className="flex max-h-[85dvh] w-full max-w-xl flex-col overflow-clip rounded-t-3xl bg-surface shadow-2xl sm:rounded-3xl"
           >
             <span className="mx-auto mt-2 block h-1.5 w-12 shrink-0 rounded-full bg-ink/15 sm:hidden" aria-hidden />
             <div className="flex items-start gap-3 px-4 pb-3 pt-3 sm:px-5 sm:pt-5">
