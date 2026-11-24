@@ -1,5 +1,5 @@
 import { createClient, type RealtimeChannel } from '@supabase/supabase-js'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef } from 'react'
 import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from '../config'
 import type { StudentResponse } from '../scoring'
@@ -205,6 +205,21 @@ export interface SessionListRow {
   quizzes: { title: string } | null
   subjects: { code: string; parallel: string; name: string; theme_color: string | null } | null
   participants: { count: number }[]
+}
+
+/** Elimina una tarea, examen o partida: desaparece del aula de los estudiantes y de la libreta. */
+export function useDeleteSession() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data, error } = await supabase.rpc('delete_session', { p_session: id })
+      if (error) throw new Error(friendlyError(error.message))
+      return data as { ok: boolean; title: string; attempts: number; mails_cancelled: number }
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries()
+    },
+  })
 }
 
 export function useSessions() {

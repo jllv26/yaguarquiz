@@ -1,12 +1,14 @@
 import { motion } from 'framer-motion'
-import { BookOpenCheck, CalendarClock, Home, MonitorPlay, Radio, Rocket, Trophy, Users } from 'lucide-react'
+import { BookOpenCheck, CalendarClock, Home, MonitorPlay, Radio, Rocket, Trash2, Trophy, Users } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
 import { SolidCard } from '../../components/ui/Card'
 import { Badge, EmptyState, Select, Skeleton } from '../../components/ui/Field'
+import { Input } from '../../components/ui/Input'
+import { useToast } from '../../components/ui/Toast'
 import { Modal } from '../../components/ui/Modal'
-import { useSessions, type Phase, type SessionListRow } from '../../lib/api/live'
+import { useDeleteSession, useSessions, type Phase, type SessionListRow } from '../../lib/api/live'
 import { useQuizzes } from '../../lib/api/quizzes'
 import { fmtDateTime } from '../../lib/dates'
 import { LaunchModal, launchHint } from './LaunchModal'
@@ -136,7 +138,8 @@ function SessionCard({ s, now }: { s: SessionListRow; now: number }) {
             {s.scheduled_start ? fmtDateTime(s.scheduled_start) : fmtDateTime(s.created_at)} → {s.scheduled_end ? fmtDateTime(s.scheduled_end) : 'sin cierre'}
           </p>
         )}
-        <div className="mt-auto flex justify-end pt-2">
+        <div className="mt-auto flex items-center justify-between gap-2 pt-2">
+          <DeleteSessionButton s={s} />
           <Link to={`/host/${s.id}`}>
             <Button size="sm" variant={open ? 'primary' : 'secondary'}>
               {open ? <MonitorPlay className="size-4" /> : <Trophy className="size-4" />}
@@ -146,6 +149,71 @@ function SessionCard({ s, now }: { s: SessionListRow; now: number }) {
         </div>
       </SolidCard>
     </motion.div>
+  )
+}
+
+/** Botón Eliminar con confirmación. Si alguien ya la entregó, pide escribir ELIMINAR. */
+function DeleteSessionButton({ s }: { s: SessionListRow }) {
+  const [open, setOpen] = useState(false)
+  const [txt, setTxt] = useState('')
+  const del = useDeleteSession()
+  const toast = useToast()
+  const n = s.participants[0]?.count ?? 0
+  const needWord = n > 0
+  const ok = !needWord || txt.trim().toUpperCase() === 'ELIMINAR'
+  const title = s.quizzes?.title ?? 'esta sesión'
+  return (
+    <>
+      <Button size="sm" variant="ghost" className="text-uap-red dark:text-game-coral" onClick={() => setOpen(true)} aria-label={`Eliminar ${title}`}>
+        <Trash2 className="size-4" /> Eliminar
+      </Button>
+      <Modal
+        open={open}
+        onClose={() => {
+          setOpen(false)
+          setTxt('')
+        }}
+        title="¿Eliminar esta tarea?"
+        subtitle={title}
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              variant="danger"
+              disabled={!ok || del.isPending}
+              onClick={() =>
+                del.mutate(s.id, {
+                  onSuccess: () => {
+                    setOpen(false)
+                    setTxt('')
+                    toast.success('Eliminada', 'Ya no aparece en el aula de los estudiantes ni en la libreta.')
+                  },
+                  onError: (e) => toast.error('No se pudo eliminar', (e as Error).message),
+                })
+              }
+            >
+              <Trash2 className="size-4" /> {del.isPending ? 'Eliminando…' : 'Sí, eliminar'}
+            </Button>
+          </>
+        }
+      >
+        <div className="flex flex-col gap-3 text-sm">
+          <p>Desaparece del aula de los estudiantes y de la libreta de notas. No se puede deshacer.</p>
+          {needWord ? (
+            <>
+              <p className="rounded-2xl bg-uap-red/10 p-3 font-semibold text-uap-red ring-1 ring-uap-red/30 dark:text-game-coral">
+                {n === 1 ? '1 estudiante ya entró' : `${n} estudiantes ya entraron`} a esta tarea: se borrarán sus intentos y sus notas.
+              </p>
+              <Input label="Para confirmar, escriba ELIMINAR" value={txt} onChange={(e) => setTxt(e.target.value)} autoComplete="off" />
+            </>
+          ) : (
+            <p className="text-ink-soft">Nadie entró todavía, así que no se pierde ninguna nota.</p>
+          )}
+        </div>
+      </Modal>
+    </>
   )
 }
 

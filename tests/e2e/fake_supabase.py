@@ -16,7 +16,7 @@ Uso:  python3 tests/e2e/fake_supabase.py  (puerto 5555; base: host=/tmp port=554
 import json
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, unquote, urlparse
 
 import psycopg
 from psycopg.types.json import Jsonb
@@ -152,6 +152,16 @@ class H(BaseHTTPRequestHandler):
             r = admin('''select coalesce(json_agg(json_build_object('quiz_id', s.quiz_id, 'scheduled_end', s.scheduled_end, 'status', s.status,
                            'grading_items', (select json_build_object('category', gi.category, 'term', gi.term) from public.grading_items gi where gi.id = s.grading_item_id))), '[]')
                          from public.sessions s where s.teacher_id = %s and s.status <> 'finished' and s.mode <> 'live' ''', [UID])[0][0]
+            return self.reply(200, r)
+        if u.path == '/rest/v1/sessions' and self.teacher and 'participants(count)' in unquote(u.query or ''):
+            r = admin('''select coalesce(json_agg(json_build_object('id', s.id, 'pin', s.pin, 'status', s.status, 'phase', s.phase, 'mode', s.mode,
+                           'created_at', s.created_at, 'finished_at', s.finished_at, 'scheduled_start', s.scheduled_start, 'scheduled_end', s.scheduled_end,
+                           'identification', s.identification, 'quizzes', json_build_object('title', q.title),
+                           'subjects', json_build_object('code', sj.code, 'parallel', sj.parallel, 'name', sj.name, 'theme_color', sj.theme_color),
+                           'participants', json_build_array(json_build_object('count', (select count(*) from public.participants p where p.session_id = s.id))))
+                           order by s.created_at desc), '[]')
+                         from public.sessions s join public.quizzes q on q.id = s.quiz_id join public.subjects sj on sj.id = s.subject_id
+                        where s.teacher_id = %s''', [UID])[0][0]
             return self.reply(200, r)
         if u.path == '/rest/v1/subjects' and self.teacher:
             r = admin('''select coalesce(json_agg(json_build_object('id', s.id, 'code', s.code, 'name', s.name, 'parallel', s.parallel, 'theme_color', s.theme_color,
