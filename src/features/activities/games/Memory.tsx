@@ -1,3 +1,4 @@
+import { sfx } from '../../../lib/sound'
 import { motion } from 'framer-motion'
 import { useMemo, useState } from 'react'
 import { JAGUAR } from '../../../components/jaguar/assets'
@@ -51,7 +52,11 @@ export default function Memory() {
           return (
             <button
               key={c.key}
-              onClick={() => void flip(c.key)}
+              data-sfx="off"
+              onClick={() => {
+                sfx.flip()
+                void flip(c.key)
+              }}
               aria-label={up ? `Carta ${i + 1}: ${c.text || 'imagen'}` : `Carta ${i + 1}, boca abajo`}
               className="aspect-[3/4] [perspective:800px]"
             >

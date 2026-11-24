@@ -1,3 +1,4 @@
+import { sfx } from '../../lib/sound'
 import { AnimatePresence, motion } from 'framer-motion'
 import { CheckCircle2, Info, TriangleAlert, X } from 'lucide-react'
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react'
@@ -12,10 +13,10 @@ interface ToastItem {
 }
 
 interface ToastApi {
-  show: (kind: Kind, title: string, message?: string) => void
+  show: (kind: Kind, title: string, message?: string, quiet?: boolean) => void
   success: (title: string, message?: string) => void
   error: (title: string, message?: string) => void
-  info: (title: string, message?: string) => void
+  info: (title: string, message?: string, quiet?: boolean) => void
 }
 
 const ToastContext = createContext<ToastApi | null>(null)
@@ -35,8 +36,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const dismiss = useCallback((id: number) => setItems((xs) => xs.filter((x) => x.id !== id)), [])
 
   const show = useCallback(
-    (kind: Kind, title: string, message?: string) => {
+    (kind: Kind, title: string, message?: string, quiet?: boolean) => {
       const id = nextId++
+      if (!quiet) {
+        if (kind === 'error') sfx.wrong()
+        else sfx.notify()
+      }
       setItems((xs) => [...xs.slice(-3), { id, kind, title, message }])
       window.setTimeout(() => dismiss(id), 4200)
     },
@@ -48,7 +53,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       show,
       success: (t, m) => show('success', t, m),
       error: (t, m) => show('error', t, m),
-      info: (t, m) => show('info', t, m),
+      info: (t, m, q) => show('info', t, m, q),
     }),
     [show],
   )

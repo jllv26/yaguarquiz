@@ -200,6 +200,16 @@ function Game({ token, onLeave }: { token: string; onLeave: (message?: string) =
 
   const now = useServerNow(offset, phase === 'countdown' || phase === 'question')
 
+  // Sonido del contador 3-2-1 y del reloj de cada pregunta en el equipo del estudiante
+  const cdVal = st?.session.phase === 'countdown' ? Math.max(0, Math.ceil((new Date(st.session.phase_started_at).getTime() + COUNTDOWN_MS - now) / 1000)) : null
+  const qLeft = st?.session.phase === 'question' ? secondsLeft(st.session.question_ends_at, now) : null
+  useEffect(() => {
+    if (cdVal !== null && cdVal > 0) sfx.countdown()
+  }, [cdVal])
+  useEffect(() => {
+    if (qLeft !== null && qLeft > 0 && qLeft <= 5) sfx.urgent(qLeft)
+  }, [qLeft])
+
   // Música opcional en el equipo del estudiante (por defecto solo efectos)
   const { studentMusic } = useSoundPrefs()
   useMuteHotkey()

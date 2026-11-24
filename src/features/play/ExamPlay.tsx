@@ -1,4 +1,5 @@
-import { motion } from 'framer-motion'
+import { useTimerSounds } from '../../lib/useTimerSounds'
+import { animate, motion, useMotionValue, useTransform } from 'framer-motion'
 import {
   AlertTriangle,
   ArrowLeft,
@@ -39,7 +40,7 @@ import { PLAY_ERRORS, serverOffset, type PlayError } from '../../lib/api/live'
 import { cn } from '../../lib/cn'
 import { fmtDateTime } from '../../lib/dates'
 import type { StudentResponse } from '../../lib/scoring'
-import { sfx } from '../../lib/sound'
+import { haptic, sfx } from '../../lib/sound'
 import { AvatarBubble } from '../live/LiveBits'
 import { celebrate, fmtLeft, useServerNow } from '../live/clock'
 import { QuestionView, type RevealInfo } from './QuestionView'
@@ -145,15 +146,24 @@ function Home({ st, now, onStart, offline }: { st: ActivityExamState; now: numbe
   const act = st.activity_type ? ACTIVITY_META[st.activity_type] : null
   const last = st.attempts[st.attempts.length - 1]
   const justFinished = useRef(false)
+  const [fresh] = useState(() => !!last && Date.now() - new Date(last.submitted_at).getTime() < 15000)
   useEffect(() => {
     if (last && !justFinished.current && Date.now() - new Date(last.submitted_at).getTime() < 15000) {
       justFinished.current = true
-      if (last.grade !== null && Number(last.grade) >= s.pass_mark) {
-        sfx.fanfare()
-        celebrate(Number(last.grade) >= 90)
-      }
+      const g = last.grade !== null ? Number(last.grade) : null
+      // la celebración llega cuando terminan de llenarse las estrellas y de subir la nota
+      const t = window.setTimeout(() => {
+        if (g === null) return sfx.sent()
+        if (g >= s.pass_mark) {
+          sfx.fanfare()
+          haptic([40, 60, 40])
+          celebrate(g >= 90)
+          if (g >= 90) window.setTimeout(() => sfx.applause(2.5), 900)
+        } else sfx.encourage()
+      }, act ? 1500 : 900)
+      return () => window.clearTimeout(t)
     }
-  }, [last, s.pass_mark])
+  }, [last, s.pass_mark, act])
   const opensIn = s.opens_at ? new Date(s.opens_at).getTime() - now : 0
   const closesIn = s.closes_at ? new Date(s.closes_at).getTime() - now : null
   const pass = st.best_grade !== null && Number(st.best_grade) >= s.pass_mark
@@ -174,14 +184,20 @@ function Home({ st, now, onStart, offline }: { st: ActivityExamState; now: numbe
           <div className="mt-5 rounded-3xl bg-ink/5 p-5 text-center">
             {s.show_grade && st.best_grade !== null ? (
               <>
-                <JaguarFace mood={pass ? 'happy' : 'neutral'} className="mx-auto mb-1 w-24" />
-                {act && <ResultStars grade={Number(st.best_grade)} />}
+                <motion.div initial={fresh ? { scale: 0.4, rotate: -12, opacity: 0 } : false} animate={{ scale: 1, rotate: 0, opacity: 1 }} transition={{ type: 'spring', stiffness: 260, damping: 14 }}>
+                  <motion.div animate={fresh && pass ? { y: [0, -10, 0] } : undefined} transition={{ delay: 1.6, duration: 0.6, repeat: 2 }}>
+                    <JaguarFace mood={pass ? 'happy' : 'neutral'} className="mx-auto mb-1 w-24" />
+                  </motion.div>
+                </motion.div>
+                {act && <ResultStars grade={Number(st.best_grade)} fresh={fresh} />}
                 <p className="text-sm font-bold uppercase tracking-widest text-ink-soft">{st.attempts.length > 1 ? 'Tu mejor nota' : 'Tu nota'}</p>
                 <p className={cn('font-display text-7xl font-black tabular-nums', pass ? 'text-uap-green dark:text-game-selva' : 'text-uap-red dark:text-game-coral')}>
-                  {Math.round(Number(st.best_grade))}
+                  <CountUp to={Math.round(Number(st.best_grade))} run={fresh} />
                   <span className="text-2xl text-ink-soft">/100</span>
                 </p>
-                <p className="font-semibold">{pass ? '¡Aprobado! 🎉' : `Necesitas ${s.pass_mark} para aprobar`}</p>
+                <motion.p initial={fresh ? { opacity: 0, y: 8 } : false} animate={{ opacity: 1, y: 0 }} transition={{ delay: fresh ? 1.4 : 0 }} className="font-semibold">
+                  {pass ? '¡Aprobado! 🎉' : `Necesitas ${s.pass_mark} para aprobar`}
+                </motion.p>
               </>
             ) : (
               <>
@@ -287,21 +303,71 @@ function Home({ st, now, onStart, offline }: { st: ActivityExamState; now: numbe
 }
 
 /** Estrellas del resultado de una actividad: ★ desde 50, ★★ desde 75 y ★★★ desde 90. */
-function ResultStars({ grade }: { grade: number }) {
+function ResultStars({ grade, fresh }: { grade: number; fresh?: boolean }) {
   const n = grade >= 90 ? 3 : grade >= 75 ? 2 : grade >= 50 ? 1 : 0
   const msg = ['¡Sigue practicando! Puedes mejorar tu nota con otro intento.', '¡Bien! Vas por buen camino.', '¡Muy bien! Casi perfecto.', '¡Excelente! Dominas el tema. 🏆'][n]
+  // cada estrella ganada suena al aparecer (solo al terminar, no al volver a ver la nota)
+  useEffect(() => {
+    if (!fresh) return
+    const ts = Array.from({ length: n }, (_, i) => window.setTimeout(() => sfx.star(i + 1), 350 + i * 320))
+    return () => ts.forEach((t) => window.clearTimeout(t))
+  }, [fresh, n])
   return (
     <div className="mb-2 flex flex-col items-center gap-1" aria-label={`${n} de 3 estrellas`}>
       <div className="flex items-end gap-1">
         {[0, 1, 2].map((i) => (
-          <motion.span key={i} initial={{ scale: 0, rotate: -30 }} animate={{ scale: 1, rotate: 0 }} transition={{ delay: 0.3 + i * 0.25, type: 'spring' }} className={cn('text-5xl leading-none', i === 1 && 'text-6xl', i < n ? 'text-uap-gold drop-shadow' : 'text-ink/15')}>
-            ★
-          </motion.span>
+          <span key={i} className="relative">
+            <span className={cn('text-5xl leading-none text-ink/15', i === 1 && 'text-6xl')}>★</span>
+            {i < n && (
+              <motion.span
+                initial={fresh ? { scale: 0, rotate: -40, opacity: 0 } : false}
+                animate={{ scale: [0, 1.45, 1], rotate: 0, opacity: 1 }}
+                transition={{ delay: 0.35 + i * 0.32, duration: 0.45 }}
+                className={cn('absolute inset-0 text-5xl leading-none text-uap-gold drop-shadow-[0_0_10px_rgba(201,162,58,.7)]', i === 1 && 'text-6xl')}
+              >
+                ★
+              </motion.span>
+            )}
+            {fresh && i < n && (
+              <motion.span
+                initial={{ scale: 0.2, opacity: 0.9 }}
+                animate={{ scale: 2.4, opacity: 0 }}
+                transition={{ delay: 0.45 + i * 0.32, duration: 0.6 }}
+                className="pointer-events-none absolute inset-0 rounded-full border-4 border-uap-gold"
+                aria-hidden
+              />
+            )}
+          </span>
         ))}
       </div>
-      <p className="font-display text-sm font-black">{msg}</p>
+      <motion.p initial={fresh ? { opacity: 0 } : false} animate={{ opacity: 1 }} transition={{ delay: fresh ? 0.4 + n * 0.32 : 0 }} className="font-display text-sm font-black">
+        {msg}
+      </motion.p>
     </div>
   )
+}
+
+/** Número que sube desde 0 (con un tic suave) cuando la nota es recién obtenida. */
+function CountUp({ to, run }: { to: number; run?: boolean }) {
+  const mv = useMotionValue(run ? 0 : to)
+  const txt = useTransform(mv, (v) => String(Math.round(v)))
+  useEffect(() => {
+    if (!run) return mv.set(to)
+    let lastTen = -1
+    const c = animate(mv, to, {
+      duration: Math.min(1.4, 0.4 + to / 90),
+      ease: 'easeOut',
+      onUpdate: (v) => {
+        const k = Math.floor(v / 10)
+        if (k !== lastTen) {
+          lastTen = k
+          sfx.tap()
+        }
+      },
+    })
+    return () => c.stop()
+  }, [to, run, mv])
+  return <motion.span>{txt}</motion.span>
 }
 
 const Info = ({ icon, label, value }: { icon: ReactNode; label: string; value: string }) => (
@@ -406,6 +472,7 @@ function Attempt({
   const q = cur.questions[idx]
   const deadline = cur.deadline ? new Date(cur.deadline).getTime() : null
   const left = deadline !== null ? deadline - now : null
+  useTimerSounds(left, (t) => toast.info(t, 'Revisa las preguntas que te faltan.', true))
 
   // ---------------------------------------------------------- guardar (con cola local si no hay internet)
   const flushing = useRef(false)
@@ -506,13 +573,6 @@ function Attempt({
   useEffect(() => {
     if (left !== null && left <= 0) void finish(true)
   }, [left, finish])
-  const lastTick = useRef(-1)
-  useEffect(() => {
-    if (left === null) return
-    const sec = Math.ceil(left / 1000)
-    if (sec !== lastTick.current && sec > 0 && sec <= 10) sfx.urgent()
-    lastTick.current = sec
-  }, [left])
 
   async function askFinish() {
     const missing = cur.questions.length - answered

@@ -1,3 +1,4 @@
+import { sfx } from '../../../lib/sound'
 import { motion } from 'framer-motion'
 import { ChevronLeft, ChevronRight, CornerDownLeft, Eraser } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
@@ -147,7 +148,11 @@ function TileGame({ items, mode }: { items: TileItem[]; mode: 'letters' | 'words
                     key={i}
                     layout
                     whileTap={{ scale: 0.9 }}
-                    onClick={() => setPlaced((x) => [...x, i])}
+                    data-sfx="off"
+                    onClick={() => {
+                      sfx.tap()
+                      setPlaced((x) => [...x, i])
+                    }}
                     className={cn(
                       'grid place-items-center rounded-xl border-2 border-uap-gold/60 bg-uap-gold/15 font-display font-black shadow-sm hover:-translate-y-0.5',
                       mode === 'letters' ? 'size-11 text-xl sm:size-12' : 'h-11 min-w-16 px-3',

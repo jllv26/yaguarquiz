@@ -1,3 +1,5 @@
+import { ActivityBadge } from '../activities/ActivityBadge'
+import { motion } from 'framer-motion'
 import { ArrowRight, CheckCircle2, ClipboardList, Clock, Loader2, LogOut, PlayCircle, RefreshCw, Trophy } from 'lucide-react'
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -215,6 +217,8 @@ function PortalList({
   const soon = data.items.filter((x) => x.win === 'not_open')
   const closed = data.items.filter((x) => x.win === 'closed')
   const graded = data.items.filter((x) => x.best != null)
+  const total = data.items.filter((x) => x.win !== 'not_open').length
+  const doneCount = data.items.filter((x) => x.win !== 'not_open' && x.done > 0).length
   const avg = graded.length ? Math.round(graded.reduce((a, x) => a + Number(x.best), 0) / graded.length) : null
   return (
     <div className="mt-2 flex w-full flex-col gap-4">
@@ -227,6 +231,24 @@ function PortalList({
             {avg != null && ` · promedio ${avg}`}
           </p>
         </div>
+        {total > 0 && (
+          <div className="order-last w-full" aria-label={`Avance: ${doneCount} de ${total} hechas`}>
+            <div className="mb-1 flex justify-between text-xs font-bold text-ink-soft">
+              <span>Tu avance</span>
+              <span>
+                {doneCount} de {total} hechas
+              </span>
+            </div>
+            <div className="h-3 overflow-hidden rounded-full bg-ink/10">
+              <motion.div
+                className="h-full rounded-full bg-gradient-to-r from-uap-green via-game-selva to-uap-gold"
+                initial={{ width: 0 }}
+                animate={{ width: `${(100 * doneCount) / total}%` }}
+                transition={{ duration: 1, ease: 'easeOut', delay: 0.3 }}
+              />
+            </div>
+          </div>
+        )}
         <div className="flex gap-2">
           <Button variant="secondary" size="sm" onClick={onRefresh} aria-label="Actualizar">
             <RefreshCw className="size-4" />
@@ -256,9 +278,18 @@ function Section({ title, items, empty, busy, onOpen }: { title: string; items: 
       <h2 className="px-1 font-display text-lg font-black">
         {title} <span className="text-ink-soft">({items.length})</span>
       </h2>
-      {items.length === 0 && empty && <Card className="text-center text-ink-soft">{empty}</Card>}
-      {items.map((it) => (
-        <ItemCard key={it.id} it={it} busy={busy === it.id} disabled={busy != null} onOpen={() => onOpen(it)} />
+      {items.length === 0 && empty && (
+        <Card className="flex flex-col items-center gap-1 text-center text-ink-soft">
+          <motion.span initial={{ scale: 0, rotate: -20 }} animate={{ scale: 1, rotate: 0 }} transition={{ type: 'spring', stiffness: 260, damping: 12 }} className="text-4xl" aria-hidden>
+            🎉
+          </motion.span>
+          {empty}
+        </Card>
+      )}
+      {items.map((it, i) => (
+        <motion.div key={it.id} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.05, 0.5), type: 'spring', stiffness: 300, damping: 26 }}>
+          <ItemCard it={it} busy={busy === it.id} disabled={busy != null} onOpen={() => onOpen(it)} />
+        </motion.div>
       ))}
     </section>
   )
@@ -273,9 +304,13 @@ function ItemCard({ it, busy, disabled, onOpen }: { it: PortalItem; busy: boolea
   const label = it.in_progress ? 'Continuar' : it.done === 0 ? (it.activity === 'research' ? 'Investigar' : 'Hacer') : 'Mejorar mi nota'
   return (
     <Card className="flex flex-wrap items-center gap-3 !p-4">
-      <span className="grid size-12 shrink-0 place-items-center rounded-2xl text-white" style={{ background: meta?.color ?? '#1F3864' }}>
-        <Icon className="size-6" />
-      </span>
+      {it.activity ? (
+        <ActivityBadge type={it.activity} />
+      ) : (
+        <span className="grid size-12 shrink-0 place-items-center rounded-2xl text-white shadow-md" style={{ background: '#1F3864' }}>
+          <Icon className="size-6" />
+        </span>
+      )}
       <div className="min-w-0 flex-1">
         <p className="font-display font-black leading-tight">{it.title}</p>
         <p className="text-xs text-ink-soft">

@@ -1,3 +1,4 @@
+import { ActivityBadge } from './ActivityBadge'
 import { useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { Copy, Gamepad2, KeyRound, ListChecks, Pencil, Printer, Rocket, Trash2 } from 'lucide-react'
@@ -44,16 +45,15 @@ export function ActivitiesPage() {
             return (
               <motion.button
                 key={t}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.03 }}
-                whileHover={{ y: -3 }}
+                initial={{ opacity: 0, y: 16, scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ delay: i * 0.035, type: 'spring', stiffness: 320, damping: 24 }}
+                whileHover={{ y: -4 }}
+                whileTap={{ scale: 0.97 }}
                 onClick={() => setCreating(t)}
                 className="group flex flex-col items-start gap-2 rounded-3xl bg-surface-2 p-4 text-left shadow-sm ring-1 ring-line transition-shadow hover:shadow-lg"
               >
-                <span className="grid size-12 place-items-center rounded-2xl text-white shadow-md transition-transform group-hover:rotate-[-6deg]" style={{ background: m.color }}>
-                  <m.icon className="size-6" />
-                </span>
+                <ActivityBadge type={t} />
                 <span className="font-display font-black leading-tight">{m.label}</span>
                 <span className="text-xs text-ink-soft">{m.description}</span>
               </motion.button>

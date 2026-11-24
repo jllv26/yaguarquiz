@@ -1,9 +1,10 @@
-import { AnimatePresence, motion } from 'framer-motion'
+import { ActivityBadge } from './ActivityBadge'
+import { AnimatePresence, motion, useAnimationControls } from 'framer-motion'
 import { CheckCircle2, Flame, Sparkles, Star, Target, XCircle } from 'lucide-react'
 import { createContext, lazy, Suspense, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useToast } from '../../components/ui/Toast'
 import { cn } from '../../lib/cn'
-import { sfx } from '../../lib/sound'
+import { haptic, sfx } from '../../lib/sound'
 import { GameCoach, PointerHint } from './Coach'
 import { HowToPlayButton } from './HowToPlay'
 import { ACTIVITY_META, type ActivityBoard, type ActivityType, type Engine, type PlayAction, type PlayResult, type Progress } from './types'
@@ -81,6 +82,20 @@ export function ActivityGame({
   const [moves, setMoves] = useState(0)
   const [touched, setTouched] = useState(false)
   const area = useRef<HTMLDivElement>(null)
+  // efectos: puntos que vuelan al marcador y sacudida al fallar
+  const tapAt = useRef<{ x: number; y: number } | null>(null)
+  const pointsRef = useRef<HTMLSpanElement>(null)
+  const [flies, setFlies] = useState<{ id: number; x: number; y: number; dx: number; dy: number; text: string }[]>([])
+  const shake = useAnimationControls()
+  const flyPoints = useCallback((text: string) => {
+    const to = pointsRef.current?.getBoundingClientRect()
+    const from = tapAt.current ?? (area.current ? { x: area.current.getBoundingClientRect().left + area.current.clientWidth / 2, y: Math.min(window.innerHeight * 0.6, area.current.getBoundingClientRect().top + 120) } : null)
+    if (!to || !from) return
+    const id = Date.now() + Math.random()
+    setFlies((f) => [...f.slice(-4), { id, x: from.x, y: from.y, dx: to.left + to.width / 2 - from.x, dy: to.top + to.height / 2 - from.y, text }])
+    window.setTimeout(() => sfx.coin(), 650)
+    window.setTimeout(() => setFlies((f) => f.filter((x) => x.id !== id)), 1000)
+  }, [])
   const meta = ACTIVITY_META[board.type]
   const done = Object.values(progress).filter((p) => p.done).length
   const points = Math.round(Object.values(progress).reduce((s, p) => s + (p.partial ?? 0) * 1000, 0))
@@ -159,9 +174,13 @@ export function ActivityGame({
           setStreak(k)
           const praise = k >= 10 ? '🔥 ¡Imparable!' : k >= 5 ? `🔥 ¡Racha de ${k}!` : k === 3 ? '🔥 ¡Racha de 3!' : PRAISE[k % PRAISE.length]
           flash(true, `${praise} +${r.points ?? 1000}`)
+          flyPoints(`+${r.points ?? 1000}`)
+          haptic(25)
         } else if (action !== 'letter' || r.hit === false) {
           if (['find', 'pair'].includes(action) || ['matching', 'classify'].includes(board.type)) setErrors((e) => e + 1)
           sfx.wrong()
+          haptic([50, 40, 50])
+          if (action !== 'letter') void shake.start({ x: [0, -10, 9, -6, 5, -2, 0], transition: { duration: 0.45 } })
           if (action !== 'letter' || (r.done && !r.correct)) {
             streakRef.current = 0
             setStreak(0)
@@ -176,7 +195,7 @@ export function ActivityGame({
         setBusy(false)
       }
     },
-    [engine, toast, onFatal, flash, board.type],
+    [engine, toast, onFatal, flash, board.type, flyPoints, shake],
   )
 
   // investigación y presentación no tienen puntos: se entregan con su botón
@@ -193,16 +212,13 @@ export function ActivityGame({
   const statCount = (research ? 1 : 2) + (withErrors ? 1 : 0) + (aside ? 1 : 0)
   const Game = GAMES[board.type]
   const ctx = useMemo(() => ({ board, progress, play, busy, flash }), [board, progress, play, busy, flash])
-  const Icon = meta.icon
 
   return (
     <GameCtx.Provider value={ctx}>
       <div className="relative flex w-full flex-col gap-3">
         <div className="flex flex-wrap items-center gap-2 rounded-3xl bg-surface-2/90 p-2 pl-2.5 shadow-sm ring-1 ring-line backdrop-blur">
           <div className="flex min-w-0 flex-1 items-center gap-2">
-            <span className="grid size-9 shrink-0 place-items-center rounded-xl text-white" style={{ background: meta.color }}>
-              <Icon className="size-5" />
-            </span>
+            <ActivityBadge type={board.type} size="sm" />
             <span className="truncate font-display font-black">{meta.label}</span>
             <AnimatePresence>
               {streak >= 2 && (
@@ -215,7 +231,9 @@ export function ActivityGame({
           <HowToPlayButton type={board.type} className="order-2 shrink-0 sm:order-3" />
           <div className="order-3 grid w-full gap-1.5 text-sm sm:order-2 sm:flex sm:w-auto" style={{ gridTemplateColumns: `repeat(${statCount}, minmax(0, 1fr))` }}>
             <Stat icon={<Target className="size-4" />} label={board.type === 'slides' ? 'Vistas' : research ? 'Respondidas' : 'Resueltas'} value={`${done}/${board.total}`} />
-            {!research && <Stat icon={<Sparkles className="size-4" />} label="Puntos" value={points.toLocaleString('es-BO')} />}
+            {!research && (
+              <Stat icon={<Sparkles className="size-4" />} label="Puntos" value={points.toLocaleString('es-BO')} pop elRef={pointsRef} />
+            )}
             {withErrors && <Stat icon={<XCircle className="size-4" />} label="Errores" value={String(errors)} />}
             {aside}
           </div>
@@ -243,11 +261,40 @@ export function ActivityGame({
           </div>
         )}
         <GameCoach type={board.type} instructions={board.instructions} moves={moves} touched={touched} />
-        <div ref={area} className="relative" onPointerDownCapture={() => setTouched(true)} onKeyDownCapture={() => setTouched(true)}>
+        <motion.div
+          ref={area}
+          animate={shake}
+          className="relative"
+          onPointerDownCapture={(e) => {
+            setTouched(true)
+            tapAt.current = { x: e.clientX, y: e.clientY }
+          }}
+          onKeyDownCapture={() => {
+            setTouched(true)
+            tapAt.current = null
+          }}
+        >
           <Suspense fallback={<div className="h-64 animate-pulse rounded-3xl bg-ink/5" />}>
             <Game />
           </Suspense>
           <PointerHint type={board.type} area={area} hidden={touched || moves > 0 || done > 0} />
+        </motion.div>
+        {/* puntos que vuelan hasta el marcador */}
+        <div className="pointer-events-none fixed inset-0 z-[60]" aria-hidden>
+          <AnimatePresence>
+            {flies.map((f) => (
+              <motion.span
+                key={f.id}
+                initial={{ x: f.x, y: f.y, scale: 0.6, opacity: 0 }}
+                animate={{ x: [f.x, f.x + f.dx * 0.15, f.x + f.dx], y: [f.y, f.y - 60, f.y + f.dy], scale: [0.6, 1.3, 0.7], opacity: [0, 1, 1] }}
+                exit={{ opacity: 0, scale: 0.2 }}
+                transition={{ duration: 0.7, ease: 'easeInOut' }}
+                className="absolute left-0 top-0 -translate-x-1/2 -translate-y-1/2 rounded-full bg-uap-gold px-2.5 py-1 font-display text-sm font-black text-ink shadow-lg ring-2 ring-white"
+              >
+                {f.text}
+              </motion.span>
+            ))}
+          </AnimatePresence>
         </div>
         <AnimatePresence>
           {bubble && (
@@ -285,12 +332,18 @@ export function ActivityGame({
   )
 }
 
-function Stat({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
+function Stat({ icon, label, value, pop, elRef }: { icon: ReactNode; label: string; value: string; pop?: boolean; elRef?: React.Ref<HTMLSpanElement> }) {
   return (
-    <span className="flex min-w-0 items-center justify-center gap-1 rounded-xl bg-ink/5 px-2 py-1.5" title={label}>
+    <span ref={elRef} className="flex min-w-0 items-center justify-center gap-1 rounded-xl bg-ink/5 px-2 py-1.5" title={label}>
       <span className="hidden text-ink-soft min-[380px]:inline sm:inline">{icon}</span>
       <span className="truncate text-[11px] font-semibold text-ink-soft sm:text-xs">{label}</span>
-      <span className="font-display font-black tabular-nums">{value}</span>
+      {pop ? (
+        <motion.span key={value} initial={{ scale: 1.6 }} animate={{ scale: 1 }} transition={{ duration: 0.5, delay: 0.6 }} className="font-display font-black tabular-nums">
+          {value}
+        </motion.span>
+      ) : (
+        <span className="font-display font-black tabular-nums">{value}</span>
+      )}
     </span>
   )
 }

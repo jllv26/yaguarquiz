@@ -81,23 +81,61 @@ function audio() {
   }
 }
 
-/** Desbloquea el audio con el primer gesto del usuario (requisito de los navegadores). */
+// Audio HTML mudo: en el iPhone hace que los efectos suenen aunque el interruptor de silencio esté activado
+const SILENT = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA='
+let silentEl: HTMLAudioElement | null = null
+
+/** Desbloquea el audio con un gesto del usuario (requisito de los navegadores). */
 export function unlockAudio() {
   unlocked = true
+  try {
+    // Safari 17+: el audio de la página se comporta como reproducción, no como timbre
+    const nav = navigator as Navigator & { audioSession?: { type: string } }
+    if (nav.audioSession && nav.audioSession.type !== 'playback') nav.audioSession.type = 'playback'
+  } catch {
+    /* sin soporte */
+  }
+  try {
+    if (!silentEl) {
+      silentEl = new Audio(SILENT)
+      silentEl.setAttribute('playsinline', '')
+      silentEl.loop = false
+      silentEl.volume = 0
+    }
+    void silentEl.play().catch(() => {})
+  } catch {
+    /* sin soporte */
+  }
   const a = audio()
-  if (a && a.state === 'suspended') void a.resume()
+  if (a && a.state !== 'running') void a.resume()
   // si ya se había pedido música, empieza ahora
   if (current && !timer && a) startLoop(a)
 }
 if (typeof window !== 'undefined') {
-  const once = () => {
+  // En el celular el «pointerdown» de un toque no da permiso para sonar: se reintenta con cada toque,
+  // clic o tecla hasta que el audio quede activo (antes se intentaba una sola vez y quedaba mudo).
+  const events = ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown'] as const
+  const tryUnlock = () => {
     unlockAudio()
-    window.removeEventListener('pointerdown', once)
-    window.removeEventListener('keydown', once)
+    if (ctx && ctx.state === 'running') events.forEach((e) => window.removeEventListener(e, tryUnlock, true))
   }
-  window.addEventListener('pointerdown', once)
-  window.addEventListener('keydown', once)
+  events.forEach((e) => window.addEventListener(e, tryUnlock, { capture: true, passive: true }))
+  // al volver a la pestaña (o desbloquear el celular) el navegador puede suspender el audio
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && ctx && ctx.state !== 'running') events.forEach((e) => window.addEventListener(e, tryUnlock, { capture: true, passive: true }))
+  })
 }
+
+/** Vibración corta en celulares Android (los iPhone la ignoran). */
+export function haptic(pattern: number | number[]) {
+  try {
+    if (prefs.muted) return
+    navigator.vibrate?.(pattern)
+  } catch {
+    /* sin soporte */
+  }
+}
+let lastClick = 0
 
 function noise(a: AudioContext) {
   if (!noiseBuf) {
@@ -150,6 +188,53 @@ function hit(start: number, dur: number, vol: number, filter: { type: BiquadFilt
 // ------------------------------------------------------------------ efectos
 export const sfx = {
   tick: () => tone(880, 0, 0.08, 'square', 0.05),
+  /** Clic suave de botones y enlaces (toda la página). */
+  click: () => {
+    const now = performance.now()
+    if (now - lastClick < 60) return
+    lastClick = now
+    tone(1250, 0, 0.045, 'sine', 0.07)
+    tone(620, 0.005, 0.04, 'triangle', 0.05)
+  },
+  /** Toque de letra, ficha o casilla. */
+  tap: () => tone(980 + Math.random() * 120, 0, 0.05, 'sine', 0.08),
+  /** Se abre una ventana o un menú. */
+  open: () => {
+    hit(0, 0.16, 0.09, { type: 'bandpass', freq: 2400, q: 0.7 })
+    tone(520, 0, 0.12, 'sine', 0.07)
+    tone(780, 0.05, 0.12, 'sine', 0.07)
+  },
+  /** Se cierra una ventana. */
+  close: () => {
+    hit(0, 0.12, 0.07, { type: 'bandpass', freq: 1600, q: 0.7 })
+    tone(700, 0, 0.1, 'sine', 0.06)
+    tone(470, 0.05, 0.1, 'sine', 0.06)
+  },
+  /** Cambio de pantalla. */
+  whoosh: () => hit(0, 0.28, 0.12, { type: 'bandpass', freq: 900, q: 0.6 }),
+  /** Voltear una carta. */
+  flip: () => {
+    hit(0, 0.06, 0.18, { type: 'highpass', freq: 2500 })
+    tone(640, 0.01, 0.06, 'triangle', 0.06)
+  },
+  /** Puntos que llegan al marcador. */
+  coin: () => {
+    tone(988, 0, 0.09, 'square', 0.06)
+    tone(1319, 0.07, 0.2, 'square', 0.06)
+  },
+  /** Cada estrella del resultado (n = 1, 2 o 3: cada una más aguda). */
+  star: (n = 1) => {
+    const base = [784, 988, 1175][Math.max(0, Math.min(2, n - 1))]
+    tone(base, 0, 0.25, 'triangle', 0.18)
+    tone(base * 1.5, 0.06, 0.3, 'sine', 0.1)
+    hit(0.02, 0.25, 0.06, { type: 'highpass', freq: 6000 })
+  },
+  /** Aviso de tiempo (quedan 5 minutos o 1 minuto). */
+  warning: () => [880, 660, 880].forEach((f, i) => tone(f, i * 0.16, 0.18, 'triangle', 0.16)),
+  /** Ánimo cuando el resultado es bajo (no es un castigo). */
+  encourage: () => [392, 440, 523].forEach((f, i) => tone(f, i * 0.14, 0.3, 'triangle', 0.14)),
+  /** Notificación o mensaje. */
+  notify: () => [1047, 1319].forEach((f, i) => tone(f, i * 0.09, 0.16, 'sine', 0.1)),
   /** Tic-tac de los últimos segundos: más golpes por segundo a medida que se acaba el tiempo. */
   urgent: (secsLeft = 5) => {
     const n = Math.max(1, Math.min(4, 6 - secsLeft))

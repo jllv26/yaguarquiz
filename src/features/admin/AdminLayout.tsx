@@ -14,7 +14,8 @@ import {
   Users,
 } from 'lucide-react'
 import { useState } from 'react'
-import { Navigate, NavLink, Outlet } from 'react-router-dom'
+import { Navigate, NavLink, Outlet, useLocation } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import { AnimatedBackground } from '../../components/AnimatedBackground'
 import { JaguarIntro, introPending } from '../../components/jaguar/JaguarIntro'
 import { ThemeToggle } from '../../components/TopBar'
@@ -38,6 +39,7 @@ const NAV = [
 
 export function AdminLayout() {
   const { loading, session, teacher, signOut } = useAuth()
+  const loc = useLocation()
   // Entrada del jaguar: una vez por pestaña al entrar al panel; se puede volver a ver con el botón 🎬
   const [intro, setIntro] = useState(0)
   const [first] = useState(introPending)
@@ -118,7 +120,9 @@ export function AdminLayout() {
         </nav>
 
         <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 lg:py-8">
-          <Outlet />
+          <motion.div key={loc.pathname} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.28, ease: 'easeOut' }}>
+            <Outlet />
+          </motion.div>
         </main>
       </div>
     </div>

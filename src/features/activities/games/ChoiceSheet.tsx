@@ -3,6 +3,7 @@ import { Pointer, X } from 'lucide-react'
 import { useEffect, useRef, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { cn } from '../../../lib/cn'
+import { sfx } from '../../../lib/sound'
 
 export interface Choice {
   key: string
@@ -46,6 +47,12 @@ export function ChoiceSheet({
   hint?: ReactNode
 }) {
   const first = useRef<HTMLButtonElement>(null)
+  const wasOpen = useRef(false)
+  useEffect(() => {
+    if (open && !wasOpen.current) sfx.open()
+    else if (!open && wasOpen.current) sfx.close()
+    wasOpen.current = open
+  }, [open])
   useEffect(() => {
     if (!open) return
     const k = (e: KeyboardEvent) => e.key === 'Escape' && onClose()

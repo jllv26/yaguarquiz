@@ -1,3 +1,4 @@
+import { sfx } from '../../../lib/sound'
 import { motion } from 'framer-motion'
 import { useEffect, useRef, useState } from 'react'
 import { JAGUAR } from '../../../components/jaguar/assets'
@@ -104,7 +105,11 @@ export default function Hangman() {
           {KEYS.map((k) => (
             <button
               key={k}
-              onClick={() => void guess(k)}
+              data-sfx="off"
+              onClick={() => {
+                sfx.tap()
+                void guess(k)
+              }}
               disabled={used.has(k) || busy}
               className={cn(
                 'h-11 rounded-xl font-display text-lg font-black shadow-sm transition',

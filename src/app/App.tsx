@@ -6,6 +6,7 @@ import { ConfirmProvider } from '../components/ui/Confirm'
 import { ToastProvider } from '../components/ui/Toast'
 import { AuthProvider } from '../features/auth/AuthProvider'
 import { HomePage } from '../features/home/HomePage'
+import { UiSounds } from './UiSounds'
 
 /**
  * HashRouter: las rutas quedan como /#/play/123456 para que GitHub Pages
@@ -48,6 +49,7 @@ export function App() {
       <ConfirmProvider>
       <AuthProvider>
         <HashRouter>
+          <UiSounds />
           <Suspense fallback={<PageLoader />}>
           <Routes>
             <Route path="/" element={<HomePage />} />

@@ -1,6 +1,7 @@
 import { CheckCircle2, Clock, Lock, Send, XCircle } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useTimerSounds } from '../../lib/useTimerSounds'
 import { Button } from '../../components/ui/Button'
 import { SolidCard } from '../../components/ui/Card'
 import { useConfirm } from '../../components/ui/Confirm'
@@ -59,13 +60,7 @@ export function ActivityAttempt({
   useEffect(() => {
     if (left !== null && left <= 0) void finish('auto')
   }, [left, finish])
-  const lastTick = useRef(-1)
-  useEffect(() => {
-    if (left === null) return
-    const sec = Math.ceil(left / 1000)
-    if (sec !== lastTick.current && sec > 0 && sec <= 10) sfx.urgent()
-    lastTick.current = sec
-  }, [left])
+  useTimerSounds(left, (t) => toast.info(t, 'Revisa lo que te falta y entrega a tiempo.', true))
 
   // al empezar se ve desde arriba: la guía «¿Qué hago ahora?» y el tablero (venía de bajar la pantalla de inicio)
   useEffect(() => {
