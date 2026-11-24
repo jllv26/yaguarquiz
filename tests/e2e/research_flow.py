@@ -100,7 +100,7 @@ with sync_playwright() as p:
     enter_aula(m, studs[0][0], ci3(studs[0][1]))
     m.get_by_role('button', name='Investigar').click()
     m.wait_for_url('**/play/*', timeout=10000)
-    m.get_by_role('button', name='Comenzar').click()
+    m.get_by_role('button', name=re.compile('^(Comenzar|Empezar a jugar)')).click()
     m.get_by_text('Tu caso (a cada compañero le tocó otro)').wait_for(timeout=10000)
     case1 = m.locator('h2').filter(has_text=re.compile('Heladería|Taller')).first.inner_text()
     check('A1', 'Ve SU caso, las preguntas y cómo se califica', m.get_by_text('Así te califica tu docente').count() == 1 and m.locator('textarea').count() == 2, case1)
@@ -160,7 +160,7 @@ with sync_playwright() as p:
         enter_aula(pg, ru, ci3(ci))
         pg.get_by_text('🏠 Crucigrama con versiones').locator('xpath=ancestor::div[contains(@class,"flex-wrap")][1]').get_by_role('button', name='Hacer').click()
         pg.wait_for_url('**/play/*', timeout=10000)
-        pg.get_by_role('button', name='Comenzar').click()
+        pg.get_by_role('button', name=re.compile('^(Comenzar|Empezar a jugar)')).click()
         pg.wait_for_timeout(2500)
         boards.append(' | '.join(sorted(set(re.findall(r'Pista de (\w+)', pg.locator('body').inner_text())))))
         if k == 0:

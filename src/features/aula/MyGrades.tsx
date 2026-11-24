@@ -67,7 +67,7 @@ export function MyGrades({ code, ru, ci }: { code: string; ru: string; ci: strin
               {its.map((it, k) => {
                 const c = row.cells[it.id]
                 const pct = c.score === null ? 0 : c.score
-                const parts = c.parts.filter((p) => d.sessions.find((s) => s.id === p.session_id))
+                const parts = c.parts.filter((p) => d.sessions.find((s) => s.id === p.session_id)).sort((a, b) => title(a.session_id).localeCompare(title(b.session_id), 'es', { numeric: true }))
                 const counted = parts.filter((p) => p.grade !== null || d.sessions.find((s) => s.id === p.session_id)?.done).length
                 const waiting = parts.length - counted
                 return (

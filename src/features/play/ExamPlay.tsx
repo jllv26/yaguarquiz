@@ -14,6 +14,7 @@ import {
   Loader2,
   Lock,
   Maximize,
+  PlayCircle,
   RefreshCw,
   Repeat,
   ShieldCheck,
@@ -48,7 +49,8 @@ import { JaguarFace } from '../../components/jaguar/JaguarFace'
 import { JaguarEye } from '../../components/jaguar/JaguarFx'
 import { activityState, type ActivityExamState, type ActivityReviewItem } from '../../lib/api/activities'
 import { ActivityAttempt, ActivityReview } from '../activities/ActivityAttempt'
-import { HowToPlay } from '../activities/HowToPlay'
+import { LeaveGuard } from '../../components/LeaveGuard'
+import { QuickGuide } from '../activities/HowToPlay'
 import { ACTIVITY_META } from '../activities/types'
 
 const pendKey = (attempt: string) => `yq-exam-pending-${attempt}`
@@ -239,7 +241,7 @@ function Home({ st, now, onStart, offline }: { st: ActivityExamState; now: numbe
             <ul className="mt-5 flex flex-col gap-2 text-sm">
               {s.time_limit_sec && (
                 <Rule icon={<Clock className="size-4" />}>
-                  Tienes <strong>{Math.round(s.time_limit_sec / 60)} {Math.round(s.time_limit_sec / 60) === 1 ? 'minuto' : 'minutos'}</strong> desde que presiones “Comenzar”. Al terminar el tiempo se entrega solo.
+                  Tienes <strong>{Math.round(s.time_limit_sec / 60)} {Math.round(s.time_limit_sec / 60) === 1 ? 'minuto' : 'minutos'}</strong> desde que presiones “{act ? 'Empezar a jugar' : 'Comenzar'}”. Al terminar el tiempo se entrega solo.
                 </Rule>
               )}
               {act ? (
@@ -250,21 +252,35 @@ function Home({ st, now, onStart, offline }: { st: ActivityExamState; now: numbe
                   <Rule icon={<ShieldCheck className="size-4" />}>No se puede copiar ni pegar texto.</Rule>
                 </>
               )}
+              {!s.focus_mode && (
+                <Rule icon={<AlertTriangle className="size-4" />}>
+                  No salgas de esta ventana mientras {act ? 'juegas' : 'respondes'}: cada salida queda registrada, tu docente la ve y <strong>puede ser penalizada</strong>.
+                </Rule>
+              )}
               {s.focus_mode && (
                 <Rule icon={<JaguarEye icon className="w-7" />}>
-                  Se abrirá en <strong>pantalla completa</strong>. Cada vez que salgas de la pestaña o ventana queda registrado
+                  Se abrirá en <strong>pantalla completa</strong>. Cada vez que salgas de la pestaña o ventana queda registrado y puede ser penalizado
                   {s.lock_after ? <> y a las <strong>{s.lock_after} salidas</strong> se bloquea</> : null}.
                 </Rule>
               )}
             </ul>
             {st.activity_type && (
               <div className="mt-5 rounded-3xl bg-uap-blue/5 p-3 ring-1 ring-uap-blue/15 sm:p-4">
-                <HowToPlay type={st.activity_type} />
+                <QuickGuide type={st.activity_type} />
               </div>
             )}
-            <Button size="xl" variant="success" className="mt-6 w-full" onClick={onStart} disabled={offline}>
-              <BookOpenCheck className="size-6" /> {st.attempts.length ? `Comenzar intento ${st.attempts.length + 1}` : 'Comenzar'}
-            </Button>
+            <div className="sticky bottom-2 z-10 mt-6">
+              <Button size="xl" variant="success" className="w-full shadow-xl" onClick={onStart} disabled={offline}>
+                {act ? <PlayCircle className="size-6" /> : <BookOpenCheck className="size-6" />}
+                {act
+                  ? st.attempts.length
+                    ? `Jugar de nuevo (intento ${st.attempts.length + 1})`
+                    : 'Empezar a jugar'
+                  : st.attempts.length
+                    ? `Comenzar intento ${st.attempts.length + 1}`
+                    : 'Comenzar'}
+              </Button>
+            </div>
           </>
         )}
         {!st.can_start && s.window === 'not_open' && (
@@ -560,7 +576,10 @@ function Attempt({
       const t0 = Date.now()
       try {
         const r = await submitAttempt(token)
-        if (auto) toast.info('Se acabó el tiempo', 'Tu examen se entregó con lo que respondiste.')
+        if (auto) {
+          sfx.timeUp()
+          toast.info('Se acabó el tiempo', 'Tu examen se entregó con lo que respondiste.')
+        }
         onState(r, t0)
       } catch {
         setOffline(true)
@@ -586,46 +605,23 @@ function Attempt({
   }
 
   // ---------------------------------------------------------- modo enfoque
+  // cambiar de pestaña o de app lo registra <LeaveGuard>; aquí solo la pantalla completa
   useEffect(() => {
     if (!s.focus_mode) return
-    let away = false
-    let timer = 0
-    const lose = () => {
-      if (away) return
-      away = true
-      void reportFocus(token, 'tab').then((r) => {
-        if (r.locked) setLocked(true)
-        if (r.focus_losses !== undefined) setLosses(r.focus_losses)
-      })
-      // vuelve a contar cuando el estudiante regrese al examen
-      window.clearInterval(timer)
-      timer = window.setInterval(() => {
-        if (document.visibilityState === 'visible' && document.hasFocus()) {
-          away = false
-          window.clearInterval(timer)
-          toast.info('Saliste del examen', 'Quedó registrado y el docente lo ve en su monitor.')
-        }
-      }, 800)
-    }
-    const onVis = () => document.visibilityState === 'hidden' && lose()
-    const onBlur = () => lose()
     const onFs = () => {
       if (fsSupported() && !document.fullscreenElement) {
         setNeedFs(true)
-        lose()
+        if (document.visibilityState === 'visible')
+          void reportFocus(token, 'tab').then((r) => {
+            if (r.locked) setLocked(true)
+            if (r.focus_losses !== undefined) setLosses(r.focus_losses)
+          })
       } else setNeedFs(false)
     }
-    document.addEventListener('visibilitychange', onVis)
-    window.addEventListener('blur', onBlur)
     document.addEventListener('fullscreenchange', onFs)
     if (fsSupported() && !document.fullscreenElement) setNeedFs(true)
-    return () => {
-      window.clearInterval(timer)
-      document.removeEventListener('visibilitychange', onVis)
-      window.removeEventListener('blur', onBlur)
-      document.removeEventListener('fullscreenchange', onFs)
-    }
-  }, [s.focus_mode, token, toast])
+    return () => document.removeEventListener('fullscreenchange', onFs)
+  }, [s.focus_mode, token])
 
   // mientras está bloqueado se consulta seguido para saber cuándo lo habilita el docente
   useEffect(() => {
@@ -652,6 +648,17 @@ function Attempt({
 
   return (
     <div className="flex w-full flex-col gap-3 select-none" onCopy={block} onCut={block} onContextMenu={block} onDragStart={block}>
+      <LeaveGuard
+        token={token}
+        active={!locked}
+        what="el examen"
+        lockAfter={s.lock_after}
+        timed={left !== null}
+        onReport={(r) => {
+          if (r.locked) setLocked(true)
+          if (r.focus_losses !== undefined) setLosses(r.focus_losses)
+        }}
+      />
       {/* Barra superior */}
       <div className="glass sticky top-2 z-20 flex flex-wrap items-center gap-3 rounded-3xl px-4 py-2">
         <span className="font-display font-bold">
@@ -661,7 +668,7 @@ function Attempt({
           {offline ? <CloudOff className="size-4" /> : nPending ? <RefreshCw className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}
           {offline ? 'Sin internet: se guarda en este equipo' : nPending ? 'Guardando…' : 'Guardado'}
         </span>
-        {s.focus_mode && losses > 0 && (
+        {losses > 0 && (
           <span className="flex items-center gap-1 text-sm font-semibold text-game-coral">
             <AlertTriangle className="size-4" /> {losses} salida{losses === 1 ? '' : 's'}
             {s.lock_after ? ` de ${s.lock_after}` : ''}

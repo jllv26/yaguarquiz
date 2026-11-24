@@ -82,7 +82,7 @@ def join(pg, pin, code, ci):
     pg.wait_for_timeout(1200)
     if pg.get_by_role('button', name='Ahora no').count():
         pg.get_by_role('button', name='Ahora no').click()
-    pg.get_by_role('button', name='Comenzar').wait_for(timeout=8000)
+    pg.get_by_role('button', name=re.compile('^(Comenzar|Empezar a jugar)')).wait_for(timeout=8000)
 
 
 def stat(pg, title):
@@ -147,7 +147,7 @@ with sync_playwright() as p:
     join(m, pin, 'DEMO-001', '001')
     m.screenshot(path=OUT + 'actividades-6-inicio-estudiante.png')
     check('9.7', 'El estudiante ve “Actividad: Crucigrama” y la cantidad de palabras', 'crucigrama' in m.locator('main').inner_text().lower() and 'palabras' in m.locator('main').inner_text().lower())
-    m.get_by_role('button', name='Comenzar').click()
+    m.get_by_role('button', name=re.compile('^(Comenzar|Empezar a jugar)')).click()
     m.wait_for_timeout(2500)
 
     def solve(clue_text):
@@ -192,7 +192,7 @@ with sync_playwright() as p:
     s_mem = make('memory', MEM)
     m2 = mc.new_page()
     join(m2, s_mem['pin'], 'DEMO-002', '002')
-    m2.get_by_role('button', name='Comenzar').click()
+    m2.get_by_role('button', name=re.compile('^(Comenzar|Empezar a jugar)')).click()
     m2.wait_for_timeout(4000)  # cuenta regresiva 3-2-1
     cards = m2.locator('button[aria-label^="Carta"]')
     pairs = {x['term']: x['prompt'] for x in MEM}
@@ -234,7 +234,7 @@ with sync_playwright() as p:
     s_cl = make('classify', CL)
     m3 = mc.new_page()
     join(m3, s_cl['pin'], 'DEMO-003', '003')
-    m3.get_by_role('button', name='Comenzar').click()
+    m3.get_by_role('button', name=re.compile('^(Comenzar|Empezar a jugar)')).click()
     m3.wait_for_timeout(4000)  # cuenta regresiva 3-2-1
     # el primero, mal a propósito; luego todos bien
     m3.locator('button[aria-pressed]', has_text='Excel').first.click()

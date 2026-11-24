@@ -30,8 +30,13 @@ async function rpc<T>(fn: string, args: Record<string, unknown>): Promise<T> {
   return data as T
 }
 
-export const portalLookup = (code: string, ru?: string | null, ci?: string | null) =>
-  rpc<PortalResult>('portal_lookup', { p_code: code, p_ru: ru ?? null, p_ci: ci ?? null })
+export const portalLookup = async (code: string, ru?: string | null, ci?: string | null) => {
+  const r = await rpc<PortalResult>('portal_lookup', { p_code: code, p_ru: ru ?? null, p_ci: ci ?? null })
+  // mismo cierre → por su número («Casa 2» antes de «Casa 10»)
+  if (r.ok && r.step === 'list')
+    r.items = [...r.items].sort((a, b) => (a.closes ?? '').slice(0, 16).localeCompare((b.closes ?? '').slice(0, 16)) || a.title.localeCompare(b.title, 'es', { numeric: true }))
+  return r
+}
 export const portalSetCode = (subject: string, code: string) => rpc<{ ok: true; code: string }>('portal_set_code', { p_subject: subject, p_code: code })
 
 /** Lo que el estudiante dejó en este navegador para no escribirlo cada vez. */

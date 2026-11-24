@@ -166,6 +166,25 @@ function tone(freq: number, start: number, dur: number, type: OscillatorType = '
   o.stop(t + dur + 0.05)
 }
 
+/** Tono que se desliza de una frecuencia a otra (saltos, caídas, «bonk»). */
+function glide(f1: number, f2: number, start: number, dur: number, type: OscillatorType = 'square', vol = 0.12) {
+  const a = audio()
+  if (!a || !sfxBus || prefs.muted || prefs.sfx === 0) return
+  const t = a.currentTime + start
+  const o = a.createOscillator()
+  const g = a.createGain()
+  o.type = type
+  o.frequency.setValueAtTime(f1, t)
+  o.frequency.exponentialRampToValueAtTime(f2, t + dur)
+  g.gain.setValueAtTime(0.0001, t)
+  g.gain.exponentialRampToValueAtTime(vol, t + 0.015)
+  g.gain.setValueAtTime(vol, t + dur * 0.7)
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur)
+  o.connect(g).connect(sfxBus)
+  o.start(t)
+  o.stop(t + dur + 0.05)
+}
+
 function hit(start: number, dur: number, vol: number, filter: { type: BiquadFilterType; freq: number; q?: number }, bus: 'sfx' | 'music' = 'sfx', at?: number) {
   const a = audio()
   if (!a || (bus === 'sfx' ? !sfxBus : !musicBus)) return
@@ -254,7 +273,40 @@ export const sfx = {
     tone(990, 0.06, 0.12, 'sine', 0.1)
   },
   correct: () => [523, 659, 784, 1047].forEach((f, i) => tone(f, i * 0.08, 0.3, 'triangle', 0.18)),
-  wrong: () => [330, 247].forEach((f, i) => tone(f, i * 0.15, 0.35, 'sawtooth', 0.08)),
+  /** Error: «bonk-bonk» que baja, bien audible en el parlante del celular. */
+  wrong: () => {
+    glide(440, 280, 0, 0.2, 'square', 0.13)
+    glide(330, 190, 0.18, 0.3, 'square', 0.13)
+    hit(0, 0.18, 0.3, { type: 'lowpass', freq: 220 })
+  },
+  /** Se acabaron los intentos de una palabra: trombón triste «wah-wah-wah-waaah». */
+  fail: () => {
+    ;[466, 440, 415].forEach((f, i) => glide(f, f * 0.97, i * 0.28, 0.26, 'triangle', 0.16))
+    glide(392, 330, 0.84, 0.75, 'triangle', 0.16)
+    glide(196, 165, 0.84, 0.75, 'square', 0.05)
+  },
+  /** Acción no válida («completa la palabra»): «eh-eh» corto. */
+  nope: () => {
+    tone(200, 0, 0.09, 'square', 0.09)
+    tone(200, 0.13, 0.09, 'square', 0.09)
+  },
+  /** Se acabó el tiempo: chicharra. */
+  timeUp: () => {
+    tone(196, 0, 0.8, 'square', 0.12)
+    tone(147, 0, 0.8, 'sawtooth', 0.08)
+    hit(0, 0.3, 0.3, { type: 'lowpass', freq: 200 })
+  },
+  /** Rana: salto, croar y chapuzón. */
+  jump: () => glide(260, 900, 0, 0.2, 'sine', 0.16),
+  ribbit: () => {
+    glide(320, 190, 0, 0.09, 'square', 0.1)
+    glide(340, 200, 0.13, 0.11, 'square', 0.1)
+  },
+  splash: () => {
+    hit(0, 0.5, 0.35, { type: 'bandpass', freq: 900, q: 0.5 })
+    hit(0.04, 0.35, 0.2, { type: 'highpass', freq: 3000 })
+    glide(700, 160, 0, 0.35, 'sine', 0.14)
+  },
   reveal: () => {
     ;[392, 523].forEach((f, i) => tone(f, i * 0.1, 0.3, 'triangle', 0.16))
     hit(0, 0.4, 0.12, { type: 'highpass', freq: 5000 })

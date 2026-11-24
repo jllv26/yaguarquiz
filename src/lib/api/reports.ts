@@ -116,7 +116,18 @@ export const adjustGrade = (participantId: string, score: number, reason: string
 export const gradeHistory = (sessionId: string) =>
   rpc<{ participant_id: string; old: number | null; new: number; reason: string; at: string }[]>('grade_history', { p_session: sessionId })
 export const setSessionItem = (sessionId: string, itemId: string | null) => rpc<null>('set_session_item', { p_session: sessionId, p_item: itemId })
-export const useGradebook = (subjectId: string) => useQuery({ queryKey: ['gradebook', subjectId], queryFn: () => rpc<GbData>('gradebook', { p_subject: subjectId }), enabled: !!subjectId })
+/** Actividades en orden: por fecha y, el mismo día, por su número («Clase 2» antes de «Clase 10»). */
+export const sortSessions = <T extends { date: string; title: string }>(xs: T[]) =>
+  [...xs].sort((a, b) => a.date.slice(0, 10).localeCompare(b.date.slice(0, 10)) || a.title.localeCompare(b.title, 'es', { numeric: true }))
+export const useGradebook = (subjectId: string) =>
+  useQuery({
+    queryKey: ['gradebook', subjectId],
+    queryFn: async () => {
+      const d = await rpc<GbData>('gradebook', { p_subject: subjectId })
+      return { ...d, sessions: sortSessions(d.sessions) }
+    },
+    enabled: !!subjectId,
+  })
 export const saveManualScore = (itemId: string, studentId: string, score: number | null) =>
   rpc<null>('save_manual_score', { p_item: itemId, p_student: studentId, p_score: score })
 export const logSheetSync = (sessionId: string, ok: boolean, error?: string) => rpc<null>('log_sheet_sync', { p_session: sessionId, p_ok: ok, p_error: error ?? null })

@@ -178,7 +178,8 @@ export function ActivityGame({
           haptic(25)
         } else if (action !== 'letter' || r.hit === false) {
           if (['find', 'pair'].includes(action) || ['matching', 'classify'].includes(board.type)) setErrors((e) => e + 1)
-          sfx.wrong()
+          if (r.done && !r.correct) sfx.fail()
+          else sfx.wrong()
           haptic([50, 40, 50])
           if (action !== 'letter') void shake.start({ x: [0, -10, 9, -6, 5, -2, 0], transition: { duration: 0.45 } })
           if (action !== 'letter' || (r.done && !r.correct)) {
@@ -211,7 +212,14 @@ export function ActivityGame({
   const withErrors = ['wordsearch', 'memory', 'matching', 'classify'].includes(board.type)
   const statCount = (research ? 1 : 2) + (withErrors ? 1 : 0) + (aside ? 1 : 0)
   const Game = GAMES[board.type]
-  const ctx = useMemo(() => ({ board, progress, play, busy, flash }), [board, progress, play, busy, flash])
+  const gameFlash = useCallback(
+    (good: boolean, text: string) => {
+      if (!good) sfx.nope()
+      flash(good, text)
+    },
+    [flash],
+  )
+  const ctx = useMemo(() => ({ board, progress, play, busy, flash: gameFlash }), [board, progress, play, busy, gameFlash])
 
   return (
     <GameCtx.Provider value={ctx}>

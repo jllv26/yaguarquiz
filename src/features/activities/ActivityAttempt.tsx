@@ -13,6 +13,7 @@ import { cn } from '../../lib/cn'
 import { sfx } from '../../lib/sound'
 import { celebrate, fmtLeft } from '../live/clock'
 import { ActivityGame } from './ActivityGame'
+import { LeaveGuard } from '../../components/LeaveGuard'
 import { ACTIVITY_META, type Engine } from './types'
 
 /** Intento en curso de una actividad (tarea o examen). */
@@ -44,7 +45,10 @@ export function ActivityAttempt({
       const t0 = Date.now()
       try {
         await submitAttempt(token)
-        if (why === 'auto') toast.info('Se acabó el tiempo', 'La actividad se entregó con lo que resolviste.')
+        if (why === 'auto') {
+          sfx.timeUp()
+          toast.info('Se acabó el tiempo', 'La actividad se entregó con lo que resolviste.')
+        }
         if (why === 'done') {
           sfx.fanfare()
           celebrate(true)
@@ -86,30 +90,6 @@ export function ActivityAttempt({
       document.removeEventListener('drop', onDrop, true)
     }
   }, [token, toast])
-
-  // modo enfoque: salir de la pestaña queda registrado (igual que en el examen)
-  useEffect(() => {
-    if (!st.session.focus_mode) return
-    let away = false
-    const lose = () => {
-      if (away) return
-      away = true
-      void reportFocus(token, 'tab').then((r) => r.locked && setLocked(true))
-      toast.info('Saliste de la actividad', 'Quedó registrado y el docente lo ve en su monitor.')
-    }
-    const back = () => {
-      if (document.visibilityState === 'visible') away = false
-    }
-    const onVis = () => (document.visibilityState === 'hidden' ? lose() : back())
-    document.addEventListener('visibilitychange', onVis)
-    window.addEventListener('blur', lose)
-    window.addEventListener('focus', back)
-    return () => {
-      document.removeEventListener('visibilitychange', onVis)
-      window.removeEventListener('blur', lose)
-      window.removeEventListener('focus', back)
-    }
-  }, [st.session.focus_mode, token, toast])
 
   // cuenta regresiva 3-2-1 al empezar un intento nuevo (no al volver a uno empezado)
   const [count, setCount] = useState<number | null>(() => (!['research', 'slides'].includes(board.type) && !Object.keys(board.progress ?? {}).length ? 3 : null))
@@ -164,6 +144,14 @@ export function ActivityAttempt({
           <Send className="size-4 sm:size-5" /> Entregar
         </Button>
       </div>
+      <LeaveGuard
+        token={token}
+        active={!locked}
+        what={st.session.mode === 'exam' ? 'el examen' : 'la actividad'}
+        lockAfter={st.session.lock_after}
+        timed={left !== null}
+        onReport={(r) => r.locked && setLocked(true)}
+      />
       <ActivityGame board={board} engine={engine} onAllDone={() => void finish('done')} onFatal={(e) => (e === 'locked' ? setLocked(true) : void finish('auto'))} />
       <AnimatePresence>
         {count !== null && (

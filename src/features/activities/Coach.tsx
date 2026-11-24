@@ -11,6 +11,7 @@ const ACTION = /toca|escribe|desliza|arrastra|elige|dale play|responde|ordena|bu
 
 /** Lo que dice la burbuja de la mano en cada juego (si no está, se usa el primer paso que dice «Toca»). */
 const POINTER_TEXT: Partial<Record<ActivityType, string>> = {
+  froggy: 'Toca la respuesta correcta: la rana salta a esa hoja.',
   classify: 'Toca una tarjeta: se abre una ventana para elegir su grupo.',
   matching: 'Toca un concepto: se abre una ventana con las definiciones.',
   fill_text: 'Toca el espacio para completarlo.',
@@ -42,8 +43,7 @@ function markSeen(type: ActivityType) {
 /** Tarjeta «¿Qué hago ahora?»: el paso actual se ilumina y avanza a medida que el estudiante juega. */
 export function GameCoach({ type, instructions, moves, touched }: { type: ActivityType; instructions?: string | null; moves: number; touched: boolean }) {
   const g = GUIDES[type]
-  const [first] = useState(() => seenCount(type) < 2)
-  const [demo, setDemo] = useState(first)
+  const [demo, setDemo] = useState(false)
   const [open, setOpen] = useState(true)
   useEffect(() => markSeen(type), [type])
   // al acertar o fallar la primera vez se cierra el ejemplo; después de dos jugadas la tarjeta se achica
@@ -90,7 +90,7 @@ export function GameCoach({ type, instructions, moves, touched }: { type: Activi
                     transition={active ? { duration: 1.6, repeat: Infinity } : undefined}
                     className={cn(
                       'relative flex items-start gap-2 rounded-2xl px-2.5 py-2 text-xs leading-snug transition-colors sm:text-[13px]',
-                      active ? 'bg-surface font-semibold shadow-md ring-2 ring-uap-blue' : past ? 'bg-uap-green/10 text-ink-soft' : 'bg-surface/60 text-ink-soft',
+                      active ? 'bg-surface font-semibold shadow-md ring-2 ring-uap-blue' : past ? 'hidden bg-uap-green/10 text-ink-soft sm:flex' : 'hidden bg-surface/60 text-ink-soft sm:flex',
                     )}
                   >
                     <span className={cn('grid size-5 shrink-0 place-items-center rounded-full font-display text-[11px] font-black text-white', active ? 'bg-uap-blue' : past ? 'bg-uap-green' : 'bg-ink/30')}>

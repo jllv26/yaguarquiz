@@ -598,7 +598,7 @@ export const GUIDES: Record<ActivityType, Guide> = {
     Demo: DictationDemo,
   },
   froggy: {
-    steps: ['Lee la pregunta de arriba.', 'Toca la hoja del estanque que tiene la respuesta correcta: la rana salta.', 'Si aciertas, la rana avanza hacia la orilla; si fallas, cae al agua 💦.'],
+    steps: ['Lee la pregunta de arriba.', 'Toca la respuesta correcta (A, B, C…): la rana salta a esa hoja.', 'Si aciertas, pasa a la siguiente pregunta; si fallas, cae al agua 💦.'],
     captions: ['Lee la pregunta', '1. Toca la hoja correcta', '¡Saltó y cruzó!'],
     Demo: FroggyDemo,
   },
@@ -744,6 +744,75 @@ export function HowToPlay({ type, compact }: { type: ActivityType; compact?: boo
           </>
         )}
       </ul>
+    </div>
+  )
+}
+
+/** Guía corta para la pantalla de inicio: 3 pasos claros; el ejemplo y los puntos solo si los pide. */
+export function QuickGuide({ type }: { type: ActivityType }) {
+  const g = GUIDES[type]
+  const meta = ACTIVITY_META[type]
+  const [more, setMore] = useState<'demo' | 'points' | null>(null)
+  const research = type === 'research' || type === 'slides'
+  return (
+    <div className="flex flex-col gap-3 text-left">
+      <p className="flex items-center gap-2 font-display text-lg font-black">
+        <span className="grid size-8 shrink-0 place-items-center rounded-xl text-white" style={{ background: meta.color }}>
+          <meta.icon className="size-5" />
+        </span>
+        Así se juega
+      </p>
+      <ol className="flex flex-col gap-2">
+        {g.steps.map((t, i) => (
+          <li key={i} className="flex items-start gap-2.5">
+            <span className="grid size-7 shrink-0 place-items-center rounded-full bg-uap-blue font-display text-sm font-black text-white">{i + 1}</span>
+            <span className="pt-0.5 font-semibold">{t}</span>
+          </li>
+        ))}
+      </ol>
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => setMore((m) => (m === 'demo' ? null : 'demo'))}
+          aria-expanded={more === 'demo'}
+          className="flex items-center gap-1.5 rounded-full bg-uap-blue/10 px-3 py-1.5 text-sm font-bold text-uap-blue hover:bg-uap-blue/20 dark:text-[#8db4ff]"
+        >
+          ▶ {more === 'demo' ? 'Ocultar ejemplo' : 'Ver un ejemplo animado'}
+        </button>
+        {!research && (
+          <button
+            type="button"
+            onClick={() => setMore((m) => (m === 'points' ? null : 'points'))}
+            aria-expanded={more === 'points'}
+            className="flex items-center gap-1.5 rounded-full bg-uap-gold/15 px-3 py-1.5 text-sm font-bold text-[#8a6416] hover:bg-uap-gold/25 dark:text-uap-gold"
+          >
+            <Star className="size-4" /> {more === 'points' ? 'Ocultar' : 'Cómo se gana puntos'}
+          </button>
+        )}
+      </div>
+      <AnimatePresence initial={false} mode="wait">
+        {more === 'demo' && (
+          <motion.div key="demo" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+            <p className="mb-1 text-center text-xs font-bold text-ink-soft">Esto es solo un ejemplo: el juego empieza cuando toques el botón verde.</p>
+            <GuideDemo type={type} />
+          </motion.div>
+        )}
+        {more === 'points' && (
+          <motion.ul key="points" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="flex flex-col gap-1 overflow-hidden rounded-2xl bg-uap-green/5 px-3 py-2 text-sm">
+            <li className="flex gap-1.5">
+              <Check className="size-4 shrink-0 text-uap-green" /> <span>Cada acierto suma hasta <b>1000 puntos</b>.</span>
+            </li>
+            {[...COMMON_TIPS, ...(g.tips ?? [])].map((t) => (
+              <li key={t} className="flex gap-1.5">
+                <X className="size-4 shrink-0 text-uap-red" /> <span>{t}</span>
+              </li>
+            ))}
+            <li className="flex gap-1.5">
+              <Star className="size-4 shrink-0 fill-uap-gold text-uap-gold" /> <span>3 estrellas: ★ al 50 %, ★★ al 75 % y ★★★ al 90 % de los puntos.</span>
+            </li>
+          </motion.ul>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

@@ -109,10 +109,33 @@ with sync_playwright() as p:
           m.get_by_role('button', name='Hacer').count() == 3, f"{m.get_by_role('button', name='Hacer').count()} botones Hacer")
     m.get_by_role('button', name='Hacer').first.click()
     m.wait_for_url('**/play/*', timeout=10000)
-    m.get_by_role('button', name='Comenzar').wait_for(timeout=15000)
+    m.get_by_role('button', name=re.compile('^(Comenzar|Empezar a jugar)')).wait_for(timeout=15000)
+    m.screenshot(path=OUT + 'aula_B_inicio.png', full_page=True)
     check('B2', 'Con un botón abre la actividad (sin escribir PIN ni RU otra vez)', True)
-    m.get_by_role('button', name='Comenzar').click()
+    m.get_by_role('button', name=re.compile('^(Comenzar|Empezar a jugar)')).click()
     m.wait_for_timeout(4000)
+    # salir de la ventana (cambiar de app) y volver: aviso + queda registrado
+    vis = "s => { Object.defineProperty(document, 'visibilityState', { get: () => s, configurable: true }); document.dispatchEvent(new Event('visibilitychange')) }"
+    m.evaluate(f'({vis})("hidden")')
+    m.wait_for_timeout(800)
+    m.evaluate(f'({vis})("visible")')
+    aviso = m.get_by_role('alertdialog')
+    aviso.wait_for(timeout=5000)
+    txt = aviso.inner_text()
+    m.wait_for_timeout(900)
+    m.screenshot(path=OUT + 'aula_B_salida.png')
+    aviso.get_by_role('button', name='Entendido, sigo aquí').click()
+    salidas = sql("select coalesce(max(a.focus_losses), 0) from public.attempts a join public.participants p on p.id = a.participant_id join public.students st on st.id = p.student_id where st.university_code = %s and a.submitted_at is null", [ru])[0][0]
+    check('B7', 'Al salir de la ventana y volver ve el aviso «puede ser penalizado» y la salida queda registrada',
+          'puede ser penalizado' in txt and salidas >= 1, f'salidas={salidas}')
+    # botón atrás del celular: pregunta antes de salir
+    m.go_back()
+    dlg2 = m.get_by_role('dialog')
+    dlg2.get_by_text('¿Salir de la actividad?').wait_for(timeout=5000)
+    m.screenshot(path=OUT + 'aula_B_salir.png')
+    dlg2.get_by_role('button', name='Cancelar').click()
+    m.wait_for_timeout(500)
+    check('B8', 'El botón «atrás» pregunta antes de salir y con «Cancelar» sigue en la actividad', '/play/' in m.url and m.get_by_role('button', name='Entregar').count() > 0, m.url)
     for it in CL:
         loc = m.locator('button[aria-pressed]', has_text=it['term'])
         if not loc.count():
