@@ -115,12 +115,12 @@ export function BulkAssignModal({ open, onClose, subjectId: initialSubject }: { 
       }
       setProgress({ done: i + 1, total: list.length })
     }
-    void mailNow().catch(() => null)
+    const mail = await mailNow().catch(() => null)
     await qc.invalidateQueries()
     setProgress(null)
     setPicked(new Set())
     if (fails) toast.error(`No se pudieron asignar ${fails}`, 'Intente de nuevo con esas actividades.')
-    else toast.success(`${list.length} actividades asignadas`, 'Los estudiantes ya las ven en su aula y les llega un solo correo con todas.')
+    else toast.success(`${list.length} actividades asignadas`, mail?.ok ? 'Los estudiantes ya las ven en su aula; el correo con todas sale ahora.' : 'Los estudiantes ya las ven en su aula. El correo con todas sale solo en los próximos minutos (lo envía Google).')
     onClose()
   }
 

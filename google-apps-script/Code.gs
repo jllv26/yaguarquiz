@@ -183,7 +183,7 @@ function json_(obj) {
 // ------------------------------------------------------------------ correos a estudiantes
 /**
  * EJECUTE ESTA FUNCIÓN UNA VEZ (menú de arriba: elegir «activarCorreos» y presionar ▶ Ejecutar).
- * Pide permiso para enviar correos desde su Gmail y deja programado el envío cada 5 minutos.
+ * Pide permiso para enviar correos desde su Gmail y deja programado el envío cada minuto.
  */
 function activarCorreos() {
   // Sin token: se conecta solo con YaguarQuiz (el docente abrió la ventana de conexión para este correo)
@@ -198,11 +198,11 @@ function activarCorreos() {
   ScriptApp.getProjectTriggers().forEach(function (t) {
     if (t.getHandlerFunction() === 'enviarCorreos') ScriptApp.deleteTrigger(t);
   });
-  ScriptApp.newTrigger('enviarCorreos').timeBased().everyMinutes(5).create();
+  ScriptApp.newTrigger('enviarCorreos').timeBased().everyMinutes(1).create();
   return enviarCorreos();
 }
 
-/** Envía lo pendiente (la llama el reloj cada 5 minutos y YaguarQuiz al lanzar una tarea). */
+/** Envía lo pendiente (la llama el reloj cada minuto y YaguarQuiz al lanzar una tarea). */
 function enviarCorreos() {
   const lock = LockService.getScriptLock();
   if (!lock.tryLock(1000)) return { ok: true, busy: true, sent: 0 };

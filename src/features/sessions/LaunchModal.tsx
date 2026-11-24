@@ -179,7 +179,10 @@ function LaunchModalInner({ open, onClose, quiz }: Props & { quiz: NonNullable<P
         return
       }
       // aviso por correo a los estudiantes (si está activado): se pide al script que envíe ya
-      if (mode === 'homework') void mailNow().catch(() => null)
+      if (mode === 'homework')
+        void mailNow()
+          .then((m) => toast.info('Tarea publicada', m.ok ? 'El aviso por correo a los estudiantes sale ahora.' : 'El aviso por correo sale solo en los próximos minutos (lo envía Google).'))
+          .catch(() => null)
       onClose()
       navigate(`/host/${r.id}`)
     } catch (e) {
