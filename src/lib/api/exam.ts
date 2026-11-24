@@ -118,6 +118,8 @@ export interface MonitorRow {
   last_submitted_at: string | null
   last_reason: string | null
   focus_total: number
+  /** intentó entrar desde otro equipo y espera que el docente lo autorice */
+  takeover_pending?: boolean
   paste_total: number
   current: { number: number; started_at: string; deadline: string | null; answered: number; total: number; locked: boolean; focus_losses: number } | null
 }

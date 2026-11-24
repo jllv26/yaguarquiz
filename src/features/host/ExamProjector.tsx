@@ -17,7 +17,7 @@ const hhmm = (ms: number) => new Date(ms).toLocaleTimeString('es-BO', { hour: '2
  * Pantalla para el proyector durante un examen: reloj gigante, cuántos están respondiendo y cuántos entregaron
  * (sin nombres) y música de suspenso que se acelera en los últimos 5 minutos. Suena solo en el proyector.
  */
-export function ExamProjector({ st, now, onClose }: { st: MonitorState; now: number; onClose: () => void }) {
+export function ExamProjector({ st, now, pending = 0, onClose }: { st: MonitorState; now: number; pending?: number; onClose: () => void }) {
   const s = st.session
   const [music, setMusicOn] = useState(true)
   const [full, setFull] = useState(!!document.fullscreenElement)
@@ -137,6 +137,20 @@ export function ExamProjector({ st, now, onClose }: { st: MonitorState; now: num
         </button>
       </header>
 
+      <AnimatePresence>
+        {pending > 0 && (
+          <motion.button
+            type="button"
+            initial={{ y: -20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="relative mx-auto mt-3 rounded-full bg-[#ffd43b] px-5 py-2 font-bold text-[#14213d] shadow-xl"
+          >
+            🔁 {pending === 1 ? '1 estudiante pide' : `${pending} estudiantes piden`} cambiar de equipo · toque aquí para autorizar
+          </motion.button>
+        )}
+      </AnimatePresence>
       <main className="relative flex flex-1 flex-col items-center justify-center gap-6 px-8 text-center">
         <AnimatePresence mode="wait">
           {phase === 'over' ? (

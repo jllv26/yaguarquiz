@@ -140,6 +140,40 @@ with sync_playwright() as p:
     t.wait_for_timeout(4500)
     t.screenshot(path=OUT + 'examen_proyector_final.png')
     check('E4', 'En los últimos 5 minutos cambia a «Últimos minutos» (rojo)', 'últimos minutos' in pj.inner_text().lower())
+    sql("update public.attempts set deadline = now() + interval '40 minutes' where session_id = %s and submitted_at is null", [sid])
+    pj.get_by_role('button', name='Cerrar la pantalla del proyector').click()
+    # ---------- se le colgó la PC: entra desde otro equipo
+    c2 = b.new_context(viewport={'width': 1366, 'height': 768})
+    c2.add_init_script("localStorage.setItem('yq-theme','light'); sessionStorage.setItem('yq-no-intro','1')")
+    m2 = c2.new_page()
+    m2.on('pageerror', lambda e: errs.append(str(e)))
+    m2.goto(BASE + f'#/play/{pin}')
+    m2.get_by_label('Tu RU').fill(ru)
+    m2.keyboard.press('Enter')
+    m2.get_by_label('Últimos 3 dígitos').fill(ci3)
+    m2.keyboard.press('Enter')
+    m2.wait_for_timeout(500)
+    if m2.get_by_role('button', name='Entrar').count():
+        m2.get_by_role('button', name='Entrar').click()
+    m2.get_by_text(re.compile('ya está abierto en otro equipo')).wait_for(timeout=8000)
+    m2.screenshot(path=OUT + 'examen_otro_equipo.png')
+    check('E5', 'Desde otro equipo le dice que avise al docente (su RU está abierto en otra PC)', True)
+    banner = t.get_by_role('alert').filter(has_text='otro equipo')
+    banner.wait_for(timeout=8000)
+    t.screenshot(path=OUT + 'examen_monitor_cambio.png')
+    banner.get_by_role('button', name=re.compile('^Autorizar')).click()
+    t.wait_for_timeout(1500)
+    pend = sql('select takeover_pending, device_id is null from public.participants where session_id = %s and student_id is not null', [sid])[0]
+    check('E6', 'El docente ve el aviso en el monitor y lo autoriza con un botón', pend == (False, True), str(pend))
+    m2.get_by_role('button', name='Entrar').click()  # vuelve a tocar «Entrar»
+    try:
+        m2.get_by_role('button', name='Ahora no').click(timeout=4000)
+    except Exception:
+        pass
+    m2.get_by_text(re.compile(r'respondidas')).first.wait_for(timeout=10000)
+    m2.wait_for_timeout(800)
+    top = m2.get_by_text(re.compile(r'^\d+/6')).first.inner_text()
+    check('E7', 'En el otro equipo sigue donde se quedó (respuestas guardadas)', top.startswith('3/6'), top)
     b.close()
 check('Z1', 'Sin errores de JavaScript', not errs, '; '.join(errs[:3]))
 print(f'\nResultado: {sum(results)}/{len(results)}')

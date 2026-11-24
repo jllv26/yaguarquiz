@@ -158,7 +158,7 @@ export const PLAY_ERRORS: Record<string, string> = {
   started: 'La sesión ya empezó y el docente no permite entrar tarde.',
   not_enrolled: 'Ese RU no está inscrito en esta asignatura. Revisa el número o avisa al docente.',
   ci: 'Los últimos 3 dígitos del CI no coinciden.',
-  other_device: 'Ese RU ya está jugando en otro dispositivo. El docente puede autorizarte desde el proyector.',
+  other_device: 'Tu RU ya está abierto en otro equipo. Avisa a tu docente: con un toque te autoriza el cambio y vuelves a entrar aquí. Tu avance no se pierde.',
   kicked: 'El docente te retiró de esta sesión.',
   nickname_length: 'El apodo debe tener entre 2 y 20 letras.',
   nickname_bad: 'Elige un apodo apropiado.',

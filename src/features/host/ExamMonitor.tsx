@@ -6,6 +6,7 @@ import {
   Copy,
   Download,
   Lock,
+  MonitorSmartphone,
   MoreVertical,
   Play,
   Plus,
@@ -18,7 +19,7 @@ import {
   UserX,
 } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { AnimatedBackground } from '../../components/AnimatedBackground'
 import { Button } from '../../components/ui/Button'
@@ -35,6 +36,7 @@ import { buildWorkbook, downloadBlob, headerCell, titleCell } from '../../lib/ex
 import { AvatarBubble } from '../live/LiveBits'
 import { fmtLeft, useServerNow } from '../live/clock'
 import { useAutoSync } from '../reports/useAutoSync'
+import { sfx } from '../../lib/sound'
 import { ExamProjector } from './ExamProjector'
 
 type Filter = 'all' | 'progress' | 'done' | 'absent' | 'alerts'
@@ -75,6 +77,13 @@ export function ExamMonitor({ id }: { id: string }) {
   }, [refresh])
   const now = useServerNow(offset, true, 1000)
   const closedNow = !!st && (st.session.status === 'finished' || (!!st.session.closes_at && new Date(st.session.closes_at).getTime() <= now))
+  // aviso con sonido cuando alguien pide entrar desde otro equipo
+  const pending = useMemo(() => (st?.rows ?? []).filter((r) => r.takeover_pending && !r.kicked), [st?.rows])
+  const pendingCount = useRef(0)
+  useEffect(() => {
+    if (pending.length > pendingCount.current) sfx.notify()
+    pendingCount.current = pending.length
+  }, [pending.length])
   useAutoSync(id, closedNow && st?.session.identification === 'roster' && !st.rows.some((r) => r.current))
 
   // primero quienes entraron (los que están en curso arriba), al final los ausentes
@@ -134,7 +143,7 @@ export function ExamMonitor({ id }: { id: string }) {
       toast.error('No se pudo completar', (e as Error).message)
     }
   }
-  async function act(r: MonitorRow, action: 'extra_time' | 'unlock' | 'grant_attempt' | 'force_submit' | 'kick', minutes = 0) {
+  async function act(r: MonitorRow, action: 'extra_time' | 'unlock' | 'grant_attempt' | 'force_submit' | 'kick' | 'device', minutes = 0) {
     if (!r.participant_id) return
     if (action === 'force_submit' || action === 'kick') {
       const ok = await confirm({
@@ -149,9 +158,10 @@ export function ExamMonitor({ id }: { id: string }) {
       if (action === 'kick') {
         if (r.current) await examParticipant(r.participant_id, 'force_submit')
         await hostParticipant(r.participant_id, 'kick')
-      } else await examParticipant(r.participant_id, action, minutes)
+      } else if (action === 'device') await hostParticipant(r.participant_id, 'authorize_device')
+      else await examParticipant(r.participant_id, action, minutes)
       toast.success(
-        { extra_time: `+${minutes} min para ${r.name}`, unlock: `${r.name} fue desbloqueado`, grant_attempt: `${r.name} tiene un intento más`, force_submit: 'Examen entregado', kick: 'Participante retirado' }[action],
+        { extra_time: `+${minutes} min para ${r.name}`, unlock: `${r.name} fue desbloqueado`, grant_attempt: `${r.name} tiene un intento más`, force_submit: 'Examen entregado', kick: 'Participante retirado', device: `${r.name} ya puede entrar desde el otro equipo` }[action],
       )
       void refresh()
     } catch (e) {
@@ -199,7 +209,7 @@ export function ExamMonitor({ id }: { id: string }) {
   return (
     <div className="relative flex min-h-dvh flex-col">
       <AnimatedBackground variant="calm" />
-      {projector && <ExamProjector st={st} now={now} onClose={() => setProjector(false)} />}
+      {projector && <ExamProjector st={st} now={now} pending={pending.length} onClose={() => setProjector(false)} />}
       <header className="glass relative z-10 mx-3 mt-3 flex flex-wrap items-center gap-3 rounded-3xl px-4 py-2.5">
         <Link to="/admin/sesiones" className="grid size-10 place-items-center rounded-xl hover:bg-ink/5" aria-label="Volver al panel">
           <ArrowLeft className="size-5" />
@@ -225,6 +235,19 @@ export function ExamMonitor({ id }: { id: string }) {
       </header>
 
       <main className="relative z-0 mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 py-5">
+        {pending.length > 0 && (
+          <div role="alert" className="flex flex-wrap items-center gap-2 rounded-3xl bg-uap-gold/20 px-4 py-3 ring-2 ring-uap-gold">
+            <MonitorSmartphone className="size-6 shrink-0 text-[#8a6416]" />
+            <p className="min-w-0 flex-1 font-semibold">
+              {pending.length === 1 ? 'Un estudiante quiere' : `${pending.length} estudiantes quieren`} entrar desde otro equipo (por ejemplo, se le colgó la PC). Si está bien, autorícelo: sigue donde se quedó.
+            </p>
+            {pending.map((r) => (
+              <Button key={r.participant_id} size="sm" variant="gold" onClick={() => void act(r, 'device')}>
+                Autorizar a {r.name.split(',')[1]?.trim().split(' ')[0] ?? r.name}
+              </Button>
+            ))}
+          </div>
+        )}
         <div className="grid gap-4 lg:grid-cols-[340px_1fr]">
           {/* Acceso */}
           <SolidCard className="flex flex-col items-center gap-3 p-5 text-center">
@@ -378,7 +401,7 @@ function Row({
   now: number
   questionCount: number
   pass: number
-  onAct: (r: MonitorRow, a: 'extra_time' | 'unlock' | 'grant_attempt' | 'force_submit' | 'kick', m?: number) => void
+  onAct: (r: MonitorRow, a: 'extra_time' | 'unlock' | 'grant_attempt' | 'force_submit' | 'kick' | 'device', m?: number) => void
 }) {
   const [menu, setMenu] = useState(false)
   const st = rowStatus(r)
@@ -462,7 +485,16 @@ function Row({
       <td className="relative px-2 py-2.5">
         {r.participant_id && !r.kicked && (
           <>
-            {c?.locked ? (
+            {r.takeover_pending ? (
+              <button
+                onClick={() => onAct(r, 'device')}
+                className="flex animate-pulse items-center gap-1 whitespace-nowrap rounded-lg bg-uap-gold px-2 py-1.5 text-xs font-black text-uap-blue-900"
+                aria-label={`Autorizar a ${r.name} a entrar desde otro equipo`}
+                title="Quiere entrar desde otro equipo"
+              >
+                <MonitorSmartphone className="size-4" /> Cambiar de equipo
+              </button>
+            ) : c?.locked ? (
               <button onClick={() => onAct(r, 'unlock')} className="rounded-lg bg-uap-red p-1.5 text-white" aria-label={`Desbloquear a ${r.name}`} title="Desbloquear">
                 <Unlock className="size-4" />
               </button>
@@ -477,6 +509,9 @@ function Row({
                 <div className="absolute right-2 top-10 z-20 w-56 overflow-hidden rounded-2xl border border-line bg-surface-2 py-1 shadow-xl">
                   <Item icon={<Plus className="size-4" />} onClick={() => (setMenu(false), onAct(r, 'extra_time', 5))}>
                     +5 min de tiempo extra
+                  </Item>
+                  <Item icon={<MonitorSmartphone className="size-4" />} onClick={() => (setMenu(false), onAct(r, 'device'))}>
+                    Liberar su equipo (cambiar de PC)
                   </Item>
                   <Item icon={<RotateCcw className="size-4" />} onClick={() => (setMenu(false), onAct(r, 'grant_attempt'))}>
                     Permitir otro intento
