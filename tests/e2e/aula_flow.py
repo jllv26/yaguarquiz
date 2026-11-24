@@ -129,6 +129,20 @@ with sync_playwright() as p:
     check('B3', 'Vuelve al aula: quedan 2 por hacer y la hecha muestra su nota', m.get_by_role('button', name='Hacer').count() == 2 and hechas == 1,
           f"Hacer={m.get_by_role('button', name='Hacer').count()} hechas={hechas}")
     m.screenshot(path=OUT + 'aula_B_hecha.png', full_page=True)
+    m.get_by_role('tab', name='Mis notas').click()
+    m.get_by_text(re.compile('^Llevas en el')).wait_for(timeout=10000)
+    m.wait_for_timeout(1200)
+    g = call('portal_grades', {'p_code': code, 'p_ru': ru, 'p_ci': ci3}, teacher=False)
+    pr = next((i for i in g['plan']['items'] if i['category'].lower().startswith('práctica') and any(s['grading_item_id'] == i['id'] for s in g['sessions'])), None)
+    mine = [x['grade'] for x in g['grades'] if any(s['id'] == x['session_id'] and s['grading_item_id'] == (pr or {}).get('id') for s in g['sessions'])]
+    exp = round(sum(float(v) for v in mine) / len(mine) / 100 * float(pr['weight']), 2) if mine else None
+    card = m.locator(f'[data-rubro="{pr["category"]}"]').filter(has_text='Promedio de').first
+    txt = card.inner_text() if card.count() else ''
+    shown = f'{exp:g}'.replace('.', ',') if exp is not None else '?'
+    check('B6', '«Mis notas» muestra el total de su categoría (promedio convertido a puntos, igual que la libreta)',
+          exp is not None and shown in txt and 'Promedio de 1 actividad' in txt, f'esperado {shown} / {pr["weight"]}: {txt[:90]!r}')
+    m.screenshot(path=OUT + 'aula_B_notas.png', full_page=True)
+    m.get_by_role('tab', name='Mis actividades').click()
     m.reload()
     m.get_by_role('heading', name=re.compile('^Por hacer')).wait_for(timeout=10000)
     check('B4', 'Al recargar no le vuelve a pedir el RU (queda en su celular)', m.get_by_label('Tu RU').count() == 0)

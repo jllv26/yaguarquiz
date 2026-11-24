@@ -1,3 +1,4 @@
+import type { GbData } from '../gradebook'
 import { supabase } from '../supabase'
 import type { ActivityType } from '../../features/activities/types'
 
@@ -57,3 +58,8 @@ export function savePortalLogin(v: PortalLogin | null) {
   }
 }
 export const portalUrl = (code: string) => `${location.origin}${location.pathname}#/aula/${code}`
+
+/** Libreta del estudiante (solo su fila): mismos datos que la libreta del docente. */
+export type PortalGradesData = Omit<GbData, 'sessions'> & { sessions: (GbData['sessions'][number] & { show_grade: boolean })[] }
+export type PortalGrades = { ok: false; error: 'code' | 'ru' | 'ci' } | ({ ok: true } & PortalGradesData)
+export const portalGrades = (code: string, ru: string, ci: string) => rpc<PortalGrades>('portal_grades', { p_code: code, p_ru: ru, p_ci: ci || null })

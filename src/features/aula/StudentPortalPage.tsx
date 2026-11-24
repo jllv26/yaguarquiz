@@ -9,6 +9,7 @@ import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import { Input } from '../../components/ui/Input'
 import { deviceId, joinSession, PLAY_ERRORS } from '../../lib/api/live'
+import { MyGrades } from './MyGrades'
 import { portalLookup, readPortalLogin, savePortalLogin, type PortalItem, type PortalResult } from '../../lib/api/portal'
 import { randomAvatar } from '../../lib/avatars'
 import { cn } from '../../lib/cn'
@@ -190,7 +191,7 @@ export function StudentPortalPage() {
           </Card>
         )}
 
-        {screen.kind === 'list' && <PortalList data={screen.data} busy={busy} error={error} onOpen={open} onLogout={logout} onRefresh={() => void lookup(screen.data.code, ru, ci, true)} />}
+        {screen.kind === 'list' && <PortalList data={screen.data} login={{ ru, ci }} busy={busy} error={error} onOpen={open} onLogout={logout} onRefresh={() => void lookup(screen.data.code, ru, ci, true)} />}
       </main>
     </div>
   )
@@ -198,6 +199,7 @@ export function StudentPortalPage() {
 
 function PortalList({
   data,
+  login,
   busy,
   error,
   onOpen,
@@ -205,6 +207,7 @@ function PortalList({
   onRefresh,
 }: {
   data: ListData
+  login: { ru: string; ci: string }
   busy: string | null
   error: string
   onOpen: (it: PortalItem) => void
@@ -220,6 +223,7 @@ function PortalList({
   const total = data.items.filter((x) => x.win !== 'not_open').length
   const doneCount = data.items.filter((x) => x.win !== 'not_open' && x.done > 0).length
   const avg = graded.length ? Math.round(graded.reduce((a, x) => a + Number(x.best), 0) / graded.length) : null
+  const [tab, setTab] = useState<'acts' | 'notas'>('acts')
   return (
     <div className="mt-2 flex w-full flex-col gap-4">
       <Card className="flex flex-wrap items-center gap-3">
@@ -263,11 +267,35 @@ function PortalList({
           {error}
         </p>
       )}
-      <Section title="Por hacer" items={todo} empty="No tienes actividades pendientes." busy={busy} onOpen={onOpen} />
-      {improve.length > 0 && <Section title="Hechas · puedes mejorar tu nota" items={improve} busy={busy} onOpen={onOpen} />}
-      {delivered.length > 0 && <Section title="Entregadas" items={delivered} busy={busy} onOpen={onOpen} />}
-      {soon.length > 0 && <Section title="Próximamente" items={soon} busy={busy} onOpen={onOpen} />}
-      {closed.length > 0 && <Section title="Cerradas" items={closed} busy={busy} onOpen={onOpen} />}
+      <div role="tablist" aria-label="Vista" className="grid grid-cols-2 gap-1 rounded-2xl bg-ink/5 p-1">
+        {(
+          [
+            ['acts', 'Mis actividades'],
+            ['notas', 'Mis notas'],
+          ] as const
+        ).map(([k, label]) => (
+          <button
+            key={k}
+            role="tab"
+            aria-selected={tab === k}
+            onClick={() => setTab(k)}
+            className={cn('rounded-xl py-2 font-display font-black transition', tab === k ? 'bg-surface-2 text-ink shadow' : 'text-ink-soft hover:text-ink')}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      {tab === 'notas' ? (
+        <MyGrades code={data.code} ru={login.ru} ci={login.ci} />
+      ) : (
+        <>
+          <Section title="Por hacer" items={todo} empty="No tienes actividades pendientes." busy={busy} onOpen={onOpen} />
+          {improve.length > 0 && <Section title="Hechas · puedes mejorar tu nota" items={improve} busy={busy} onOpen={onOpen} />}
+          {delivered.length > 0 && <Section title="Entregadas" items={delivered} busy={busy} onOpen={onOpen} />}
+          {soon.length > 0 && <Section title="Próximamente" items={soon} busy={busy} onOpen={onOpen} />}
+          {closed.length > 0 && <Section title="Cerradas" items={closed} busy={busy} onOpen={onOpen} />}
+        </>
+      )}
     </div>
   )
 }
