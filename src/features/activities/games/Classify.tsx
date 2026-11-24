@@ -113,6 +113,7 @@ export default function Classify() {
       <ChoiceSheet
         open={!!picked}
         title="¿A qué grupo pertenece?"
+        hint="Toca el grupo de esta tarjeta. Si te equivocas, vuelve a la caja y puedes intentarlo otra vez."
         subject={
           picked && (
             <span className="flex items-center gap-2">

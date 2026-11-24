@@ -67,6 +67,11 @@ export function ActivityAttempt({
     lastTick.current = sec
   }, [left])
 
+  // al empezar se ve desde arriba: la guía «¿Qué hago ahora?» y el tablero (venía de bajar la pantalla de inicio)
+  useEffect(() => {
+    window.scrollTo({ top: 0 })
+  }, [])
+
   // anti-trampa: no se puede pegar texto en las respuestas (queda registrado para el docente)
   useEffect(() => {
     const onPaste = (e: ClipboardEvent) => {

@@ -131,6 +131,7 @@ export default function FillText() {
         <ChoiceSheet
           open={!!sheet}
           title={`¿Qué palabra va en el espacio ${sheetN ?? ''}?`}
+          hint="Lee la frase de arriba y toca la palabra que completa el espacio."
           subject={sheet ? <span className="text-sm font-semibold">{contextOf(sheet)}</span> : null}
           choices={available.map((w, i) => ({ key: `${i}:${w}`, label: w }))}
           cols={available.length > 4 ? 2 : 1}

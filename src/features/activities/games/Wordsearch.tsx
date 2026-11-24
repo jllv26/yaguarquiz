@@ -57,7 +57,7 @@ export default function Wordsearch() {
 
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]">
-      <div className="overflow-x-auto rounded-3xl bg-surface-2 p-2 shadow-sm ring-1 ring-line sm:p-3" style={{ containerType: 'inline-size' }}>
+      <div data-coach="" className="overflow-x-auto rounded-3xl bg-surface-2 p-2 shadow-sm ring-1 ring-line sm:p-3" style={{ containerType: 'inline-size' }}>
         <div
           role="group" data-board
           aria-label="Sopa de letras: arrastre desde la primera letra hasta la última, o toque la primera y luego la última"

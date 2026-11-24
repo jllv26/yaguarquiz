@@ -4,6 +4,7 @@ import { createContext, lazy, Suspense, useCallback, useContext, useEffect, useM
 import { useToast } from '../../components/ui/Toast'
 import { cn } from '../../lib/cn'
 import { sfx } from '../../lib/sound'
+import { GameCoach, PointerHint } from './Coach'
 import { HowToPlayButton } from './HowToPlay'
 import { ACTIVITY_META, type ActivityBoard, type ActivityType, type Engine, type PlayAction, type PlayResult, type Progress } from './types'
 
@@ -76,6 +77,10 @@ export function ActivityGame({
   const [errors, setErrors] = useState(board.errors ?? 0)
   const [busy, setBusy] = useState(false)
   const [bubble, setBubble] = useState<{ id: number; good: boolean; text: string } | null>(null)
+  // guía dentro del juego: jugadas hechas y si ya tocó el tablero
+  const [moves, setMoves] = useState(0)
+  const [touched, setTouched] = useState(false)
+  const area = useRef<HTMLDivElement>(null)
   const meta = ACTIVITY_META[board.type]
   const done = Object.values(progress).filter((p) => p.done).length
   const points = Math.round(Object.values(progress).reduce((s, p) => s + (p.partial ?? 0) * 1000, 0))
@@ -118,6 +123,8 @@ export function ActivityGame({
           return r
         }
         const item = r.item ?? (data.item as string | undefined)
+        setTouched(true)
+        if (action !== 'clue') setMoves((m) => m + 1)
         if (action === 'clue') return r // adivinanza: la pista la muestra el juego
         if (action === 'seen') {
           // presentación: la diapositiva cuenta como vista (sin puntos ni sonidos)
@@ -235,10 +242,13 @@ export function ActivityGame({
             ))}
           </div>
         )}
-        {board.instructions && <p className="rounded-2xl bg-uap-gold/10 px-4 py-2 text-sm font-semibold">{board.instructions}</p>}
-        <Suspense fallback={<div className="h-64 animate-pulse rounded-3xl bg-ink/5" />}>
-          <Game />
-        </Suspense>
+        <GameCoach type={board.type} instructions={board.instructions} moves={moves} touched={touched} />
+        <div ref={area} className="relative" onPointerDownCapture={() => setTouched(true)} onKeyDownCapture={() => setTouched(true)}>
+          <Suspense fallback={<div className="h-64 animate-pulse rounded-3xl bg-ink/5" />}>
+            <Game />
+          </Suspense>
+          <PointerHint type={board.type} area={area} hidden={touched || moves > 0 || done > 0} />
+        </div>
         <AnimatePresence>
           {bubble && (
             <motion.div

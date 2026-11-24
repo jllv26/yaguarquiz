@@ -118,6 +118,7 @@ export default function Matching() {
       <ChoiceSheet
         open={sheet && !!pickedText}
         title="Elige su definición"
+        hint="Toca la definición que corresponde a este concepto."
         subject={pickedText}
         choices={right.filter((r) => !linked.has(r.key)).map((r) => ({ key: r.key, label: r.text, image_url: r.image_url }))}
         onChoose={(k) => {

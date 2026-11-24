@@ -19,7 +19,7 @@ function Row({ value, i, n, move, locked, state }: { value: string; i: number; n
       )}
     >
       {!locked && (
-        <span onPointerDown={(e) => ctl.start(e)} className="cursor-grab touch-none rounded-lg p-1.5 text-ink-soft active:cursor-grabbing" aria-hidden>
+        <span data-coach={i === 0 ? '' : undefined} onPointerDown={(e) => ctl.start(e)} className="cursor-grab touch-none rounded-lg p-1.5 text-ink-soft active:cursor-grabbing" aria-hidden>
           <GripVertical className="size-5" />
         </span>
       )}

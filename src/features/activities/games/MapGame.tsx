@@ -76,6 +76,7 @@ export default function MapGame() {
         <ChoiceSheet
           open={sheet}
           title="¿Qué quieres buscar en la imagen?"
+          hint="Elige qué parte buscar; después tócala sobre la imagen."
           choices={(names ?? []).filter((nm) => !progress[nm.key]?.done).map((nm) => ({ key: nm.key, label: nm.text }))}
           cols={2}
           onChoose={(k) => {
@@ -85,7 +86,7 @@ export default function MapGame() {
           onClose={() => setSheet(false)}
         />
       ) : (
-        <ChoiceSheet open={sheet && !!tgt} title={`¿Qué es el ${tgt?.text.toLowerCase() ?? 'punto'}?`} onClose={() => setSheet(false)}>
+        <ChoiceSheet open={sheet && !!tgt} title={`¿Qué es el ${tgt?.text.toLowerCase() ?? 'punto'}?`} hint="Escribe el nombre de esa parte de la imagen y comprueba." onClose={() => setSheet(false)}>
           <div className="flex gap-2 pb-2">
             <input
               autoFocus
@@ -119,7 +120,7 @@ export default function MapGame() {
             )}
           </p>
         )}
-        <div className="relative overflow-hidden rounded-3xl bg-white shadow-lg ring-1 ring-line">
+        <div data-coach="" className="relative overflow-hidden rounded-3xl bg-white shadow-lg ring-1 ring-line">
           {image_url ? <img src={image_url} alt="Imagen de la actividad" className="block w-full select-none" draggable={false} /> : <div className="aspect-video bg-ink/5" />}
           {points.map((pt, i) => {
             const info = pinInfo(pt.key)

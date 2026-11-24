@@ -97,6 +97,7 @@ export default function Riddle() {
             </Button>
             <div className="flex gap-2">
               <input
+                data-coach=""
                 ref={input}
                 value={val}
                 onChange={(e) => setVal(e.target.value)}

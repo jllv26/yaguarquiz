@@ -128,3 +128,125 @@ export const GADS_POINTS: { term: string; prompt: string; x: number; y: number }
   { term: 'Extensión de llamada', prompt: 'Botón para llamar al negocio', x: 17.5, y: 57 },
   { term: 'Resultado orgánico', prompt: 'El que no se paga', x: 50, y: 81 },
 ]
+
+/** Correo de email marketing (cuarta versión del mapa). Partes del correo según el material del Grupo 5. 600×800. */
+export const MAIL_SVG = uri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800" font-family="Arial, Helvetica, sans-serif">
+  <rect width="600" height="800" fill="#eef1f5"/>
+  <rect x="0" y="0" width="600" height="56" fill="#3c4a5c"/><text x="24" y="36" font-size="20" font-weight="700" fill="#fff">Bandeja de entrada</text>
+  <rect x="12" y="68" width="576" height="96" rx="10" fill="#fff" stroke="#cfd6df"/>
+  <circle cx="50" cy="104" r="20" fill="#e8590c"/><text x="50" y="111" font-size="16" font-weight="700" fill="#fff" text-anchor="middle">PR</text>
+  <text x="84" y="98" font-size="19" font-weight="700" fill="#111">Panadería Río Acre</text><text x="540" y="98" font-size="15" fill="#666" text-anchor="end">9:05</text>
+  <text x="84" y="124" font-size="18" font-weight="700" fill="#222">Tu pan favorito, ahora a domicilio</text>
+  <text x="84" y="150" font-size="16" fill="#666">Pide antes de las 8 y recíbelo calientito en casa…</text>
+  <rect x="12" y="180" width="576" height="608" rx="10" fill="#fff" stroke="#cfd6df"/>
+  <rect x="40" y="204" width="520" height="210" rx="8" fill="#ffe8cc"/>
+  <ellipse cx="300" cy="330" rx="150" ry="52" fill="#d9480f"/><ellipse cx="300" cy="318" rx="130" ry="40" fill="#f08c00"/>
+  <path d="M200 318 q100 -40 200 0" stroke="#ffd8a8" stroke-width="6" fill="none"/>
+  <text x="300" y="252" font-size="24" font-weight="700" fill="#a63e00" text-anchor="middle">Pan recién horneado</text>
+  <text x="40" y="452" font-size="18" fill="#222">Hola, Ana:</text>
+  <text x="40" y="482" font-size="18" fill="#222">Ahora puedes pedir tu pan por WhatsApp hasta las 8 de la</text>
+  <text x="40" y="506" font-size="18" fill="#222">mañana y te lo llevamos calientito a tu casa.</text>
+  <rect x="190" y="530" width="220" height="52" rx="26" fill="#e8590c"/><text x="300" y="563" font-size="20" font-weight="700" fill="#fff" text-anchor="middle">Ver catálogo</text>
+  <circle cx="262" cy="624" r="16" fill="#1877f2"/><text x="262" y="630" font-size="16" font-weight="700" fill="#fff" text-anchor="middle">f</text>
+  <circle cx="300" cy="624" r="16" fill="#c13584"/><rect x="292" y="616" width="16" height="16" rx="5" fill="none" stroke="#fff" stroke-width="2"/>
+  <circle cx="338" cy="624" r="16" fill="#25d366"/><text x="338" y="630" font-size="13" font-weight="700" fill="#fff" text-anchor="middle">W</text>
+  <line x1="40" y1="660" x2="560" y2="660" stroke="#dde2e8"/>
+  <text x="300" y="692" font-size="15" fill="#555" text-anchor="middle">Panadería Río Acre · Av. 9 de Febrero, Cobija · 700-00000</text>
+  <text x="300" y="740" font-size="15" fill="#1971c2" text-anchor="middle" text-decoration="underline">Darse de baja de estos correos</text>
+</svg>`)
+
+export const MAIL_POINTS: { term: string; prompt: string; x: number; y: number }[] = [
+  { term: 'Remitente', prompt: 'Nombre reconocible del negocio que envía', x: 34, y: 12.2 },
+  { term: 'Asunto', prompt: 'Corto, claro y que despierte interés', x: 46, y: 15.5 },
+  { term: 'Texto de vista previa', prompt: 'La línea que se lee junto al asunto', x: 60, y: 18.8 },
+  { term: 'Imagen', prompt: 'Liviana, acompaña la idea principal', x: 50, y: 40 },
+  { term: 'Cuerpo del mensaje', prompt: 'Mensaje breve con una idea principal', x: 50, y: 61.5 },
+  { term: 'Llamado a la acción', prompt: 'Botón claro, como «Ver catálogo»', x: 50, y: 69.8 },
+  { term: 'Íconos de redes sociales', prompt: 'Bloque para seguir al negocio en sus redes', x: 50, y: 78 },
+  { term: 'Datos del negocio', prompt: 'En el pie: dirección y contacto', x: 50, y: 86.3 },
+  { term: 'Enlace para darse de baja', prompt: 'Los proveedores exigen que sea fácil', x: 50, y: 92.3 },
+]
+
+/** Perfil de Empresa en Google (quinta versión del mapa). Elementos del Grupo 6. 600×800. */
+export const GBP_SVG = uri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800" font-family="Arial, Helvetica, sans-serif">
+  <rect width="600" height="800" fill="#fff"/>
+  <rect x="0" y="0" width="600" height="190" fill="#d3f9d8"/>
+  <path d="M0 120 C120 80 200 160 320 110 S520 60 600 100 L600 190 L0 190 Z" fill="#b2f2bb"/>
+  <line x1="0" y1="150" x2="600" y2="70" stroke="#fff" stroke-width="10"/><line x1="200" y1="0" x2="260" y2="190" stroke="#fff" stroke-width="8"/>
+  <path d="M300 60 c-22 0 -36 16 -36 34 c0 26 36 58 36 58 s36 -32 36 -58 c0 -18 -14 -34 -36 -34z" fill="#e03131"/><circle cx="300" cy="94" r="12" fill="#fff"/>
+  <text x="24" y="232" font-size="26" font-weight="700" fill="#202124">Librería Bahía</text>
+  <text x="24" y="264" font-size="18" fill="#202124">4,6</text>
+  <g fill="#fbbc04"><path d="M66 250 l4 9 10 1 -8 6 3 10 -9 -6 -9 6 3 -10 -8 -6 10 -1z"/><path d="M90 250 l4 9 10 1 -8 6 3 10 -9 -6 -9 6 3 -10 -8 -6 10 -1z"/><path d="M114 250 l4 9 10 1 -8 6 3 10 -9 -6 -9 6 3 -10 -8 -6 10 -1z"/><path d="M138 250 l4 9 10 1 -8 6 3 10 -9 -6 -9 6 3 -10 -8 -6 10 -1z"/><path d="M162 250 l4 9 10 1 -8 6 3 10 -9 -6 -9 6 3 -10 -8 -6 10 -1z"/></g>
+  <text x="186" y="264" font-size="17" fill="#5f6368">(87 reseñas)</text>
+  <text x="24" y="294" font-size="17" fill="#5f6368">Librería · Papelería</text>
+  <line x1="0" y1="316" x2="600" y2="316" stroke="#e8eaed" stroke-width="2"/>
+  <circle cx="44" cy="350" r="10" fill="none" stroke="#1a73e8" stroke-width="3"/><text x="70" y="356" font-size="17" fill="#202124">Calle Cochabamba 123, Cobija, Pando</text>
+  <circle cx="44" cy="392" r="10" fill="none" stroke="#1a73e8" stroke-width="3"/><line x1="44" y1="392" x2="44" y2="385" stroke="#1a73e8" stroke-width="2"/><line x1="44" y1="392" x2="49" y2="392" stroke="#1a73e8" stroke-width="2"/>
+  <text x="70" y="398" font-size="17" fill="#188038">Abierto</text><text x="142" y="398" font-size="17" fill="#202124">· Cierra a las 20:00</text>
+  <rect x="34" y="420" width="20" height="20" rx="4" fill="none" stroke="#1a73e8" stroke-width="3"/><text x="70" y="437" font-size="17" fill="#202124">700-00000 · WhatsApp</text>
+  <circle cx="44" cy="470" r="10" fill="none" stroke="#1a73e8" stroke-width="3"/><line x1="34" y1="470" x2="54" y2="470" stroke="#1a73e8" stroke-width="2"/>
+  <text x="70" y="476" font-size="17" fill="#1a0dab">facebook.com/libreriabahia.ejemplo</text>
+  <line x1="0" y1="500" x2="600" y2="500" stroke="#e8eaed" stroke-width="2"/>
+  <text x="24" y="534" font-size="19" font-weight="700" fill="#202124">Fotos</text>
+  <rect x="24" y="548" width="170" height="110" rx="8" fill="#a5d8ff"/><rect x="40" y="574" width="60" height="70" fill="#1971c2"/><rect x="110" y="590" width="70" height="54" fill="#74c0fc"/>
+  <rect x="210" y="548" width="170" height="110" rx="8" fill="#ffec99"/><rect x="230" y="568" width="22" height="80" fill="#e67700"/><rect x="258" y="568" width="22" height="80" fill="#2b8a3e"/><rect x="286" y="568" width="22" height="80" fill="#c92a2a"/>
+  <rect x="396" y="548" width="170" height="110" rx="8" fill="#e5dbff"/><circle cx="450" cy="600" r="22" fill="#7048e8"/><circle cx="510" cy="600" r="22" fill="#9775fa"/>
+  <text x="24" y="696" font-size="19" font-weight="700" fill="#202124">Reseñas</text>
+  <text x="24" y="726" font-size="16" fill="#202124">«Encontré todos los útiles de mi hijo. Muy buena atención.»</text>
+  <rect x="40" y="740" width="536" height="46" rx="6" fill="#f1f3f4"/>
+  <text x="54" y="769" font-size="15" fill="#3c4043"><tspan font-weight="700">Respuesta del propietario:</tspan> ¡Gracias, Carla! Te esperamos.</text>
+</svg>`)
+
+export const GBP_POINTS: { term: string; prompt: string; x: number; y: number }[] = [
+  { term: 'Nombre del negocio', prompt: 'Real, sin palabras de relleno', x: 22, y: 28.5 },
+  { term: 'Calificación con estrellas', prompt: 'Suma prominencia en el ranking local', x: 20, y: 32.5 },
+  { term: 'Categoría', prompt: 'La principal y correcta del rubro', x: 22, y: 36.5 },
+  { term: 'Dirección', prompt: 'Exacta y ubicada en el mapa', x: 45, y: 44 },
+  { term: 'Horario', prompt: 'Actualizado, incluidos feriados', x: 38, y: 49.2 },
+  { term: 'Teléfono o WhatsApp', prompt: 'Para que llamen o escriban', x: 33, y: 54.2 },
+  { term: 'Enlace a las redes', prompt: 'Lleva al sitio o a las redes del negocio', x: 48, y: 59 },
+  { term: 'Fotos', prompt: 'Reales del local y de los productos', x: 50, y: 75.5 },
+  { term: 'Respuesta del propietario', prompt: 'Las reseñas se responden', x: 50, y: 95.5 },
+]
+
+/** Página de resultados de Google (sexta versión del mapa). Elementos del Grupo 6, apartado 1.5. 600×800. */
+export const SERP_SVG = uri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800" font-family="Arial, Helvetica, sans-serif">
+  <rect width="600" height="800" fill="#fff"/>
+  <rect x="20" y="18" width="560" height="50" rx="25" fill="#fff" stroke="#dadce0" stroke-width="2"/>
+  <circle cx="52" cy="43" r="9" fill="none" stroke="#5f6368" stroke-width="3"/><line x1="58" y1="49" x2="66" y2="57" stroke="#5f6368" stroke-width="3"/>
+  <text x="84" y="50" font-size="19" fill="#202124">farmacia en Cobija</text>
+  <rect x="20" y="84" width="560" height="120" rx="14" fill="#f3f0ff"/>
+  <text x="38" y="114" font-size="16" font-weight="700" fill="#5f3dc4">✦ Vista creada con IA</text>
+  <text x="38" y="142" font-size="15" fill="#3c4043">En Cobija hay varias farmacias en el centro; algunas atienden</text>
+  <text x="38" y="164" font-size="15" fill="#3c4043">las 24 horas. Revisa su horario y sus reseñas antes de ir.</text>
+  <text x="38" y="190" font-size="14" fill="#1a0dab">Fuentes: 3 sitios</text>
+  <text x="24" y="236" font-size="14" font-weight="700" fill="#202124">Patrocinado</text>
+  <text x="24" y="260" font-size="14" fill="#4d5156">www.farmaciasalud.ejemplo</text>
+  <text x="24" y="284" font-size="19" fill="#1a0dab">Farmacia Salud · Envío a domicilio en Cobija</text>
+  <rect x="20" y="304" width="560" height="214" rx="12" fill="#fff" stroke="#dadce0"/>
+  <rect x="20" y="304" width="560" height="80" rx="12" fill="#e9f5e9"/><path d="M20 360 C150 320 300 380 580 330" stroke="#fff" stroke-width="8" fill="none"/>
+  <circle cx="160" cy="340" r="9" fill="#e03131"/><circle cx="300" cy="352" r="9" fill="#e03131"/><circle cx="430" cy="334" r="9" fill="#e03131"/>
+  <text x="36" y="412" font-size="16" font-weight="700" fill="#202124">Farmacia Central</text><text x="400" y="412" font-size="15" fill="#5f6368">4,5 ★★★★★ (64)</text>
+  <text x="36" y="436" font-size="14" fill="#188038">Abierto las 24 horas</text>
+  <text x="36" y="468" font-size="16" font-weight="700" fill="#202124">Farmacia Pando</text><text x="400" y="468" font-size="15" fill="#5f6368">4,2 ★★★★ (31)</text>
+  <text x="36" y="492" font-size="14" fill="#5f6368">Cierra a las 22:00</text>
+  <text x="24" y="552" font-size="14" fill="#4d5156">www.guiacobija.ejemplo › farmacias</text>
+  <text x="24" y="578" font-size="19" fill="#1a0dab">Farmacias en Cobija: direcciones y horarios</text>
+  <text x="24" y="602" font-size="15" fill="#4d5156">Lista de farmacias del centro de Cobija con su dirección,</text>
+  <text x="24" y="622" font-size="15" fill="#4d5156">teléfono y horario de atención actualizado.</text>
+  <text x="24" y="664" font-size="18" font-weight="700" fill="#202124">Otras preguntas de los usuarios</text>
+  <rect x="20" y="676" width="560" height="44" rx="6" fill="#fff" stroke="#dadce0"/><text x="36" y="704" font-size="16" fill="#202124">¿Qué farmacia atiende de noche en Cobija?</text><text x="556" y="704" font-size="16" fill="#5f6368">⌄</text>
+  <rect x="20" y="726" width="560" height="44" rx="6" fill="#fff" stroke="#dadce0"/><text x="36" y="754" font-size="16" fill="#202124">¿Hay farmacias con envío a domicilio?</text><text x="556" y="754" font-size="16" fill="#5f6368">⌄</text>
+</svg>`)
+
+export const SERP_POINTS: { term: string; prompt: string; x: number; y: number }[] = [
+  { term: 'Búsqueda local', prompt: 'Lo que escribió la persona: quiere algo cerca', x: 40, y: 5.4 },
+  { term: 'Resumen creado con IA', prompt: 'Respuesta de la IA de Google con algunas fuentes', x: 50, y: 18.5 },
+  { term: 'Anuncio patrocinado', prompt: 'Resultado pagado', x: 45, y: 33 },
+  { term: 'Paquete local', prompt: 'Mapa con negocios cercanos', x: 50, y: 43 },
+  { term: 'Calificación con estrellas', prompt: 'Estrellas de un negocio del mapa', x: 80, y: 51.5 },
+  { term: 'Horario', prompt: 'Dato del negocio en el paquete local', x: 20, y: 54.5 },
+  { term: 'Resultado orgánico', prompt: 'No se paga: Google lo ordena por relevancia y calidad', x: 50, y: 72.2 },
+  { term: 'Meta descripción', prompt: 'Resumen de la página bajo el título', x: 50, y: 76.5 },
+  { term: 'Otras preguntas de los usuarios', prompt: 'Preguntas relacionadas que se despliegan', x: 50, y: 88 },
+]

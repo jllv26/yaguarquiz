@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { X } from 'lucide-react'
+import { Pointer, X } from 'lucide-react'
 import { useEffect, useRef, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { cn } from '../../../lib/cn'
@@ -28,6 +28,7 @@ export function ChoiceSheet({
   busy,
   children,
   footer,
+  hint,
 }: {
   open: boolean
   title: string
@@ -41,6 +42,8 @@ export function ChoiceSheet({
   /** contenido propio (por ejemplo, un campo para escribir) */
   children?: ReactNode
   footer?: ReactNode
+  /** qué hacer en esta ventana (se muestra con una mano animada) */
+  hint?: ReactNode
 }) {
   const first = useRef<HTMLButtonElement>(null)
   useEffect(() => {
@@ -80,7 +83,24 @@ export function ChoiceSheet({
             <div className="flex items-start gap-3 px-4 pb-3 pt-3 sm:px-5 sm:pt-5">
               <div className="min-w-0 flex-1">
                 <p className="font-display text-lg font-black leading-tight">{title}</p>
-                {subject && <div className="mt-2 rounded-2xl bg-uap-gold/15 px-3 py-2 font-display font-bold leading-snug text-ink ring-1 ring-uap-gold/40">{subject}</div>}
+                {subject && (
+                  <motion.div
+                    initial={{ scale: 0.96 }}
+                    animate={{ scale: [0.96, 1.02, 1] }}
+                    transition={{ duration: 0.45 }}
+                    className="mt-2 rounded-2xl bg-uap-gold/15 px-3 py-2 font-display font-bold leading-snug text-ink ring-1 ring-uap-gold/40"
+                  >
+                    {subject}
+                  </motion.div>
+                )}
+                {(hint ?? (choices ? 'Toca la opción correcta.' : null)) && (
+                  <p className="mt-2 flex items-center gap-2 text-sm font-semibold text-ink-soft">
+                    <motion.span animate={{ y: [0, 4, 0] }} transition={{ duration: 0.9, repeat: Infinity }} className="grid size-7 shrink-0 place-items-center rounded-full bg-uap-blue text-white" aria-hidden>
+                      <Pointer className="size-4" />
+                    </motion.span>
+                    <span>{hint ?? 'Toca la opción correcta.'}</span>
+                  </p>
+                )}
               </div>
               <button type="button" onClick={onClose} className="rounded-full p-2 text-ink-soft hover:bg-ink/10" aria-label="Cerrar sin elegir">
                 <X className="size-5" />
@@ -95,9 +115,9 @@ export function ChoiceSheet({
                       ref={i === 0 ? first : undefined}
                       type="button"
                       whileTap={{ scale: 0.97 }}
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: Math.min(i * 0.03, 0.3) }}
+                      initial={{ opacity: 0, y: 14, scale: 0.96 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      transition={{ delay: 0.08 + Math.min(i * 0.06, 0.45), type: 'spring', stiffness: 420, damping: 26 }}
                       disabled={busy || c.disabled}
                       onClick={() => onChoose?.(c.key)}
                       className={cn(

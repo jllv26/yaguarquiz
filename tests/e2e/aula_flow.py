@@ -112,13 +112,13 @@ with sync_playwright() as p:
     m.get_by_role('button', name='Comenzar').wait_for(timeout=15000)
     check('B2', 'Con un botón abre la actividad (sin escribir PIN ni RU otra vez)', True)
     m.get_by_role('button', name='Comenzar').click()
-    m.wait_for_timeout(2500)
+    m.wait_for_timeout(4000)
     for it in CL:
         loc = m.locator('button[aria-pressed]', has_text=it['term'])
         if not loc.count():
             continue
         loc.first.click()
-        m.locator('button', has=m.locator('span', has_text=re.compile('^' + it['group'] + '$'))).first.click()
+        m.get_by_role('dialog').get_by_role('button', name=it['group'], exact=True).click()
         m.wait_for_timeout(1000)
     m.wait_for_timeout(2500)
     m.wait_for_timeout(1500)

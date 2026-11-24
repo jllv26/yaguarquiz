@@ -543,12 +543,12 @@ const COMMON_TIPS = ['Si te equivocas, pierdes un intento y esa respuesta vale m
 
 export const GUIDES: Record<ActivityType, Guide> = {
   classify: {
-    steps: ['Toca un elemento de la caja de arriba.', 'Toca el grupo al que pertenece (en el celular aparecen abajo).', 'Si acertaste, se queda en el grupo; si no, vuelve para que lo intentes otra vez.'],
+    steps: ['Toca una tarjeta de la caja de arriba.', 'Se abre una ventana: toca el grupo al que pertenece.', 'Si acertaste, se queda en el grupo; si no, vuelve a la caja para que lo intentes otra vez.'],
     captions: ['Mira el elemento', '1. Tócalo', '2. Toca su grupo', '¡Correcto! Suma puntos'],
     Demo: ClassifyDemo,
   },
   matching: {
-    steps: ['Toca un concepto de la columna izquierda (queda amarillo).', 'Toca su definición en la columna derecha.', 'Las parejas correctas se pintan del mismo color.'],
+    steps: ['Toca un concepto de la columna izquierda.', 'Se abre una ventana: toca su definición.', 'Las parejas correctas se pintan del mismo color.'],
     captions: ['Dos columnas', '1. Toca el concepto', '2. Toca su definición', '¡Pareja correcta!'],
     Demo: MatchingDemo,
   },
@@ -573,7 +573,7 @@ export const GUIDES: Record<ActivityType, Guide> = {
     Demo: HangmanDemo,
   },
   fill_text: {
-    steps: ['Lee el texto y haz el cálculo (puedes usar la calculadora).', 'Toca el espacio y escribe solo el número o la palabra.', 'Toca «Comprobar»: verde es correcto; rojo, vuelve a intentar.'],
+    steps: ['Lee el texto y haz el cálculo (puedes usar la calculadora).', 'Toca el espacio: escribe solo el número o la palabra (o elígela en la ventana, si hay banco de palabras).', 'Toca «Comprobar»: verde es correcto; rojo, vuelve a intentar.'],
     captions: ['Lee el problema', '1. Toca el espacio', '2. Escribe y comprueba', '¡Correcto!'],
     Demo: FillDemo,
   },
@@ -638,7 +638,7 @@ export const GUIDES: Record<ActivityType, Guide> = {
     Demo: RiddleDemo,
   },
   map: {
-    steps: ['Arriba dice qué tienes que buscar (o elígelo en la lista).', 'Toca el punto correcto sobre la imagen.', 'Los puntos acertados quedan en verde con su nombre.'],
+    steps: ['Arriba dice qué parte buscar y una pista (con «Buscar otro» puedes cambiarla).', 'Toca esa parte sobre la imagen.', 'Las partes acertadas quedan en verde con su nombre.'],
     captions: ['Lee qué buscar', '1. Toca el punto', '¡Correcto!'],
     Demo: MapDemo,
   },
