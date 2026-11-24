@@ -21,6 +21,7 @@ import { setMusic, sfx, type Track } from '../../lib/sound'
 import { cn } from '../../lib/cn'
 import { SoundControl } from '../../components/SoundControl'
 import { VISUAL_THEMES } from '../../lib/visualThemes'
+import { SceneCard, type Scene } from '../../components/SceneCard'
 
 const INSTITUTIONAL = [
   { name: 'Azul UAP', hex: '#1F3864', cls: 'bg-uap-blue' },
@@ -75,6 +76,7 @@ export function DesignPage() {
         </header>
 
         <JaguarShowcase />
+        <SceneShowcase />
         <ActivityShowcase />
         <SoundShowcase />
         <ThemeShowcase />
@@ -415,6 +417,35 @@ function ActivityShowcase() {
         Reiniciar
       </Button>
       <ActivityGame key={`${type}-${round}`} board={demo.board} engine={demo.engine} />
+    </section>
+  )
+}
+
+/** Escenas de casos (ejemplos genéricos): así se ven las preguntas de caso en el examen. */
+const SAMPLE_SCENES: Scene[] = [
+  { kind: 'chat', title: 'Heladería Polar', subtitle: 'cuenta de empresa', msgs: [{ me: true, text: '¿Tienen helado de copoazú? 🍨', time: '16:20' }, { text: '¡Sí! Hoy 2x1 hasta las 18:00 😊', time: '16:21' }] },
+  { kind: 'post', net: 'facebook', author: 'Heladería Polar', sponsored: true, text: '🍨 Nuevo sabor amazónico: ¡copoazú con castaña!', emoji: '🍨🌴', cta: 'Enviar mensaje' },
+  { kind: 'comment', page: 'Heladería Polar', author: 'Rosa T.', text: 'Fui ayer y estaba cerrado 😕' },
+  { kind: 'search', query: 'heladería abierta ahora Cobija', results: [{ title: 'Heladería Polar · Cobija', url: 'maps.google.com', stars: 4.4, reviews: 52 }, { ad: true, title: 'Helados a domicilio en 30 min', url: 'heladospando.com' }] },
+  { kind: 'email', from: 'Heladería Polar', subject: '🎁 Tu cupón de cumpleaños', text: '¡Feliz cumpleaños! Te regalamos un cono doble esta semana.', button: 'Ver mi cupón' },
+  { kind: 'review', business: 'Heladería Polar', author: 'Luis P.', stars: 4, text: 'Muy ricos los sabores, pero tardaron en atender.' },
+  { kind: 'form', title: 'Club de clientes', fields: ['Nombre', 'Celular'], check: { label: 'Acepto recibir promociones', on: false }, button: 'Unirme' },
+  { kind: 'metrics', title: 'Anuncio · resultados', source: 'meta', rows: [{ label: 'Impresiones', value: '4.000' }, { label: 'Alcance', value: '1.600' }, { label: 'Clics', value: '96' }] },
+  { kind: 'task', when: 'Sábado · 10:00', text: 'Publicar el video del nuevo sabor', who: 'el community manager' },
+  { kind: 'chat', app: 'ai', title: 'Asistente de IA', msgs: [{ me: true, text: '¿Dónde venden helado de copoazú en Cobija?' }, { text: 'Buscando opciones cerca de ti… ✍️' }] },
+]
+function SceneShowcase() {
+  return (
+    <section className="flex flex-col gap-4 rounded-3xl bg-surface-2 p-5 shadow-sm ring-1 ring-line" data-testid="scene-demo">
+      <div>
+        <h2 className="font-display text-2xl font-black">Escenas de casos</h2>
+        <p className="text-sm text-ink-soft">Las preguntas de caso muestran la situación como se ve en la vida real (chat, anuncio, búsqueda, correo…). Nunca dicen la respuesta.</p>
+      </div>
+      <div className="grid gap-5 md:grid-cols-2">
+        {SAMPLE_SCENES.map((sc, i) => (
+          <SceneCard key={i} scene={sc} />
+        ))}
+      </div>
     </section>
   )
 }

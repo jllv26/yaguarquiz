@@ -113,6 +113,8 @@ export interface PlayState {
     time_limit_sec: number
     base_points: number
     options: { key: string; text: string; image_url: string | null }[]
+    topic?: string | null
+    scene?: import('../../components/SceneCard').Scene | null
   }
   my_answer?: { answered: boolean; response?: StudentResponse; correct?: boolean; partial?: number; points?: number }
   reveal?: { correct_keys: string[]; correct_order: string[] | null; accepted_answers: string[] | null; explanation: string | null }

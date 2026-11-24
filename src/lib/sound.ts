@@ -371,11 +371,19 @@ export const sfx = {
 }
 
 // ------------------------------------------------------------------ música
-export type Track = 'lobby' | 'question' | null
+export type Track = 'lobby' | 'question' | 'suspense' | null
 let current: Track = null
 let timer: number | null = null
 let nextAt = 0
 let stepIdx = 0
+/** Tensión de la música de suspenso (0 = calma, 1 = últimos minutos): sube el tempo y agrega capas. */
+let tension = 0
+export function setTension(t: number) {
+  tension = Math.max(0, Math.min(1, t))
+}
+// Suspenso: bajo en Re menor con latido, cuerdas graves y campana que aparece al final
+const SUS_BASS = [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 2, 0, 1, 0]
+const SUS_NOTES = [146.83, 155.56, 138.59] // Re, Mi♭, Do#: semitonos que inquietan
 
 // Escala pentatónica menor de La (sonido "selva"), en Hz
 const PENTA = [220, 261.63, 293.66, 329.63, 392, 440, 523.25, 587.33, 659.25, 783.99]
@@ -392,11 +400,23 @@ function marimba(freq: number, at: number, vol: number) {
 function schedule() {
   const a = ctx
   if (!a || !current) return
-  const bpm = current === 'lobby' ? 104 : 128
+  const bpm = current === 'lobby' ? 104 : current === 'suspense' ? 92 + tension * 52 : 128
   const step = 60 / bpm / 2 // corcheas
   while (nextAt < a.currentTime + 0.25) {
     const i = stepIdx
-    if (current === 'lobby') {
+    if (current === 'suspense') {
+      const bar = i % 16
+      // latido: dos golpes graves por compás
+      if (bar === 0 || bar === 3) hit(0, 0.16, 0.22 + tension * 0.12, { type: 'lowpass', freq: 90 }, 'music', nextAt)
+      // bajo pulsante que sube un semitono para inquietar
+      if (i % 2 === 0) tone(SUS_NOTES[SUS_BASS[Math.floor(i / 2) % 16]] / 2, 0, step * 1.6, 'sawtooth', 0.045 + tension * 0.03, 'music', nextAt)
+      // tic de reloj (más fuerte con la tensión)
+      hit(0, 0.025, 0.03 + tension * 0.05, { type: 'highpass', freq: 7500 }, 'music', nextAt)
+      // cuerda tensa cada dos compases
+      if (i % 32 === 0) tone(SUS_NOTES[0] * 2, 0, step * 14, 'triangle', 0.04 + tension * 0.04, 'music', nextAt)
+      // en la recta final: campana aguda que avisa
+      if (tension > 0.6 && i % 8 === 4) tone(1174.66, 0, 0.12, 'sine', 0.05 * tension, 'music', nextAt)
+    } else if (current === 'lobby') {
       const m = LOBBY_MEL[i % 32]
       if (m >= 0) marimba(PENTA[m], nextAt, 0.16)
       if (i % 4 === 0) tone(PENTA[LOBBY_BASS[Math.floor(i / 4) % 8]] / 2, 0, 0.5, 'triangle', 0.16, 'music', nextAt)

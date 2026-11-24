@@ -51,6 +51,7 @@ import { activityState, type ActivityExamState, type ActivityReviewItem } from '
 import { ActivityAttempt, ActivityReview } from '../activities/ActivityAttempt'
 import { LeaveGuard } from '../../components/LeaveGuard'
 import { QuickGuide } from '../activities/HowToPlay'
+import { topicStyle } from '../../lib/topics'
 import { ACTIVITY_META } from '../activities/types'
 
 const pendKey = (attempt: string) => `yq-exam-pending-${attempt}`
@@ -595,9 +596,26 @@ function Attempt({
 
   async function askFinish() {
     const missing = cur.questions.length - answered
+    const nums = cur.questions.map((x, i) => (answers[x.id] ? null : i + 1)).filter((n): n is number => n !== null)
     const ok = await confirm({
       title: '¿Entregar ahora?',
-      message: missing ? `Te falta${missing === 1 ? '' : 'n'} ${missing} pregunta${missing === 1 ? '' : 's'} por responder. Después de entregar ya no podrás cambiar nada.` : 'Respondiste todas. Después de entregar ya no podrás cambiar nada.',
+      message: missing ? (
+        <span className="flex flex-col gap-2">
+          <span>
+            Te falta{missing === 1 ? '' : 'n'} <b>{missing}</b> pregunta{missing === 1 ? '' : 's'} por responder:
+          </span>
+          <span className="flex flex-wrap gap-1">
+            {nums.map((n) => (
+              <span key={n} className="grid size-8 place-items-center rounded-lg bg-uap-red/10 font-display text-sm font-black text-uap-red">
+                {n}
+              </span>
+            ))}
+          </span>
+          <span>Las que no respondas cuentan 0. Después de entregar ya no podrás cambiar nada.</span>
+        </span>
+      ) : (
+        '¡Respondiste todas! 🎉 Después de entregar ya no podrás cambiar nada.'
+      ),
       confirmText: 'Entregar',
       danger: missing > 0,
     })
@@ -688,23 +706,45 @@ function Attempt({
         )}
       </div>
 
-      {/* Navegación por número */}
+      {/* Avance: el jaguar corre a medida que responde */}
+      <div className="relative px-4 pt-3" aria-label={`Avance: ${answered} de ${cur.questions.length} respondidas`}>
+        <div className="h-3 overflow-hidden rounded-full bg-ink/10">
+          <motion.div className="h-full rounded-full bg-gradient-to-r from-uap-green via-game-selva to-uap-gold" animate={{ width: `${(100 * answered) / cur.questions.length}%` }} transition={{ type: 'spring', stiffness: 80, damping: 18 }} />
+        </div>
+        <motion.div
+          className="pointer-events-none absolute top-0 w-9 -translate-x-1/2"
+          animate={{ left: `calc(1rem + (100% - 2rem) * ${answered / cur.questions.length})` }}
+          transition={{ type: 'spring', stiffness: 80, damping: 18 }}
+          aria-hidden
+        >
+          <motion.div animate={{ y: [0, -4, 0] }} transition={{ duration: 0.6, repeat: Infinity }}>
+            <JaguarFace mood={answered === cur.questions.length ? 'happy' : 'neutral'} className="w-9 drop-shadow" />
+          </motion.div>
+        </motion.div>
+      </div>
+
+      {/* Navegación por número: la franja de color es el tema de la pregunta */}
       <nav className="flex flex-wrap gap-1.5" aria-label="Preguntas">
-        {cur.questions.map((x, i) => (
-          <button
-            key={x.id}
-            onClick={() => setIdx(i)}
-            aria-label={`Pregunta ${i + 1}${answers[x.id] ? ' (respondida)' : ''}`}
-            aria-current={i === idx}
-            className={cn(
-              'grid size-9 place-items-center rounded-xl font-display text-sm font-bold transition',
-              answers[x.id] ? 'bg-uap-green text-white' : 'bg-surface-2 text-ink-soft',
-              i === idx && 'ring-4 ring-uap-gold',
-            )}
-          >
-            {i + 1}
-          </button>
-        ))}
+        {cur.questions.map((x, i) => {
+          const t = topicStyle(x.topic)
+          return (
+            <button
+              key={x.id}
+              onClick={() => setIdx(i)}
+              aria-label={`Pregunta ${i + 1}${t ? `, ${t.code}` : ''}${answers[x.id] ? ' (respondida)' : ''}`}
+              aria-current={i === idx}
+              title={t ? `${t.code} · ${t.label}` : undefined}
+              style={t && !answers[x.id] ? { boxShadow: `inset 0 -4px 0 ${t.color}` } : undefined}
+              className={cn(
+                'grid size-9 place-items-center rounded-xl font-display text-sm font-bold transition',
+                answers[x.id] ? 'bg-uap-green text-white' : 'bg-surface-2 text-ink-soft',
+                i === idx && 'scale-110 ring-4 ring-uap-gold',
+              )}
+            >
+              {i + 1}
+            </button>
+          )
+        })}
       </nav>
 
       <SolidCard className="p-4 sm:p-6">

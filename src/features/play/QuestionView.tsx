@@ -7,6 +7,8 @@ import { Button } from '../../components/ui/Button'
 import { ANSWER_STYLES } from '../../lib/brand'
 import { cn } from '../../lib/cn'
 import type { StudentResponse } from '../../lib/scoring'
+import { SceneCard, type Scene } from '../../components/SceneCard'
+import { topicStyle } from '../../lib/topics'
 
 /** Lo que ve el estudiante: nunca incluye cuál es la respuesta correcta. */
 export interface StudentQuestion {
@@ -16,6 +18,9 @@ export interface StudentQuestion {
   time_limit_sec: number
   base_points: number
   options: { key: string; text: string; image_url: string | null }[]
+  /** tema (primera etiqueta) y escena del caso: solo ilustran, nunca dicen la respuesta */
+  topic?: string | null
+  scene?: Scene | null
 }
 
 export interface RevealInfo {
@@ -77,14 +82,22 @@ export function QuestionView({ q, index, total, secondsLeft, onSubmit, submitted
   }, [response])
 
   const urgent = secondsLeft !== undefined && secondsLeft <= 5
+  const topic = topicStyle(q.topic)
 
   return (
     <div className="flex flex-col gap-5">
       {/* Encabezado */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <span className="rounded-full bg-uap-blue px-4 py-1.5 font-display text-sm font-bold text-white dark:bg-game-electric">
-          Pregunta {index + 1} de {total}
-        </span>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="rounded-full bg-uap-blue px-4 py-1.5 font-display text-sm font-bold text-white dark:bg-game-electric">
+            Pregunta {index + 1} de {total}
+          </span>
+          {topic && (
+            <span className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-bold text-white shadow-sm" style={{ background: topic.color }} title={`Tema: ${topic.label}`}>
+              <topic.icon className="size-4" /> {topic.code} · {topic.label}
+            </span>
+          )}
+        </div>
         <div className="flex items-center gap-2">
           {q.base_points > 0 && (
             <span className="flex items-center gap-1 rounded-full bg-uap-gold/20 px-3 py-1.5 text-sm font-bold text-[#7a5e12] dark:text-uap-gold-300">
@@ -109,6 +122,7 @@ export function QuestionView({ q, index, total, secondsLeft, onSubmit, submitted
       {q.image_url && (
         <img src={q.image_url} alt="" className="mx-auto max-h-[38vh] w-auto max-w-full rounded-3xl object-contain shadow-lg" />
       )}
+      {q.scene && <SceneCard key={q.prompt} scene={q.scene} />}
 
       {/* Opciones */}
       {(q.type === 'single' || q.type === 'true_false') && (

@@ -13,6 +13,8 @@ export interface ExamQuestion {
   time_limit_sec: number
   base_points: number
   options: { key: string; text: string; image_url: string | null }[]
+  topic?: string | null
+  scene?: import('../../components/SceneCard').Scene | null
 }
 export interface RevealData {
   correct_keys: string[]

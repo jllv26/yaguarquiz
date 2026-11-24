@@ -9,6 +9,7 @@ import {
   MoreVertical,
   Play,
   Plus,
+  Presentation,
   RotateCcw,
   Send,
   Share2,
@@ -34,6 +35,7 @@ import { buildWorkbook, downloadBlob, headerCell, titleCell } from '../../lib/ex
 import { AvatarBubble } from '../live/LiveBits'
 import { fmtLeft, useServerNow } from '../live/clock'
 import { useAutoSync } from '../reports/useAutoSync'
+import { ExamProjector } from './ExamProjector'
 
 type Filter = 'all' | 'progress' | 'done' | 'absent' | 'alerts'
 
@@ -53,6 +55,7 @@ export function ExamMonitor({ id }: { id: string }) {
   const [offset, setOffset] = useState(0)
   const [err, setErr] = useState('')
   const [filter, setFilter] = useState<Filter>('all')
+  const [projector, setProjector] = useState(false)
 
   const refresh = useCallback(async () => {
     const t0 = Date.now()
@@ -196,6 +199,7 @@ export function ExamMonitor({ id }: { id: string }) {
   return (
     <div className="relative flex min-h-dvh flex-col">
       <AnimatedBackground variant="calm" />
+      {projector && <ExamProjector st={st} now={now} onClose={() => setProjector(false)} />}
       <header className="glass relative z-10 mx-3 mt-3 flex flex-wrap items-center gap-3 rounded-3xl px-4 py-2.5">
         <Link to="/admin/sesiones" className="grid size-10 place-items-center rounded-xl hover:bg-ink/5" aria-label="Volver al panel">
           <ArrowLeft className="size-5" />
@@ -207,6 +211,9 @@ export function ExamMonitor({ id }: { id: string }) {
           </p>
           <p className="truncate font-display text-lg font-extrabold">{s.quiz_title}</p>
         </div>
+        <Button size="sm" variant="gold" onClick={() => setProjector(true)} title="Reloj gigante con música de suspenso para el proyector">
+          <Presentation className="size-4" /> Proyectar
+        </Button>
         <Link to={`/admin/reportes/${id}`}>
           <Button size="sm" variant="secondary">
             Reporte
