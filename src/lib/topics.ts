@@ -24,5 +24,8 @@ export function topicStyle(topic: string | null | undefined): TopicStyle | null 
   if (m && GROUPS[m[1]]) return { code: m[1], label: m[2], ...GROUPS[m[1]] }
   let h = 0
   for (const ch of topic) h = (h * 31 + ch.charCodeAt(0)) >>> 0
+  // «P1 · Tema» o «CI · Tema»: código corto propio y el resto como nombre
+  const c = topic.match(/^([A-Z]{1,2}\d*)\s*·\s*(.+)$/)
+  if (c) return { code: c[1], label: c[2], color: PALETTE[h % PALETTE.length], icon: Lightbulb }
   return { code: topic.slice(0, 2).toUpperCase(), label: topic, color: PALETTE[h % PALETTE.length], icon: Lightbulb }
 }
