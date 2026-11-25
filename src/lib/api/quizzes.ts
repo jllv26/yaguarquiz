@@ -29,7 +29,7 @@ function check<T>(res: { data: T; error: { message: string } | null }): T {
 }
 
 const QUESTION_SELECT =
-  'id, quiz_id, sort_order, type, prompt, image_url, time_limit_sec, base_points, difficulty, explanation, tags, accepted_answers, question_options(id, text, image_url, is_correct, sort_order, correct_position)'
+  'id, quiz_id, sort_order, type, prompt, image_url, time_limit_sec, base_points, difficulty, explanation, tags, accepted_answers, extra, question_options(id, text, image_url, is_correct, sort_order, correct_position)'
 
 export const qkq = {
   quizzes: ['quizzes'] as const,

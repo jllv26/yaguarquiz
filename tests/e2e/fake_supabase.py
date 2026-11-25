@@ -138,6 +138,15 @@ class H(BaseHTTPRequestHandler):
             r = admin('''select coalesce(json_agg(json_build_object('id', id, 'term', term, 'prompt', prompt, 'image_url', image_url, 'tags', tags, 'extra', extra) order by sort_order), '[]')
                          from public.questions where quiz_id = %s and type = 'game_item' ''', [eq('quiz_id')])[0][0]
             return self.reply(200, r)
+        if u.path == '/rest/v1/questions' and self.teacher and eq('quiz_id') and not eq('type'):
+            # editor de evaluaciones (incluye la escena del caso en extra)
+            r = admin('''select coalesce(json_agg(json_build_object('id', q.id, 'quiz_id', q.quiz_id, 'sort_order', q.sort_order, 'type', q.type, 'prompt', q.prompt,
+                           'image_url', q.image_url, 'time_limit_sec', q.time_limit_sec, 'base_points', q.base_points, 'difficulty', q.difficulty,
+                           'explanation', q.explanation, 'tags', q.tags, 'accepted_answers', q.accepted_answers, 'extra', q.extra,
+                           'question_options', (select coalesce(json_agg(row_to_json(o)), '[]') from (select id, text, image_url, is_correct, sort_order, correct_position
+                                                 from public.question_options where question_id = q.id) o)) order by q.sort_order), '[]')
+                         from public.questions q where q.quiz_id::text = %s''', [eq('quiz_id')])[0][0]
+            return self.reply(200, r)
         if u.path == '/rest/v1/grading_plans' and self.teacher:
             r = admin('''select json_build_object('id', gp.id, 'subject_id', gp.subject_id, 'pass_mark', gp.pass_mark, 'max_score', gp.max_score,
                            'grading_items', (select coalesce(json_agg(row_to_json(gi)), '[]') from public.grading_items gi where gi.plan_id = gp.id))

@@ -8,6 +8,8 @@ export function toStudentQuestion(q: {
   time_limit_sec: number
   base_points: number
   options: { key: string; text: string; image_url: string | null }[]
+  tags?: string[]
+  scene?: StudentQuestion['scene']
 }): StudentQuestion {
   let options = q.options.map(({ key, text, image_url }) => ({ key, text, image_url }))
   if (q.type === 'ordering') {
@@ -20,5 +22,5 @@ export function toStudentQuestion(q: {
       }
     }
   }
-  return { type: q.type, prompt: q.prompt, image_url: q.image_url, time_limit_sec: q.time_limit_sec, base_points: q.base_points, options }
+  return { type: q.type, prompt: q.prompt, image_url: q.image_url, time_limit_sec: q.time_limit_sec, base_points: q.base_points, options, topic: q.tags?.[0] ?? null, scene: q.scene ?? null }
 }

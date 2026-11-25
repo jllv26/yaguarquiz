@@ -26,6 +26,8 @@ export interface EditorQuestion {
   tags: string[]
   accepted_answers: string[]
   options: EditorOption[]
+  /** escena del caso (questions.extra.scene): solo se muestra, el editor no la cambia */
+  scene?: import('../../components/SceneCard').Scene | null
 }
 
 export const TIME_PRESETS = [5, 10, 20, 30, 45, 60, 90, 120]
@@ -183,6 +185,7 @@ export function fromDb(row: any): EditorQuestion {
     tags: row.tags ?? [],
     accepted_answers: row.accepted_answers ?? [],
     options,
+    scene: row.extra?.scene ?? null,
   }
 }
 
