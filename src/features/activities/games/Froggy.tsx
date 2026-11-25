@@ -178,7 +178,7 @@ export default function Froggy() {
                   <Pad letter={LETTERS[k]} state={state}>
                     {frogHere ? <Frog small sink={pick?.ok === false} /> : undefined}
                   </Pad>
-                  <span className="min-w-0 flex-1 font-display text-base font-black leading-snug text-[#1b4332] sm:text-lg">{o}</span>
+                  <span className="min-w-0 flex-1 font-display text-base font-black leading-snug text-[#1b4332] sm:text-lg [overflow-wrap:anywhere]">{o}</span>
                   <AnimatePresence>
                     {chosen && pick?.ok === false && (
                       <motion.span initial={{ scale: 0, opacity: 0 }} animate={{ scale: 1.5, opacity: 1 }} exit={{ opacity: 0 }} className="absolute left-6 top-1 z-30 text-4xl" aria-hidden>

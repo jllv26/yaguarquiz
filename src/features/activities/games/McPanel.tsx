@@ -47,7 +47,7 @@ export function McQuestion({ it, n, onDone, compact }: { it: McItem; n: number; 
               )}
             >
               <span className="grid size-6 shrink-0 place-items-center rounded-md bg-ink/10 text-xs font-black">{'ABCDEF'[k]}</span>
-              {o}
+              <span className="min-w-0 [overflow-wrap:anywhere]">{o}</span>
             </motion.button>
           )
         })}
