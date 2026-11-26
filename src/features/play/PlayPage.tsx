@@ -359,6 +359,12 @@ function Game({ token, onLeave }: { token: string; onLeave: (message?: string) =
               <Clock className="size-4" /> No alcanzaste a responder
             </p>
           )}
+          {/* se acabó el tiempo y el docente aún no muestra la respuesta: los botones ya no responden, hay que decirlo */}
+          {s.phase === 'question' && !st.my_answer?.answered && pending?.qid !== st.question.id && secondsLeft(s.question_ends_at, now) === 0 && (
+            <p role="status" className="mb-3 flex items-center justify-center gap-2 rounded-2xl bg-uap-red/10 px-3 py-2 text-center font-semibold text-uap-red dark:text-game-coral">
+              <Clock className="size-4 shrink-0" /> ¡Se acabó el tiempo de esta pregunta! Ya no se puede responder: espera la siguiente.
+            </p>
+          )}
           <QuestionView
             key={st.question.id}
             q={st.question}
