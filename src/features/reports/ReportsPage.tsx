@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { BarChart3, CheckCircle2, ChevronRight, CloudOff, Users } from 'lucide-react'
+import { BarChart3, CheckCircle2, ChevronRight, CloudOff, UserSearch, Users } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { SolidCard } from '../../components/ui/Card'
@@ -25,6 +25,13 @@ export function ReportsPage() {
           <h1 className="font-display text-3xl font-black">Reportes</h1>
           <p className="text-ink-soft">Resultados de cada sesión, preguntas difíciles y envío a Google Sheets. La libreta de notas está en cada asignatura.</p>
         </div>
+        <div className="flex flex-wrap items-center gap-2">
+        <Link
+          to="/admin/reportes/estudiante"
+          className="inline-flex h-11 items-center gap-2 rounded-2xl bg-uap-blue px-4 font-display font-bold text-white shadow-sm hover:brightness-110"
+        >
+          <UserSearch className="size-5" /> Seguimiento por estudiante
+        </Link>
         {subjects.length > 1 && (
           <Select aria-label="Filtrar por asignatura" value={subject} onChange={(e) => setSubject(e.target.value)} className="min-w-64">
             <option value="">Todas las asignaturas</option>
@@ -35,6 +42,7 @@ export function ReportsPage() {
             ))}
           </Select>
         )}
+        </div>
       </div>
 
       {list.isLoading ? (

@@ -34,6 +34,7 @@ const SettingsPage = lazy(() => import('../features/admin/SettingsPage').then((m
 const QuizzesPage = lazy(() => import('../features/quizzes/QuizzesPage').then((m) => ({ default: m.QuizzesPage })))
 const ReportsPage = lazy(() => import('../features/reports/ReportsPage').then((m) => ({ default: m.ReportsPage })))
 const SessionReportPage = lazy(() => import('../features/reports/SessionReportPage').then((m) => ({ default: m.SessionReportPage })))
+const StudentTracePage = lazy(() => import('../features/reports/StudentTracePage').then((m) => ({ default: m.StudentTracePage })))
 const ReportPrint = lazy(() => import('../features/reports/ReportPrint').then((m) => ({ default: m.ReportPrint })))
 const SessionsPage = lazy(() => import('../features/sessions/SessionsPage').then((m) => ({ default: m.SessionsPage })))
 const HostPage = lazy(() => import('../features/host/HostPage').then((m) => ({ default: m.HostPage })))
@@ -76,6 +77,7 @@ export function App() {
               <Route path="exposiciones/:id" element={<PresentationEditorPage />} />
               <Route path="sesiones" element={<SessionsPage />} />
               <Route path="reportes" element={<ReportsPage />} />
+              <Route path="reportes/estudiante" element={<StudentTracePage />} />
               <Route path="reportes/:id" element={<SessionReportPage />} />
               <Route path="configuracion" element={<SettingsPage />} />
             </Route>
