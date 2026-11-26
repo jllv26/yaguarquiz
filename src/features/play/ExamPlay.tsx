@@ -28,6 +28,7 @@ import { useConfirm } from '../../components/ui/Confirm'
 import { useToast } from '../../components/ui/Toast'
 import {
   EXAM_ERRORS,
+  examPoints,
   reportFocus,
   saveAnswer,
   startAttempt,
@@ -140,13 +141,25 @@ export function ExamPlay({ token, onLeave }: { token: string; onLeave: (message?
   if (!st) return <Loader2 className="size-10 animate-spin text-uap-green" aria-label="Cargando" />
   if (st.activity_type && st.current?.activity) return <ActivityAttempt key={st.current.id} st={st} token={token} now={now} onState={apply} />
   if (st.current) return <Attempt key={st.current.id} st={st as ExamState} token={token} now={now} offline={offline} setOffline={setOffline} onState={apply} refresh={refresh} />
-  return <Home st={st} now={now} onStart={() => void begin()} offline={offline} />
+  return <Home st={st} token={token} now={now} onStart={() => void begin()} offline={offline} />
 }
 
 // ================================================================ inicio / resultados
-function Home({ st, now, onStart, offline }: { st: ActivityExamState; now: number; onStart: () => void; offline: boolean }) {
+function Home({ st, token, now, onStart, offline }: { st: ActivityExamState; token: string; now: number; onStart: () => void; offline: boolean }) {
   const s = st.session
   const act = st.activity_type ? ACTIVITY_META[st.activity_type] : null
+  // examen: además de /100, la nota en puntos del parcial (p. ej. «5,6 / 7»)
+  const [pts, setPts] = useState<number | null>(null)
+  const wantPts = s.mode === 'exam' && !act && s.show_grade && st.best_grade !== null
+  useEffect(() => {
+    if (!wantPts) return
+    let on = true
+    void examPoints(token).then((r) => on && setPts(r?.weight ?? null))
+    return () => {
+      on = false
+    }
+  }, [wantPts, token])
+  const fmtPts = (n: number) => n.toLocaleString('es-BO', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
   const last = st.attempts[st.attempts.length - 1]
   const justFinished = useRef(false)
   const [fresh] = useState(() => !!last && Date.now() - new Date(last.submitted_at).getTime() < 15000)
@@ -198,6 +211,12 @@ function Home({ st, now, onStart, offline }: { st: ActivityExamState; now: numbe
                   <CountUp to={Math.round(Number(st.best_grade))} run={fresh} />
                   <span className="text-2xl text-ink-soft">/100</span>
                 </p>
+                {pts !== null && (
+                  <motion.p initial={fresh ? { opacity: 0, scale: 0.8 } : false} animate={{ opacity: 1, scale: 1 }} transition={{ delay: fresh ? 1.1 : 0 }} className="mx-auto mb-1 inline-flex items-baseline gap-1.5 rounded-2xl bg-uap-gold/20 px-4 py-1.5 font-display font-black tabular-nums">
+                    <span className="text-3xl">{fmtPts((Number(st.best_grade) / 100) * pts)}</span>
+                    <span className="text-lg text-ink-soft">/ {fmtPts(pts).replace(/,0$/, '')} puntos del parcial</span>
+                  </motion.p>
+                )}
                 <motion.p initial={fresh ? { opacity: 0, y: 8 } : false} animate={{ opacity: 1, y: 0 }} transition={{ delay: fresh ? 1.4 : 0 }} className="font-semibold">
                   {pass ? '¡Aprobado! 🎉' : `Necesitas ${s.pass_mark} para aprobar`}
                 </motion.p>

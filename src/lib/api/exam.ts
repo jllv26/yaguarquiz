@@ -171,3 +171,16 @@ export const REASON_LABEL: Record<string, string> = {
   closed: 'Cierre de la actividad',
   teacher: 'Entregado por el docente',
 }
+
+/** Puntos del parcial que vale el examen (p. ej. 7). Si la función aún no existe en la base, devuelve null. */
+export const examPoints = async (token: string): Promise<{ weight: number; category: string; term: number } | null> => {
+  try {
+    const { data, error } = await supabase.rpc('exam_points', { p_token: token })
+    if (error || !data || !(data as { ok?: boolean }).ok) return null
+    const d = data as { weight: number | string; category: string; term: number }
+    const w = Number(d.weight)
+    return w > 0 ? { weight: w, category: d.category, term: d.term } : null
+  } catch {
+    return null
+  }
+}
