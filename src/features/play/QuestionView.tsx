@@ -120,7 +120,7 @@ export function QuestionView({ q, index, total, secondsLeft, onSubmit, submitted
 
       <h2 className="text-balance text-center font-display text-2xl font-extrabold leading-tight sm:text-3xl">{q.prompt}</h2>
       {q.image_url && (
-        <img src={q.image_url} alt="" className="mx-auto max-h-[38vh] w-auto max-w-full rounded-3xl object-contain shadow-lg" />
+        <img src={q.image_url} alt="" className="mx-auto max-h-[24vh] w-auto max-w-full rounded-3xl object-contain shadow-lg sm:max-h-[38vh]" />
       )}
       {q.scene && <SceneCard key={q.prompt} scene={q.scene} />}
 
