@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, FileSearch } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, FileSearch, Wand2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Button } from '../../components/ui/Button'
 import { SolidCard } from '../../components/ui/Card'
@@ -7,6 +7,8 @@ import { Skeleton } from '../../components/ui/Field'
 import { useToast } from '../../components/ui/Toast'
 import { researchGrade, researchList, type ResearchSubmission } from '../../lib/api/activities'
 import { cn } from '../../lib/cn'
+import { useConfirm } from '../../components/ui/Confirm'
+import { autoGradeResearch } from './researchAutoGrade'
 
 const LEVELS = [
   { v: 2, label: 'Cumple', emoji: '✅', on: 'border-uap-green bg-uap-green/15' },
@@ -23,6 +25,41 @@ export function useResearch(sessionId: string) {
 export function ResearchGrader({ sessionId, onGraded }: { sessionId: string; onGraded?: () => void }) {
   const q = useResearch(sessionId)
   const [i, setI] = useState(0)
+  const [auto, setAuto] = useState<null | { done: number; total: number }>(null)
+  const confirm = useConfirm()
+  const toast = useToast()
+
+  /** Califica solas, por cumplimiento, todas las entregas que aún no tienen nota. */
+  async function autoGradeAll() {
+    const data = q.data
+    if (!data) return
+    const todo = data.items.filter((x) => x.grade === null)
+    if (!todo.length) return
+    const ok = await confirm({
+      title: `¿Calificar automáticamente ${todo.length} entrega${todo.length === 1 ? '' : 's'}?`,
+      message:
+        'Cada criterio sale Cumple, A medias o No cumple según si respondió todo con suficiente texto, usó los conceptos del tema y, si se piden, puso datos o números. Después puede cambiar cualquier nota a mano. Si los correos están activados, a cada estudiante le llega su nota.',
+      confirmText: 'Calificar ahora',
+    })
+    if (!ok) return
+    setAuto({ done: 0, total: todo.length })
+    let done = 0
+    for (const x of todo) {
+      const g = autoGradeResearch({ criteria: data.criteria, minWords: data.min_words, answers: x.answers })
+      try {
+        await researchGrade(x.attempt, g.scores, g.comment)
+        done++
+        setAuto({ done, total: todo.length })
+      } catch (e) {
+        toast.error(`No se pudo calificar a ${x.name}`, (e as Error).message)
+      }
+    }
+    setAuto(null)
+    toast.success(`${done} entrega${done === 1 ? '' : 's'} calificada${done === 1 ? '' : 's'} automáticamente`)
+    void q.refetch()
+    onGraded?.()
+  }
+
   if (q.isLoading) return <Skeleton className="h-64" />
   const data = q.data
   if (!data || !data.items.length)
@@ -42,6 +79,11 @@ export function ResearchGrader({ sessionId, onGraded }: { sessionId: string; onG
         <p className="px-2 pb-2 text-xs font-bold uppercase tracking-wider text-ink-soft">
           {items.length} entregas · {pending} sin calificar
         </p>
+        {pending > 0 && (
+          <Button size="sm" variant="gold" className="mx-1 mb-2 w-[calc(100%-0.5rem)]" disabled={!!auto} onClick={() => void autoGradeAll()}>
+            <Wand2 className="size-4" /> {auto ? `Calificando ${auto.done}/${auto.total}…` : `Calificar solas (${pending})`}
+          </Button>
+        )}
         {items.map((x, k) => (
           <button
             key={x.attempt}

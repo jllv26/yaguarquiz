@@ -93,8 +93,14 @@ function LaunchModalInner({ open, onClose, quiz }: Props & { quiz: NonNullable<P
   const [rubroTouched, setRubroTouched] = useState(false)
   useEffect(() => {
     if (rubroTouched || !items.length || s.identification !== 'roster') return
-    const want = quiz.activity === 'research' ? 'inv' : (hint?.rubro ?? (mode === 'homework' ? 'casa' : 'clase'))
-    const it = want === 'inv' ? items.find((i) => i.term === curTerm && /investigaci/i.test(i.category)) : findItem(curTerm, want)
+    // una evaluación (no actividad) lanzada como examen de laboratorio va a «Examen y pruebas escritas»
+    const want: 'clase' | 'casa' | 'inv' | 'examen' = quiz.activity === 'research' ? 'inv' : (hint?.rubro ?? (mode === 'homework' ? 'casa' : mode === 'exam' && !act ? 'examen' : 'clase'))
+    const it =
+      want === 'inv'
+        ? items.find((i) => i.term === curTerm && /investigaci/i.test(i.category))
+        : want === 'examen'
+          ? items.find((i) => i.term === curTerm && /examen|prueba/i.test(i.category))
+          : findItem(curTerm, want)
     if (it && it.id !== s.grading_item_id) setS((x) => ({ ...x, grading_item_id: it.id }))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items.length, mode, curTerm, rubroTouched, s.identification])

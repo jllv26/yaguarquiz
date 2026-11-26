@@ -6,10 +6,12 @@ import {
   Copy,
   Download,
   Lock,
+  Minus,
   MonitorSmartphone,
   MoreVertical,
   Play,
   Plus,
+  Repeat,
   Presentation,
   RotateCcw,
   Send,
@@ -37,6 +39,7 @@ import { AvatarBubble } from '../live/LiveBits'
 import { fmtLeft, useServerNow } from '../live/clock'
 import { useAutoSync } from '../reports/useAutoSync'
 import { sfx } from '../../lib/sound'
+import { supabase } from '../../lib/supabase'
 import { ExamProjector } from './ExamProjector'
 
 type Filter = 'all' | 'progress' | 'done' | 'absent' | 'alerts'
@@ -142,6 +145,26 @@ export function ExamMonitor({ id }: { id: string }) {
     } catch (e) {
       toast.error('No se pudo completar', (e as Error).message)
     }
+  }
+  /** Cambia los intentos de TODOS (también de quienes aún no empezaron). Cuenta el mejor intento. */
+  async function changeAttempts(delta: 1 | -1) {
+    if (!st) return
+    const next = st.session.max_attempts + delta
+    if (next < 1 || next > 20) return
+    const ok = await confirm({
+      title: delta > 0 ? `¿Dar un intento más a todos? (${next} en total)` : `¿Quitar un intento a todos? (${next} en total)`,
+      message:
+        delta > 0
+          ? 'Vale para todos los estudiantes, también para quienes aún no la empezaron. Cuenta el mejor intento, así que nadie baja su nota.'
+          : 'Quien ya usó todos sus intentos no podrá volver a entrar. Los intentos ya hechos no se borran.',
+      confirmText: delta > 0 ? 'Dar un intento más' : 'Quitar un intento',
+      danger: delta < 0,
+    })
+    if (!ok) return
+    const { error } = await supabase.from('sessions').update({ max_attempts: next }).eq('id', id)
+    if (error) return toast.error('No se pudo cambiar', error.message)
+    toast.success(delta > 0 ? `Ahora todos tienen ${next} intentos` : `Ahora todos tienen ${next} intento${next === 1 ? '' : 's'}`)
+    void refresh()
   }
   async function act(r: MonitorRow, action: 'extra_time' | 'unlock' | 'grant_attempt' | 'force_submit' | 'kick' | 'device', minutes = 0) {
     if (!r.participant_id) return
@@ -315,6 +338,14 @@ export function ExamMonitor({ id }: { id: string }) {
               {win === 'closed' && (
                 <Button size="sm" variant="secondary" onClick={() => void control('reopen', 30)}>
                   <RotateCcw className="size-4" /> Reabrir 30 min
+                </Button>
+              )}
+              <Button size="sm" variant="secondary" onClick={() => void changeAttempts(1)} title="Da un intento más a todos los estudiantes">
+                <Repeat className="size-4" /> +1 intento a todos
+              </Button>
+              {s.max_attempts > 1 && (
+                <Button size="sm" variant="ghost" onClick={() => void changeAttempts(-1)} title="Quita un intento a todos" aria-label="Quitar un intento a todos">
+                  <Minus className="size-4" /> 1 intento
                 </Button>
               )}
             </div>
